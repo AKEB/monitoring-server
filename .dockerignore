@@ -1,0 +1,4 @@
+.git/
+src/composer.lock
+src/vendor/
+src/version.php

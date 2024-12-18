@@ -1,0 +1,5 @@
+/src/vendor/
+.git
+*.log
+/mysql_data/
+.env
