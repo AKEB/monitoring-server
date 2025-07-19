@@ -257,11 +257,259 @@ class T {
 	public static function Weeks_Sa(): string { return ''; }
 
 	/**
-	 * Test
+	 * Groups_Default
 	 * 
-	 * @return string "Test"
-	 * @return string "Тест"
+	 * @return string "Группа по умолчанию"
+	 * @return string ""
 	 */
-	public static function Test(): string { return ''; }
+	public static function Groups_Default(): string { return ''; }
+
+	/**
+	 * User_Log_CODE_AUTHORIZATION
+	 * 
+	 * @return string "Авторизация"
+	 * @return string ""
+	 */
+	public static function User_Log_CODE_AUTHORIZATION(): string { return ''; }
+
+	/**
+	 * User_Log_CODE_CREATE_MANAGER
+	 * 
+	 * @return string "Создание менеджера"
+	 * @return string ""
+	 */
+	public static function User_Log_CODE_CREATE_MANAGER(): string { return ''; }
+
+	/**
+	 * User_Log_CODE_EDIT_MANAGER
+	 * 
+	 * @return string "Редактирование менеджера"
+	 * @return string ""
+	 */
+	public static function User_Log_CODE_EDIT_MANAGER(): string { return ''; }
+
+	/**
+	 * User_Log_CODE_REMOVE_MANAGER
+	 * 
+	 * @return string "Удаление менеджера"
+	 * @return string ""
+	 */
+	public static function User_Log_CODE_REMOVE_MANAGER(): string { return ''; }
+
+	/**
+	 * User_Log_CODE_MANAGER_GROUP_ADD
+	 * 
+	 * @return string "Добавление группы для менеджера"
+	 * @return string ""
+	 */
+	public static function User_Log_CODE_MANAGER_GROUP_ADD(): string { return ''; }
+
+	/**
+	 * User_Log_CODE_MANAGER_GROUP_DELETE
+	 * 
+	 * @return string "Удаление группы для менеджера"
+	 * @return string ""
+	 */
+	public static function User_Log_CODE_MANAGER_GROUP_DELETE(): string { return ''; }
+
+	/**
+	 * User_Log_CODE_MANAGER_SET_PRIVILEGE
+	 * 
+	 * @return string "Установка прав"
+	 * @return string ""
+	 */
+	public static function User_Log_CODE_MANAGER_SET_PRIVILEGE(): string { return ''; }
+
+	/**
+	 * User_Log_CODE_CREATE_GROUP
+	 * 
+	 * @return string "Создание группы менеджеров"
+	 * @return string ""
+	 */
+	public static function User_Log_CODE_CREATE_GROUP(): string { return ''; }
+
+	/**
+	 * User_Log_CODE_EDIT_GROUP
+	 * 
+	 * @return string "Редактирование группы менеджеров"
+	 * @return string ""
+	 */
+	public static function User_Log_CODE_EDIT_GROUP(): string { return ''; }
+
+	/**
+	 * User_Log_CODE_REMOVE_GROUP
+	 * 
+	 * @return string "Удаление группы менеджеров"
+	 * @return string ""
+	 */
+	public static function User_Log_CODE_REMOVE_GROUP(): string { return ''; }
+
+	/**
+	 * User_Log_CODE_CREATE_ORGANIZATION
+	 * 
+	 * @return string "Создание организации менеджеров"
+	 * @return string ""
+	 */
+	public static function User_Log_CODE_CREATE_ORGANIZATION(): string { return ''; }
+
+	/**
+	 * User_Log_CODE_EDIT_ORGANIZATION
+	 * 
+	 * @return string "Редактирование организации менеджеров"
+	 * @return string ""
+	 */
+	public static function User_Log_CODE_EDIT_ORGANIZATION(): string { return ''; }
+
+	/**
+	 * User_Log_CODE_REMOVE_ORGANIZATION
+	 * 
+	 * @return string "Удаление организации менеджеров"
+	 * @return string ""
+	 */
+	public static function User_Log_CODE_REMOVE_ORGANIZATION(): string { return ''; }
+
+	/**
+	 * User_Log_OBJECT_MANAGER
+	 * 
+	 * @return string "Менеджер"
+	 * @return string ""
+	 */
+	public static function User_Log_OBJECT_MANAGER(): string { return ''; }
+
+	/**
+	 * User_Log_OBJECT_GROUP
+	 * 
+	 * @return string "Группа менеджеров"
+	 * @return string ""
+	 */
+	public static function User_Log_OBJECT_GROUP(): string { return ''; }
+
+	/**
+	 * User_Log_OBJECT_ORGANIZATION
+	 * 
+	 * @return string "Организация"
+	 * @return string ""
+	 */
+	public static function User_Log_OBJECT_ORGANIZATION(): string { return ''; }
+
+	/**
+	 * User_Log_PRIORITY_LOW
+	 * 
+	 * @return string "низкий"
+	 * @return string ""
+	 */
+	public static function User_Log_PRIORITY_LOW(): string { return ''; }
+
+	/**
+	 * User_Log_PRIORITY_NORMAL
+	 * 
+	 * @return string "нормальный"
+	 * @return string ""
+	 */
+	public static function User_Log_PRIORITY_NORMAL(): string { return ''; }
+
+	/**
+	 * User_Log_PRIORITY_MEDIUM
+	 * 
+	 * @return string "повышенный"
+	 * @return string ""
+	 */
+	public static function User_Log_PRIORITY_MEDIUM(): string { return ''; }
+
+	/**
+	 * User_Log_PRIORITY_HIGH
+	 * 
+	 * @return string "высокий"
+	 * @return string ""
+	 */
+	public static function User_Log_PRIORITY_HIGH(): string { return ''; }
+
+	/**
+	 * User_Log_PRIORITY_HIGHEST
+	 * 
+	 * @return string "наивысший"
+	 * @return string ""
+	 */
+	public static function User_Log_PRIORITY_HIGHEST(): string { return ''; }
+
+	/**
+	 * User_Groups_GROUP_DEFAULT
+	 * 
+	 * @return string "Группа по умолчанию"
+	 * @return string ""
+	 */
+	public static function User_Groups_GROUP_DEFAULT(): string { return ''; }
+
+	/**
+	 * User_Groups_Code
+	 * 
+	 * @return string "Код"
+	 * @return string ""
+	 */
+	public static function User_Groups_Code(): string { return ''; }
+
+	/**
+	 * User_Groups_Title
+	 * 
+	 * @return string "Название"
+	 * @return string ""
+	 */
+	public static function User_Groups_Title(): string { return ''; }
+
+	/**
+	 * User_Groups_CreatorId
+	 * 
+	 * @return string "Создатель"
+	 * @return string ""
+	 */
+	public static function User_Groups_CreatorId(): string { return ''; }
+
+	/**
+	 * User_Groups_CreateTime
+	 * 
+	 * @return string "Дата создания"
+	 * @return string ""
+	 */
+	public static function User_Groups_CreateTime(): string { return ''; }
+
+	/**
+	 * User_Groups_UpdateTime
+	 * 
+	 * @return string "Дата редактирования"
+	 * @return string ""
+	 */
+	public static function User_Groups_UpdateTime(): string { return ''; }
+
+	/**
+	 * User_Organization_Title
+	 * 
+	 * @return string "Название"
+	 * @return string ""
+	 */
+	public static function User_Organization_Title(): string { return ''; }
+
+	/**
+	 * User_Organization_CreatorId
+	 * 
+	 * @return string "Создатель"
+	 * @return string ""
+	 */
+	public static function User_Organization_CreatorId(): string { return ''; }
+
+	/**
+	 * User_Organization_CreateTime
+	 * 
+	 * @return string "Дата создания"
+	 * @return string ""
+	 */
+	public static function User_Organization_CreateTime(): string { return ''; }
+
+	/**
+	 * User_Organization_UpdateTime
+	 * 
+	 * @return string "Дата редактирования"
+	 * @return string ""
+	 */
+	public static function User_Organization_UpdateTime(): string { return ''; }
 
 }

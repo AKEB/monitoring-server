@@ -1,16 +1,17 @@
 <?php
 require_once("./version.php");
 require_once("./vendor/autoload.php");
-require_once("./include/placeholder.php");
-require_once("./include/common.php");
-
-ini_set('zend.exception_ignore_args', 0);
-
-error_reporting(E_ALL &~ E_NOTICE);
 
 global $PWD;
 $PWD = __DIR__;
 if (!defined('SERVER_ROOT')) define("SERVER_ROOT", $PWD.'/');
+
+require_once("./include/constant.php");
+require_once("./include/placeholder.php");
+require_once("./include/common.php");
+
+error_reporting(E_ALL &~ E_NOTICE);
+
 
 \Config::getInstance();
 

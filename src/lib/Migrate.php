@@ -16,7 +16,7 @@ class Migrate {
 		}
 
 		$className::install();
-		\Models\Migrations::save([
+		\DB\Migrations::save([
 			'migration_name' => $migrationName,
 			'stime' => time(),
 			'_mode' => \DB\Common::CSMODE_INSERT,
@@ -34,13 +34,13 @@ class Migrate {
 		}
 		$className = ucfirst($migrationName);
 		$className::uninstall();
-		\Models\Migrations::delete(['migration_name' => $migrationName],'','migration_name');
+		\DB\Migrations::delete(['migration_name' => $migrationName],'','migration_name');
 		echo $migrationName." uninstall\n";
 		unset(static::$doneMigrations[$migrationName]);
 	}
 
 	static public function apply() {
-		static::$doneMigrations = get_hash(\Models\Migrations::data(), 'migration_name', 'stime');
+		static::$doneMigrations = get_hash(\DB\Migrations::data(), 'migration_name', 'stime');
 		$allFiles = glob(SERVER_ROOT.'migrations/migration_*.php');
 		$migrations = [];
 		foreach($allFiles as $file) {
@@ -63,7 +63,7 @@ class Migrate {
 	}
 
 	static public function rollback($migrations) {
-		static::$doneMigrations = get_hash(\Models\Migrations::data(), 'migration_name', 'stime');
+		static::$doneMigrations = get_hash(\DB\Migrations::data(), 'migration_name', 'stime');
 		$allFiles = glob(SERVER_ROOT.'migrations/migration_*.php');
 
 		static::$depends = [];

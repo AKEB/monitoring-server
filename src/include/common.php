@@ -37,3 +37,44 @@ function &make_hash(array $arr, string|array $key_name='id', bool $group=false) 
 	}
 	return $ret;
 }
+
+function common_html_hidden(array $arr, ?string $arr_name=null): string {
+	$html = "";
+	foreach ($arr as $k=>$v) {
+		if ($arr_name) $k = $arr_name.'['.$k.']';
+		$html .= !is_array($v) ? "<input type=\"hidden\" name=\"".$k."\" value=\"".htmlspecialchars($v)."\">\n": common_html_hidden($v,$k);
+	}
+	return $html;
+}
+
+function common_build_request(string|array $param, string $arr_name='', bool $encode=true): string {
+	if (!is_array($param)) return $encode ? urlencode($param): $param;
+	$t = [];
+	foreach ($param as $k=>$v) {
+		if ($encode) $k = urlencode($k);
+		if ($arr_name) $k = $arr_name.'['.$k.']';
+		$t[] = !is_array($v) ? $k.'='.($encode ? urlencode($v): $v): common_build_request($v,$k);
+	}
+	return implode('&',$t);
+}
+
+function common_redirect(string $url='', array $param=[], bool $post=false) {
+	global $error;
+	$err = $error ? $error : $_GET['error'];
+	if ((!isset($param['error']) || !$param['error']) && $err) $param['error'] = $err;
+	if (!$post) {
+		if ($param) $url .= (strpos($url, '?') !== false ? '&' : '?') . common_build_request($param);
+		header("Location: ".$url);
+	} else {
+		$html = '<html><body>';
+		$html .= '<script type="text/javascript" nonce="'.$GLOBALS['nonceRandom'].'">';
+		$html .= '$(document).ready(function(){ frm.submit(); });';
+		$html .= '</script>';
+		$html .= '<form name="frm" method="post" action="'.$url.'">';
+		if ($param && is_array($param)) $html .= common_html_hidden($param);
+		$html .= '</form>';
+		$html .= '</body></html>';
+		print $html;
+	}
+	exit;
+}

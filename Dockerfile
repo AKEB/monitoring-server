@@ -1,4 +1,4 @@
-FROM akeb/nginx-php-fpm:8.3
+FROM akeb/nginx-php-fpm-8.3:latest
 
 ARG SERVER_VERSION="v0.0.0"
 ENV SERVER_VERSION=${SERVER_VERSION}

@@ -36,4 +36,41 @@ Weeks:
   Fr: "Пт"
   Sa: "Сб"
 
-Test: "Тест"
+User:
+  Log:
+    CODE:
+      AUTHORIZATION: "Авторизация"
+      CREATE_MANAGER: "Создание менеджера"
+      EDIT_MANAGER: "Редактирование менеджера"
+      REMOVE_MANAGER: "Удаление менеджера"
+      MANAGER_GROUP_ADD: "Добавление группы для менеджера"
+      MANAGER_GROUP_DELETE: "Удаление группы для менеджера"
+      MANAGER_SET_PRIVILEGE: "Установка прав"
+      CREATE_GROUP: "Создание группы менеджеров"
+      EDIT_GROUP: "Редактирование группы менеджеров"
+      REMOVE_GROUP: "Удаление группы менеджеров"
+      CREATE_ORGANIZATION: "Создание организации менеджеров"
+      EDIT_ORGANIZATION: "Редактирование организации менеджеров"
+      REMOVE_ORGANIZATION: "Удаление организации менеджеров"
+    OBJECT:
+      MANAGER: "Менеджер"
+      GROUP: "Группа менеджеров"
+      ORGANIZATION: "Организация"
+    PRIORITY:
+      LOW: "низкий"
+      NORMAL: "нормальный"
+      MEDIUM: "повышенный"
+      HIGH: "высокий"
+      HIGHEST: "наивысший"
+  Groups:
+    GROUP_DEFAULT: "Группа по умолчанию"
+    Code: "Код"
+    Title: "Название"
+    CreatorId: "Создатель"
+    CreateTime: "Дата создания"
+    UpdateTime: "Дата редактирования"
+  Organization:
+    Title: "Название"
+    CreatorId: "Создатель"
+    CreateTime: "Дата создания"
+    UpdateTime: "Дата редактирования"

@@ -38,4 +38,6 @@ Weeks:
   Fr: "Fr"
   Sa: "Sa"
 
-Test: "Test"
+Groups:
+  Default: "Группа по умолчанию"
+

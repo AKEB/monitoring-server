@@ -17,6 +17,8 @@ class Config {
 	public readonly string $mysql_slave_password;
 	public readonly string $mysql_slave_db_name;
 
+	public readonly string $password_salt;
+
 	private static $_instance;
 
 	// public function __construct() {
@@ -47,6 +49,7 @@ class Config {
 			self::$_instance->mysql_slave_password = strval($_ENV['MYSQL_SLAVE_PASSWORD'] ?? self::$_instance->mysql_password);
 			self::$_instance->mysql_slave_db_name = strval($_ENV['MYSQL_SLAVE_DB_NAME'] ?? self::$_instance->mysql_db_name);
 
+			self::$_instance->password_salt = "bHchLzC3B99Ss2ghc2gkDdtgCG7vKtoj";
 		}
 		return self::$_instance;
 	}
