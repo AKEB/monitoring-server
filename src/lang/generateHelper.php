@@ -2,6 +2,11 @@
 $dirname = dirname(__FILE__) . '/';
 $files = $dirname . '*.yml';
 
+global $PWD;
+$PWD = __DIR__;
+if (!defined('SERVER_ROOT')) define("SERVER_ROOT", $PWD);
+
+
 require_once($dirname . "/../vendor/autoload.php");
 
 if (!function_exists('glob_recursive')) {
@@ -51,13 +56,14 @@ $code = "<?php\n";
 $code .= "class T {\n";
 
 foreach($data as $k=>$v) {
+
 	$code .= "\t/**\n";
 	$code .= "\t * $k\n";
 	$code .= "\t * \n";
 	$code .= "\t * @return string \"".str_replace(["\n", "\t"],["\\n", "\\t"],addslashes($v[0]))."\"\n";
 	$code .= "\t * @return string \"". str_replace(["\n", "\t"], ["\\n", "\\t"], addslashes($v[1]))."\"\n";
 	$code .= "\t */\n";
-	$code .= "\tpublic static function $k(): string { return ''; }\n\n";
+	$code .= "\tpublic static function $k(...\$argv): string { return ''; }\n\n";
 }
 
 $code .= "}\n";

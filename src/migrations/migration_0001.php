@@ -11,7 +11,7 @@ class Migration_0001 {
 
 	static function uninstall() {
 		global $db;
-		$db->execSQL("CREATE TABLE `test_table` LIKE `migrations`");
+		$db->execSQL("CREATE TABLE IF NOT EXISTS `test_table` LIKE `migrations`");
 	}
 }
 

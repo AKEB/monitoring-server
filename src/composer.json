@@ -1,14 +1,15 @@
 {
-	"name": "akeb/monitoring-server",
+	"name": "akeb/monitoring",
 	"version": "0.0.1",
 	"require": {
 		"php": "^8.3",
-		"akeb/curlget": "@stable",
-		"akeb/profiler": "@stable",
-		"akeb/cache": "@stable",
-		"mustangostang/spyc": "@stable"
+		"akeb/framework": "@stable",
+		"michelf/php-markdown": "@stable"
 	},
-	"require-dev": {},
+	"require-dev": {
+		"phpunit/phpunit": "@stable",
+		"akeb/framework": "dev-main"
+	},
 	"authors": [
 		{
 			"name": "Vadim Babadzhanyan",
@@ -19,6 +20,11 @@
 		"email": "vadimakeb@gmail.com"
 	},
 	"autoload": {
-		"classmap": ["lib"]
+		"classmap": [
+			"lib/"
+		],
+		"files": []
+	},
+	"repositories": {
 	}
 }

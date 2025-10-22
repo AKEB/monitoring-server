@@ -1,12 +1,10 @@
 <?php
 class Migration_0000 {
-	static public $previous = [
-		// 'migration_0000',
-	];
+	static public $previous = [];
 
 	static function install() {
 		global $db;
-		$db->execSQL("CREATE TABLE `test_table` LIKE `migrations`");
+		$db->execSQL("CREATE TABLE IF NOT EXISTS `test_table` LIKE `migrations`");
 	}
 
 	static function uninstall() {

@@ -1,0 +1,110 @@
+---
+
+name: build project-dev
+
+on:
+  push:
+    branches: 
+      - main
+    # tags:
+    #   - '*'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:latest
+        env:
+          MYSQL_ALLOW_EMPTY_PASSWORD: yes
+          MYSQL_ROOT_PASSWORD: pa$$word
+          MYSQL_DATABASE: test
+        ports:
+          - 3306
+        options: --health-cmd="mysqladmin ping -h 127.0.0.1 -u root --password=pa$$word" --health-interval=5s --health-timeout=5s --health-retries=3
+
+    strategy:
+      matrix:
+        php: ['8.3']
+    name: PHP ${{ matrix.php }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+            path: ~/.composer/cache/files
+            key: dependencies-php-${{ matrix.php }}-composer-${{ hashFiles('composer.json') }}
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, mysql, mysqli, pdo_mysql, bcmath, soap, intl, gd, exif, iconv, imagick
+          ini-values: variables_order=EGPCS
+          coverage: none
+
+      - name: Install dependencies
+        run: |
+          cd src/
+          rm -rf vendor composer.lock
+          composer install --prefer-install=auto --no-interaction --no-suggest
+
+      - name: Migrations
+        run: |
+          cd src/vendor/akeb/framework/src/
+          SERVER_ROOT=${PWD}../../../../ php migrate.php
+        env:
+          TZ: 'Europe/Moscow'
+          MYSQL_HOST: '127.0.0.1'
+          MYSQL_PORT: ${{ job.services.mysql.ports[3306] }}
+          MYSQL_USERNAME: 'root'
+          MYSQL_PASSWORD: 'pa$$word'
+          MYSQL_DB_NAME: 'test'
+          PASSWORD_SALT: 'salt_for_passwords'
+
+      - name: Run Tests
+        run: |
+          cd src/
+          vendor/bin/phpunit --no-coverage --colors=never -c phpunit.xml
+        env:
+          TZ: 'Europe/Moscow'
+          MYSQL_HOST: '127.0.0.1'
+          MYSQL_PORT: ${{ job.services.mysql.ports[3306] }}
+          MYSQL_USERNAME: 'root'
+          MYSQL_PASSWORD: 'pa$$word'
+          MYSQL_DB_NAME: 'test'
+          PASSWORD_SALT: 'salt_for_passwords'
+
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+    - name: checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up Docker Buildx
+      id: buildx
+      uses: crazy-max/ghaction-docker-buildx@v1
+      with:
+        buildx-version: latest
+        qemu-version: latest
+
+    - name: Available platforms
+      run: echo ${{ steps.buildx.outputs.platforms }}
+
+    - name: Login to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    - name: build the image
+      run: |
+        docker buildx build \
+        --build-arg SERVER_VERSION=dev \
+        --push \
+        --tag akeb/monitoring:dev \
+        --platform linux/amd64,linux/arm/v7,linux/arm64/v8 ./

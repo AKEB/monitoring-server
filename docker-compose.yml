@@ -1,11 +1,34 @@
 ---
-
-name: "monitoring"
-
 services:
+  mysql:
+    container_name: monitoring-mysql
+    image: mysql:latest
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      # MYSQL_DATABASE: ${MYSQL_DB_NAME}
+      # MYSQL_USER: ${MYSQL_USERNAME}
+      # MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    volumes:
+      - ./mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysql", "-h", "127.0.0.1", "-u", "root", "--password=${MYSQL_ROOT_PASSWORD}", "-e", "show databases;"]
+      start_period: 10s
+      interval: 5s
+      timeout: 5s
+      retries: 55
+  
+  memcached:
+    container_name: "monitoring-memcached"
+    image: memcached
+    command:
+      - --conn-limit=1024
+      - --memory-limit=32
+      - --threads=4
+    
   server:
     container_name: "monitoring-server"
-    image: "akeb/monitoring-server:local"
+    image: "akeb/monitoring:local"
     restart: unless-stopped
     build: .
     env_file:
@@ -16,29 +39,8 @@ services:
       - ./logs/nginx/:/var/log/nginx/:rw
     ports:
       - "${NGINX_PORT}:80"
-    environment:
-      - MYSQL_HOST=${MYSQL_HOST}
-      - MYSQL_PORT=${MYSQL_PORT}
-      - MYSQL_USERNAME=${MYSQL_USERNAME}
-      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
-      - MYSQL_DB_NAME=${MYSQL_DB_NAME}
     depends_on:
       mysql:
-          condition: service_healthy
-
-  mysql:
-    container_name: monitoring-mysql
-    image: mysql:latest
-    restart: unless-stopped
-    ports:
-      - ${EXTERNAL_MYSQL_PORT}:3306
-    environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-    volumes:
-      - ./mysql_data:/var/lib/mysql
-    healthcheck:
-      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost", "-u", "${MYSQL_USERNAME}", "--password=${MYSQL_PASSWORD}"]
-      start_period: 5s
-      interval: 5s
-      timeout: 5s
-      retries: 55
+        condition: service_healthy
+      memcached:
+        condition: service_started

@@ -1,0 +1,8 @@
+div.text-danger>input {
+	--bs-text-opacity: 1;
+	color: rgba(var(--bs-danger-rgb), var(--bs-text-opacity)) !important;
+}
+div.text-success>input {
+	--bs-text-opacity: 1;
+	color: rgba(var(--bs-success-rgb), var(--bs-text-opacity)) !important;
+}
