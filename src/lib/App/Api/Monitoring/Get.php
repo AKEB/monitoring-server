@@ -12,8 +12,42 @@ class Get extends \Routing_Parent implements \Routing_Interface {
 		$this->data = [];
 		$this->processRequest();
 		if (!$this->worker) {
-			e403();
+			$this->responseError([
+				'error' => 'Worker not found',
+			]);
+			return;
 		}
+		$this->updateWorker();
+
+		$this->responseSuccess([
+			'data' => $this->getWorkerData(),
+			'jobs' => $this->getJobsData(),
+		]);
+	}
+
+	private function responseSuccess(array $response=[]) {
+		if (isset($response['error'])) unset($response['error']);
+		if (!isset($response['status'])) $response['status'] = 0;
+		if (!isset($response['server_time'])) $response['server_time'] = time();
+		if (!isset($response['server_microtime'])) $response['server_microtime'] = microtime(true);
+		header('Content-Encoding: UTF-8');
+		header('Content-Type: application/json;charset=utf-8');
+		echo json_encode($response);
+		exit(0);
+	}
+
+	private function responseError(array $response=[]) {
+		if (!isset($response['error'])) $response['error'] = 'Error';
+		if (!isset($response['status'])) $response['status'] = 1;
+		if (!isset($response['server_time'])) $response['server_time'] = time();
+		if (!isset($response['server_microtime'])) $response['server_microtime'] = microtime(true);
+		header('Content-Encoding: UTF-8');
+		header('Content-Type: application/json;charset=utf-8');
+		echo json_encode($response);
+		exit(0);
+	}
+
+	private function updateWorker(): void {
 		$save_data = [];
 		if (isset($this->data['protocol_version']) && $this->data['protocol_version'] && $this->data['protocol_version'] != $this->worker['protocol_version']) {
 			$save_data['protocol_version'] = $this->data['protocol_version'];
@@ -31,22 +65,27 @@ class Get extends \Routing_Parent implements \Routing_Interface {
 			$save_data['_mode'] = \DB\Common::CSMODE_UPDATE;
 			\Workers::save($save_data);
 		}
-		$return = [
-			'data' => [
-				'worker_id' => $this->worker['id'],
-				'worker_threads' => $this->worker['worker_threads'],
-				'jobs_get_timeout' => $this->worker['jobs_get_timeout'],
-				'loop_timeout' => $this->worker['loop_timeout'],
-				'response_send_timeout' => $this->worker['response_send_timeout'],
-				'logs_write_timeout' => $this->worker['logs_write_timeout'],
-			],
-			'status' => 0,
-			'server_time' => time(),
-			'server_microtime' => microtime(true),
+	}
+
+	private function getWorkerData(): array {
+		return [
+			'worker_id' => $this->worker['id'],
+			'worker_threads' => $this->worker['worker_threads'],
+			'jobs_get_timeout' => $this->worker['jobs_get_timeout'],
+			'loop_timeout' => $this->worker['loop_timeout'],
+			'response_send_timeout' => $this->worker['response_send_timeout'],
+			'logs_write_timeout' => $this->worker['logs_write_timeout'],
 		];
-		header('Content-Encoding: UTF-8');
-		header('Content-Type: application/json;charset=utf-8');
-		echo json_encode($return);
+	}
+
+	private function getJobsData(): array {
+		$jobs = [];
+		if ($this->worker && $this->worker['id']) {
+			$jobs = \Jobs::data(['worker_id' => $this->worker['id']], sql_pholder(' AND M.`status` = ? ',\Monitors::STATUS_ENABLED), 't.`id` as `job_id`, t.`update_time`, M.*', false, false, [
+				'_join' => ' JOIN `'.\Monitors::getTable().'` M ON t.`monitor_id` = M.`id`'
+			]);
+		}
+		return $jobs;
 	}
 
 	protected function handleBodyData(array $data) {

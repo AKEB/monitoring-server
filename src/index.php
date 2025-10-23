@@ -43,12 +43,12 @@ new \T([
 		'title' => \T::Menu_Home(),
 		'link'=>'/',
 	],
-	[
-		'title' => \T::Menu_Test(),
-		'link' => '/test/',
-		'icon' => "bi bi-code-square"
-		// 'permission' => \Sessions::checkPermission(\Permissions::ADMIN, 0, READ),
-	],
+	// [
+	// 	'title' => \T::Menu_Test(),
+	// 	'link' => '/test/',
+	// 	'icon' => "bi bi-code-square"
+	// 	// 'permission' => \Sessions::checkPermission(\Permissions::ADMIN, 0, READ),
+	// ],
 	[
 		'title' => \T::Worker_Menu(),
 		'link' => '/workers/',
@@ -58,9 +58,10 @@ new \T([
 ]);
 
 // Add another Websocket item
-\Websocket::addAction('test', '\\Test');
-\Websocket::addAction('notification_test', '\\Test');
-\Websocket::addAction('mattermost_test', '\\Test');
+// \Websocket::addAction('test', '\\Test');
+// \Websocket::addAction('notification_test', '\\Test');
+// \Websocket::addAction('mattermost_test', '\\Test');
+\Websocket::addAction('monitors_update', '\\MonitorsWebsocket');
 
 // ADD Another Routes
 // \Routes::addRoute('/test/', '\\App\\Test');

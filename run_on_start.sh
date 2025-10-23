@@ -27,6 +27,8 @@ cp -R vendor/akeb/framework/src/js js/framework/
 cp -R vendor/akeb/framework/src/css css/framework/
 cp -R vendor/akeb/framework/src/lang lang/framework/
 
+/usr/sbin/logrotate -f /etc/logrotate.conf
+
 cd /app/vendor/akeb/framework/src/ && SERVER_ROOT=/app php migrate.php
 
 cd /app/vendor/akeb/framework/src/crons/ && SERVER_ROOT=/app ./run_all.sh

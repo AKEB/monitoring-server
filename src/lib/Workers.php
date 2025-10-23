@@ -9,6 +9,7 @@ class Workers extends \DB\MySQLObject implements \PermissionSubject_Interface {
 	const PERMISSION_WORKER = 'worker';
 	const PERMISSION_WORKER_KEY_HASH = 'worker_key_hash';
 	const PERMISSION_CREATE_WORKER = 'create_worker';
+	
 
 
 	static public function subject_hash(): array {

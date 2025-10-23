@@ -6,3 +6,116 @@ div.text-success>input {
 	--bs-text-opacity: 1;
 	color: rgba(var(--bs-success-rgb), var(--bs-text-opacity)) !important;
 }
+
+.border-red {
+	border:1px solid red;
+}
+.border-green {
+	border:1px solid green;
+}
+
+.monitor-list-filter {
+	min-height: 4rem;
+}
+
+.wrap {
+	overflow: hidden;
+	width: 100%;
+	white-space: nowrap;
+	padding: 0.25rem 0.078125rem;
+	display: flex;
+	justify-content: flex-end;
+}
+.monitor-item>* {
+	--bs-gutter-x: 0.8rem;
+	--mon-list-padding: 1rem;
+}
+
+.monitor-states {
+	
+	/* display: flex;
+	overflow-x: hidden;
+	width: 100%;
+	flex-wrap: nowrap; */
+	
+}
+
+.monitor-states>div {
+	display:inline-flex;
+	flex-shrink: 0;
+	border-radius:50rem;
+	margin:0.125rem
+}
+
+.monitor-states>div {
+	width: 0.3125rem;
+	height: 1rem;
+	--bs-bg-opacity: 1;
+}
+
+.monitor-states>div.bg-success {
+	background-color: rgba(var(--bs-success-rgb), var(--bs-bg-opacity)) !important;
+}
+
+.monitor-states>div.bg-warning {
+	background-color: rgba(var(--bs-warning-rgb), var(--bs-bg-opacity)) !important;
+}
+
+.monitor-states>div.bg-secondary {
+	background-color: rgba(var(--bs-secondary-rgb), var(--bs-bg-opacity)) !important;
+}
+
+.monitor-states>div.bg-primary {
+	background-color: rgba(var(--bs-primary-rgb), var(--bs-bg-opacity)) !important;
+}
+
+.monitor-states>div:hover {
+	transition: all ease-in-out .15s;
+	opacity: .8;
+	transform: scale(1.5)
+}
+
+.monitor-item>div.collapsed>i.bi::before {
+	content: "\f234";
+}
+
+.monitor-item>div.collapsed>i.bi::before {
+	/* content: "\f22C"; */
+}
+
+.ml-padding-1 {
+	margin-left: calc(var(--mon-list-padding) * 1);
+}
+.ml-padding-2 {
+	margin-left: calc(var(--mon-list-padding) * 2);
+}
+.ml-padding-3 {
+	margin-left: calc(var(--mon-list-padding) * 3);
+}
+.ml-padding-4 {
+	margin-left: calc(var(--mon-list-padding) * 4);
+}
+.ml-padding-5 {
+	margin-left: calc(var(--mon-list-padding) * 5);
+}
+.ml-padding-6 {
+	margin-left: calc(var(--mon-list-padding) * 6);
+}
+.ml-padding-7 {
+	margin-left: calc(var(--mon-list-padding) * 7);
+}
+.ml-padding-8 {
+	margin-left: calc(var(--mon-list-padding) * 8);
+}
+.ml-padding-9 {
+	margin-left: calc(var(--mon-list-padding) * 9);
+}
+.ml-padding-10 {
+	margin-left: calc(var(--mon-list-padding) * 10);
+}
+.ml-padding-11 {
+	margin-left: calc(var(--mon-list-padding) * 11);
+}
+.ml-padding-12 {
+	margin-left: calc(var(--mon-list-padding) * 12);
+}
