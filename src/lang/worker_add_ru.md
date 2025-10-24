@@ -10,7 +10,7 @@
       worker:
         container_name: "monitoring-worker"
         image: "akeb/monitoring-worker:latest"
-        restart: unless-stopped
+        restart: always
         environment:
           - TZ=UTC
           - WORKER_KEY_HASH=${WORKER_KEY_HASH}

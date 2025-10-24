@@ -21,10 +21,20 @@ function MonitorsUpdate(wss, count=20) {
 						}
 					}
 				}
+				const monitorItem = $('.monitor-item[data-monitor-id="'+monitor_id+'"]');
+				const monitorBadge = $('.monitor-badge[data-monitor-id="'+monitor_id+'"]');
+				console.log(monitorBadge);
+				if (monitorBadge && monitorBadge.length > 0) {
+					$(monitorBadge[0]).removeClass("bg-secondary bg-warning bg-danger bg-success").addClass(monitor.badge_class);
+					$(monitorBadge[0]).text(monitor.badge_text);
+				}
+				if (monitorItem && monitorItem.length > 0) {
+					$(monitorItem[0]).removeClass("disabled").addClass(monitor.class);
+				}
 			}
 		}
 	})
 	setTimeout(function() {
 		MonitorsUpdate(wss, 5);
-	}, 30000);
+	}, 10000);
 }

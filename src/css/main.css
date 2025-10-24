@@ -14,6 +14,10 @@ div.text-success>input {
 	border:1px solid green;
 }
 
+.monitor-list {
+	--bs-gutter-x: 1.5rem;
+}
+
 .monitor-list-filter {
 	min-height: 4rem;
 }
@@ -22,34 +26,28 @@ div.text-success>input {
 	overflow: hidden;
 	width: 100%;
 	white-space: nowrap;
-	padding: 0.25rem 0.078125rem;
+	padding: 0.125rem 0.078125rem;
+	/* padding: 0.125rem; */
 	display: flex;
 	justify-content: flex-end;
+
 }
 .monitor-item>* {
 	--bs-gutter-x: 0.8rem;
-	--mon-list-padding: 1rem;
+	--mon-list-padding: 1.2rem;
 }
 
 .monitor-states {
-	
-	/* display: flex;
-	overflow-x: hidden;
-	width: 100%;
-	flex-wrap: nowrap; */
-	
+	/* line-height: 2rem; */
 }
 
 .monitor-states>div {
 	display:inline-flex;
 	flex-shrink: 0;
 	border-radius:50rem;
-	margin:0.125rem
-}
-
-.monitor-states>div {
+	margin:0.125rem;
 	width: 0.3125rem;
-	height: 1rem;
+	height: 1.0rem;
 	--bs-bg-opacity: 1;
 }
 
@@ -81,6 +79,14 @@ div.text-success>input {
 
 .monitor-item>div.collapsed>i.bi::before {
 	/* content: "\f22C"; */
+}
+
+.monitor-badge {
+	width: 4rem;
+}
+
+.monitor-item.disabled {
+	opacity: 0.3;
 }
 
 .ml-padding-1 {

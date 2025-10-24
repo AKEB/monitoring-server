@@ -15,20 +15,21 @@ require_once("./autoload.php");
 // Print Content Security Policy Header
 \ContentSecurityPolicy::print_header();
 
-new \T([
-	'en' => 'lang/worker_en.yml',
-	'ru' => 'lang/worker_ru.yml',
-]);
-
+\Permissions::add_permission(\Workers::PERMISSION_CREATE_WORKER, \T::Worker_Permissions_CreateWorker());
+\Permissions::add_permission(\Monitors::PERMISSION_CREATE_MONITOR, \T::Monitor_Permissions_CreateMonitor());
 
 // Add another permissions subject types
 \Permissions::set_subject_type('worker', '\\Workers', 'Workers');
+\Permissions::set_subject_type('monitor', '\\Monitors', 'Monitors');
 
 \Sessions::session_init(true); // This need to check Permissions and user language
 
 // Set Application Settings
 \Template::setProjectName("Monitoring");
 \Template::setTheme('auto');
+
+\Template::addHeadMeta(['content' => "#212529",'name' => 'msapplication-TileColor']);
+\Template::addHeadMeta(['name' => 'theme-color','content' => "#212529"]);
 
 // Add another css files
 \Template::addCSSFile('/css/main.css');
@@ -37,34 +38,13 @@ new \T([
 \Template::addJSFile('/js/locale_'.\T::getCurrentLanguage().'.js');
 \Template::addJSFile('/js/main.js');
 
-// Add another Menu items
-\Template::setMenuItems([
-	[
-		'title' => \T::Menu_Home(),
-		'link'=>'/',
-	],
-	// [
-	// 	'title' => \T::Menu_Test(),
-	// 	'link' => '/test/',
-	// 	'icon' => "bi bi-code-square"
-	// 	// 'permission' => \Sessions::checkPermission(\Permissions::ADMIN, 0, READ),
-	// ],
-	[
-		'title' => \T::Worker_Menu(),
-		'link' => '/workers/',
-		'icon' => "bi bi-hdd-network",
-		'permission' => \Sessions::checkPermission(\Workers::PERMISSION_WORKER, -1, READ),
-	],
-]);
+\Template::addMenuItem(new \MenuItem('', \T::Menu_Home(), '/', null, null));
+\Template::addMenuAdminItem(new \MenuItem('bi bi-code-square', \T::Worker_Menu(), '/workers/', null, new \MenuPermissionItem(\Workers::PERMISSION_WORKER, -1, READ)));
 
 // Add another Websocket item
-// \Websocket::addAction('test', '\\Test');
-// \Websocket::addAction('notification_test', '\\Test');
-// \Websocket::addAction('mattermost_test', '\\Test');
 \Websocket::addAction('monitors_update', '\\MonitorsWebsocket');
 
 // ADD Another Routes
-// \Routes::addRoute('/test/', '\\App\\Test');
 \Routes::addRoute('/workers/edit/(?P<worker_id>\d+)/', '\\App\\Workers\\Edit');
 \Routes::addRoute('/workers/edit/', '\\App\\Workers\\Edit');
 \Routes::addRoute('/workers/(?P<action>[^/]+)/(?P<worker_id>\d+)/', '\\App\\Workers\\Show');

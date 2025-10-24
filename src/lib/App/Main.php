@@ -15,7 +15,7 @@ class Main extends \Routing_Parent implements \Routing_Interface {
 		}
 		foreach($monitors as $monitor_id=>$monitor) {
 			if ($monitor['type'] != \Monitors::TYPE_FOLDER) {
-				if (!\Sessions::checkPermission('monitors', $monitor['id'], READ)) {
+				if (!\Sessions::checkPermission(\Monitors::PERMISSION_MONITOR, $monitor['id'], READ)) {
 					unset($monitors[$monitor_id]);
 				}
 			}
@@ -32,16 +32,19 @@ class Main extends \Routing_Parent implements \Routing_Interface {
 				unset($monitors[$monitor_id]);
 			}
 		}
+
+
+
 		?>
 		<div class="row">
-			<div class="col-12 col-md-6 col-xl-6 col-xxl-5 ps-xl-0 pe-xl-0">
+			<div class="col-12 col-md-6 col-xl-6 col-xxl-5 monitor-list">
 				<div class="row monitor-list-filter">
 					<div class="col">
 
 					</div>
 				</div>
-				<div class="row monitor-list">
-					<div class="col ps-xl-0 pe-xl-0">
+				<div class="row monitor-list-items">
+					<div class="col">
 						<?php
 						$this->print_monitors($monitors, 0);
 						?>
@@ -69,13 +72,13 @@ class Main extends \Routing_Parent implements \Routing_Interface {
 					continue;
 				}
 				?>
-				<div class="row monitor-item">
-					<div class="col-9 col-md-8 ps-xl-0 pe-xl-0 collapsed" data-bs-toggle="collapse" href="#collapseMonitors-<?=$item['id'];?>" role="button" aria-expanded="false" aria-controls="collapseMonitors-<?=$item['id'];?>">
-						<span class="ml-padding-<?=$level;?>"></span>
+				<div class="row monitor-item" data-monitor-id="<?=$item['id'];?>">
+					<div class="col-9 col-md-8 collapsed monitor-title" data-monitor-id="<?=$item['id'];?>" data-bs-toggle="collapse" href="#collapseMonitors-<?=$item['id'];?>" role="button" aria-expanded="false" aria-controls="collapseMonitors-<?=$item['id'];?>">
+						<span class="ml-padding-<?=$level;?>"></span><span class="badge rounded-pill monitor-badge" title="24-часа" data-monitor-id="<?=$item['id'];?>">100%</span>
 						<i class="bi bi-caret-down"></i>
 						<?=$item['title'];?>
 					</div>
-					<div class="col-3 col-md-4 ps-xl-0 pe-xl-0">
+					<div class="col-3 col-md-4">
 						<div class="wrap">
 							<div class="monitor-states" data-monitor-id="<?=$item['id'];?>"></div>
 						</div>
@@ -89,12 +92,12 @@ class Main extends \Routing_Parent implements \Routing_Interface {
 				<?php
 			} else {
 				?>
-				<div class="row monitor-item">
-					<div class="col-9 col-md-8 ps-xl-0 pe-xl-0">
-						<span class="ml-padding-<?=$level;?>"></span><span class="badge rounded-pill text-bg-success" title="24-часа" data-monitor-id="<?=$item['id'];?>">100%</span>
+				<div class="row monitor-item" data-monitor-id="<?=$item['id'];?>">
+					<div class="col-9 col-md-8 monitor-title" data-monitor-id="<?=$item['id'];?>">
+						<span class="ml-padding-<?=$level;?>"></span><span class="badge rounded-pill monitor-badge" title="24-часа" data-monitor-id="<?=$item['id'];?>">100%</span>
 						<?=$item['title'];?>
 					</div>
-					<div class="col-3 col-md-4 ps-xl-0 pe-xl-0">
+					<div class="col-3 col-md-4">
 						<div class="wrap">
 							<div class="monitor-states" data-monitor-id="<?=$item['id'];?>"></div>
 						</div>

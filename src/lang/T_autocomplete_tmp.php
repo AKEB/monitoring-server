@@ -9,36 +9,12 @@ class T {
 	public static function MainPage(...$argv): string { return ''; }
 
 	/**
-	 * TestPage
-	 * 
-	 * @return string "Test page"
-	 * @return string "Тестовая страница"
-	 */
-	public static function TestPage(...$argv): string { return ''; }
-
-	/**
 	 * Menu_Home
 	 * 
 	 * @return string "Home"
 	 * @return string "Главная"
 	 */
 	public static function Menu_Home(...$argv): string { return ''; }
-
-	/**
-	 * Menu_Test
-	 * 
-	 * @return string "Test"
-	 * @return string "Тест"
-	 */
-	public static function Menu_Test(...$argv): string { return ''; }
-
-	/**
-	 * Menu_Workers
-	 * 
-	 * @return string "Workers"
-	 * @return string "Обработчики"
-	 */
-	public static function Menu_Workers(...$argv): string { return ''; }
 
 	/**
 	 * Worker_Menu
@@ -311,6 +287,38 @@ class T {
 	 * @return string "У вас нет прав на создание обработчика"
 	 */
 	public static function Worker_Create_PermissionDenied(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Menu
+	 * 
+	 * @return string "Monitors"
+	 * @return string "Мониторы"
+	 */
+	public static function Monitor_Menu(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_PageTitle
+	 * 
+	 * @return string "Monitors"
+	 * @return string "Мониторы"
+	 */
+	public static function Monitor_PageTitle(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Permissions_Monitor
+	 * 
+	 * @return string "Access"
+	 * @return string "Доступ"
+	 */
+	public static function Monitor_Permissions_Monitor(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Permissions_CreateMonitor
+	 * 
+	 * @return string "Create monitor"
+	 * @return string "Создание монитора"
+	 */
+	public static function Monitor_Permissions_CreateMonitor(...$argv): string { return ''; }
 
 	/**
 	 * Framework_ServerVersion
@@ -1407,6 +1415,14 @@ class T {
 	 * @return string "Вход под пользователем"
 	 */
 	public static function Framework_Permissions_ImpersonateUser(...$argv): string { return ''; }
+
+	/**
+	 * Framework_Permissions_LogsReport
+	 * 
+	 * @return string "Logs report"
+	 * @return string "Просмотр логов"
+	 */
+	public static function Framework_Permissions_LogsReport(...$argv): string { return ''; }
 
 	/**
 	 * Framework_Permissions_Group

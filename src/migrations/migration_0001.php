@@ -6,12 +6,12 @@ class Migration_0001 {
 
 	static function install() {
 		global $db;
-		$db->execSQL("DROP TABLE IF EXISTS `test_table`");
+		$db->execSQL("ALTER TABLE `workers` CHANGE `status` `last_active_time` INT NOT NULL DEFAULT '0';");
 	}
 
 	static function uninstall() {
 		global $db;
-		$db->execSQL("CREATE TABLE IF NOT EXISTS `test_table` LIKE `migrations`");
+		$db->execSQL("ALTER TABLE `workers` CHANGE `last_active_time` `status` INT NOT NULL DEFAULT '0';");
 	}
 }
 
