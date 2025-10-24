@@ -15,7 +15,7 @@ class Main extends \Routing_Parent implements \Routing_Interface {
 		}
 		foreach($monitors as $monitor_id=>$monitor) {
 			if ($monitor['type'] != \Monitors::TYPE_FOLDER) {
-				if (!\Sessions::checkPermission(\Monitors::PERMISSION_MONITOR, $monitor['id'], READ)) {
+				if (!\Sessions::checkPermission(\Monitors::PERMISSION_ACCESS, $monitor['id'], READ)) {
 					unset($monitors[$monitor_id]);
 				}
 			}
@@ -58,13 +58,36 @@ class Main extends \Routing_Parent implements \Routing_Interface {
 		<script nonce="<?=\CSP::nonceRandom();?>">
 			$(document).ready(function() {
 				MonitorsUpdate(wss);
+				MonitorsCollapse();
 			});
 		</script>
 		<?php
 	}
 
-
 	private function print_monitors(array $monitors=[], int $level=0) {
+		// Нужно отсортировать массив по полю title
+		usort($monitors, function($a, $b){
+			$titleA = $a['title'];
+			$titleB = $b['title'];
+
+			// Проверяем, начинается ли строка с русской буквы
+			$isRussianA = preg_match('/^[а-яё]/iu', $titleA);
+			$isRussianB = preg_match('/^[а-яё]/iu', $titleB);
+
+			// Если одна строка начинается с русской буквы, а другая - нет,
+			// русская строка должна идти первой
+			if ($isRussianA && !$isRussianB) {
+				return -1;
+			}
+			if (!$isRussianA && $isRussianB) {
+				return 1;
+			}
+
+			// Если обе строки начинаются с русских букв или обе с английских,
+			// сортируем регистронезависимо
+			return strcasecmp($titleA, $titleB);
+		});
+
 		foreach($monitors as $item) {
 			if ($item['type'] == \Monitors::TYPE_FOLDER) {
 				// continue;
@@ -72,8 +95,8 @@ class Main extends \Routing_Parent implements \Routing_Interface {
 					continue;
 				}
 				?>
-				<div class="row monitor-item" data-monitor-id="<?=$item['id'];?>">
-					<div class="col-9 col-md-8 collapsed monitor-title" data-monitor-id="<?=$item['id'];?>" data-bs-toggle="collapse" href="#collapseMonitors-<?=$item['id'];?>" role="button" aria-expanded="false" aria-controls="collapseMonitors-<?=$item['id'];?>">
+				<div class="row monitor-folder mb-1" data-monitor-id="<?=$item['id'];?>">
+					<div class="col-9 col-md-8 collapsed monitor-title" data-monitor-id="<?=$item['id'];?>" aria-controls="collapseMonitors_<?=$item['id'];?>">
 						<span class="ml-padding-<?=$level;?>"></span><span class="badge rounded-pill monitor-badge" title="24-часа" data-monitor-id="<?=$item['id'];?>">100%</span>
 						<i class="bi bi-caret-down"></i>
 						<?=$item['title'];?>
@@ -84,7 +107,7 @@ class Main extends \Routing_Parent implements \Routing_Interface {
 						</div>
 					</div>
 				</div>
-				<div class="collapse" id="collapseMonitors-<?=$item['id'];?>">
+				<div class="collapse" id="collapseMonitors_<?=$item['id'];?>">
 					<?php
 					$this->print_monitors($item['children'], $level+1);
 					?>
@@ -92,7 +115,7 @@ class Main extends \Routing_Parent implements \Routing_Interface {
 				<?php
 			} else {
 				?>
-				<div class="row monitor-item" data-monitor-id="<?=$item['id'];?>">
+				<div class="row monitor-item mb-1" data-monitor-id="<?=$item['id'];?>">
 					<div class="col-9 col-md-8 monitor-title" data-monitor-id="<?=$item['id'];?>">
 						<span class="ml-padding-<?=$level;?>"></span><span class="badge rounded-pill monitor-badge" title="24-часа" data-monitor-id="<?=$item['id'];?>">100%</span>
 						<?=$item['title'];?>

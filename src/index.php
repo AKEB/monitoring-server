@@ -15,8 +15,8 @@ require_once("./autoload.php");
 // Print Content Security Policy Header
 \ContentSecurityPolicy::print_header();
 
-\Permissions::add_permission(\Workers::PERMISSION_CREATE_WORKER, \T::Worker_Permissions_CreateWorker());
-\Permissions::add_permission(\Monitors::PERMISSION_CREATE_MONITOR, \T::Monitor_Permissions_CreateMonitor());
+\Permissions::add_permission(\Workers::PERMISSION_CREATE, \T::Worker_Permissions_CreateWorker());
+\Permissions::add_permission(\Monitors::PERMISSION_CREATE, \T::Monitor_Permissions_CreateMonitor());
 
 // Add another permissions subject types
 \Permissions::set_subject_type('worker', '\\Workers', 'Workers');
@@ -39,7 +39,8 @@ require_once("./autoload.php");
 \Template::addJSFile('/js/main.js');
 
 \Template::addMenuItem(new \MenuItem('', \T::Menu_Home(), '/', null, null));
-\Template::addMenuAdminItem(new \MenuItem('bi bi-code-square', \T::Worker_Menu(), '/workers/', null, new \MenuPermissionItem(\Workers::PERMISSION_WORKER, -1, READ)));
+\Template::addMenuAdminItem(new \MenuItem('bi bi-hdd-network', \T::Worker_Menu(), '/workers/', null, new \MenuPermissionItem(\Workers::PERMISSION_ACCESS, -1, READ)));
+\Template::addMenuAdminItem(new \MenuItem('bi bi-question-octagon', \T::Monitor_Menu(), '/monitors/', null, new \MenuPermissionItem(\Monitors::PERMISSION_ACCESS, -1, READ)));
 
 // Add another Websocket item
 \Websocket::addAction('monitors_update', '\\MonitorsWebsocket');
@@ -49,6 +50,13 @@ require_once("./autoload.php");
 \Routes::addRoute('/workers/edit/', '\\App\\Workers\\Edit');
 \Routes::addRoute('/workers/(?P<action>[^/]+)/(?P<worker_id>\d+)/', '\\App\\Workers\\Show');
 \Routes::addRoute('/workers/', '\\App\\Workers\\Show');
+
+\Routes::addRoute('/monitors/(?P<parent_id>\d+)/edit/(?P<monitor_id>\d+)/', '\\App\\Monitors\\Edit');
+\Routes::addRoute('/monitors/(?P<parent_id>\d+)/edit/', '\\App\\Monitors\\Edit');
+\Routes::addRoute('/monitors/(?P<parent_id>\d+)/(?P<action>[^/]+)/(?P<monitor_id>\d+)/', '\\App\\Monitors\\Show');
+\Routes::addRoute('/monitors/(?P<parent_id>\d+)/', '\\App\\Monitors\\Show');
+\Routes::addRoute('/monitors/', '\\App\\Monitors\\Show');
+
 
 new \Routing();
 

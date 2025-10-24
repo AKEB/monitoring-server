@@ -32,7 +32,7 @@ div.text-success>input {
 	justify-content: flex-end;
 
 }
-.monitor-item>* {
+.monitor-item>*, .monitor-folder>* {
 	--bs-gutter-x: 0.8rem;
 	--mon-list-padding: 1.2rem;
 }
@@ -73,11 +73,15 @@ div.text-success>input {
 	transform: scale(1.5)
 }
 
-.monitor-item>div.collapsed>i.bi::before {
+.monitor-folder>.monitor-title {
+	cursor:pointer;
+}
+
+.monitor-folder>div.collapsed>i.bi::before {
 	content: "\f234";
 }
 
-.monitor-item>div.collapsed>i.bi::before {
+.monitor-folder>div.collapsed>i.bi::before {
 	/* content: "\f22C"; */
 }
 
@@ -85,7 +89,7 @@ div.text-success>input {
 	width: 4rem;
 }
 
-.monitor-item.disabled {
+.monitor-item.disabled, .monitor-folder.disabled {
 	opacity: 0.3;
 }
 

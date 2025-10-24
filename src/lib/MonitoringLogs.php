@@ -18,16 +18,23 @@ class MonitoringLogs extends \DB\MySQLObject {
 		$monitors = \Monitors::data(false, $sql);
 		if (!$max_time) $max_time= time();
 		$monitor_workers_hash = [];
-		$monitor_workers_data = \Jobs::data(false, ' ORDER BY `monitor_id` ASC, `worker_id` ASC', '`monitor_id`, `worker_id`');
+		$monitor_workers_data = \Jobs::data(false, ' ORDER BY `monitor_id` ASC, `worker_id` ASC', '`monitor_id`, `worker_id`, `create_time`');
 		if ($monitor_workers_data) {
 			foreach($monitor_workers_data as $item) {
 				if (!isset($monitor_workers_hash[$item['monitor_id']])) $monitor_workers_hash[$item['monitor_id']] = [];
-				$monitor_workers_hash[$item['monitor_id']][$item['worker_id']] = true;
+				$monitor_workers_hash[$item['monitor_id']][$item['worker_id']] = $item['create_time'] ? $item['create_time'] : 1;
 			}
 		}
+
+		// Получить процент доступности
+		$availability = static::getAvailabilityPercent();
+		if ($availability) {
+			$availability = get_hash($availability, 'monitor_id', 'availability_percent');
+		}
+
 		$monitors_data = [];
 		foreach($monitors as $monitor) {
-			if (!\Sessions::checkPermission(\Monitors::PERMISSION_MONITOR, $monitor['id'], READ)) continue;
+			if (!\Sessions::checkPermission(\Monitors::PERMISSION_ACCESS, $monitor['id'], READ)) continue;
 			$repeat = intval($monitor['repeat_seconds']??30);
 
 			$monitor_max_time = $max_time;
@@ -45,6 +52,7 @@ class MonitoringLogs extends \DB\MySQLObject {
 				'monitor_min_time' => $monitor_min_time,
 				'monitor_max_time' => $monitor_max_time,
 				'workers' => $workers,
+				'availability_percent' => round($availability[$monitor['id']]??0, 2),
 				'states' => [],
 			];
 			$workers_array = [];
@@ -59,6 +67,11 @@ class MonitoringLogs extends \DB\MySQLObject {
 					'max_time' => $t+$repeat,
 					'workers' => $workers_array,
 				];
+				foreach($item['states'][$t]['workers'] as $worker_id=>$state) {
+					if (!$workers[$worker_id] || $workers[$worker_id] > $t) {
+						unset($item['states'][$t]['workers'][$worker_id]);
+					}
+				}
 			}
 			$monitors_data[$monitor['id']] = $item;
 		}
@@ -91,34 +104,39 @@ class MonitoringLogs extends \DB\MySQLObject {
 				}
 			}
 		}
+
 		// Проставляем параметры для мониторов и родителей
 		foreach($monitors as $monitor) {
 			$monitor_id = $monitor['id'];
 			foreach($monitors_data[$monitor_id]['states'] as $min_time=>&$state) {
-				$array_unique = array_unique($state['workers'], SORT_NUMERIC);
-				if (in_array(\MonitoringLogs::STATE_ERROR, $array_unique) || in_array(\MonitoringLogs::STATE_UNKNOWN, $array_unique)) {
-					// Есть ошибка или неизвестный статус
-					if (in_array(\MonitoringLogs::STATE_SUCCESS, $array_unique)) {
-						// Есть удачные ответы
-						// Помечаем WARNING так как есть ошибки и успех
-						if ($min_time + 1.5 * $monitor['repeat_seconds'] >= time() && !in_array(\MonitoringLogs::STATE_ERROR, $array_unique)) {
-							// Ошибок нет, но статус пока еще не от всех обработчиков пришел
-							static::setParamForParents($monitor_id, $monitors_data, $min_time, 'has_success');
-						} else {
-							static::setParamForParents($monitor_id, $monitors_data, $min_time, 'has_warning');
+				if ($monitors_data[$monitor_id]['monitor_type'] != \Monitors::TYPE_FOLDER) {
+					$array_unique = array_unique($state['workers'], SORT_NUMERIC);
+					if (in_array(\MonitoringLogs::STATE_ERROR, $array_unique) || in_array(\MonitoringLogs::STATE_UNKNOWN, $array_unique)) {
+						// Есть ошибка или неизвестный статус
+						if (in_array(\MonitoringLogs::STATE_SUCCESS, $array_unique)) {
+							// Есть удачные ответы
+							// Помечаем WARNING так как есть ошибки и успех
+							if ($min_time + 1.5 * $monitor['repeat_seconds'] >= time() && !in_array(\MonitoringLogs::STATE_ERROR, $array_unique)) {
+								// Ошибок нет, но статус пока еще не от всех обработчиков пришел
+								static::setParamForParents($monitor_id, $monitors_data, $min_time, 'has_success', true);
+							} else {
+								static::setParamForParents($monitor_id, $monitors_data, $min_time, 'has_warning', true);
+							}
+						} elseif (in_array(\MonitoringLogs::STATE_ERROR, $array_unique)) {
+							// Есть ошибки
+							static::setParamForParents($monitor_id, $monitors_data, $min_time, 'has_danger', true);
+						} elseif (in_array(\MonitoringLogs::STATE_UNKNOWN, $array_unique)) {
+							// неизвестный статус
+							static::setParamForParents($monitor_id, $monitors_data, $min_time, 'has_secondary', true);
 						}
-					} elseif (in_array(\MonitoringLogs::STATE_ERROR, $array_unique)) {
-						// Есть ошибки
-						static::setParamForParents($monitor_id, $monitors_data, $min_time, 'has_danger');
-					} elseif (in_array(\MonitoringLogs::STATE_UNKNOWN, $array_unique)) {
+					} elseif (in_array(\MonitoringLogs::STATE_SUCCESS, $array_unique)) {
+						// Нет ошибок
+						static::setParamForParents($monitor_id, $monitors_data, $min_time, 'has_success', true);
+					} else {
 						// неизвестный статус
-						static::setParamForParents($monitor_id, $monitors_data, $min_time, 'has_secondary');
+						static::setParamForParents($monitor_id, $monitors_data, $min_time, 'has_secondary', true);
 					}
-				} else {
-					// Нет ошибок
-					static::setParamForParents($monitor_id, $monitors_data, $min_time, 'has_success');
 				}
-
 				$state['title'] = date("Y-m-d H:i:s", $state['min_time']);
 			}
 			unset($state);
@@ -148,25 +166,42 @@ class MonitoringLogs extends \DB\MySQLObject {
 			}
 			$last = end($monitors_data[$monitor_id]['states']);
 			$monitors_data[$monitor_id]['badge_class'] = $last['class'];
-			$monitors_data[$monitor_id]['badge_text'] = round(rand(9800, 10000)/100, 2).'%';
+			$parent_id = $monitors_data[$monitor_id]['monitor_parent_id']??0;
+			if ($parent_id) {
+				static::setParentAvailabilityPercent($parent_id, $monitors_data, $monitors_data[$monitor_id]['availability_percent']);
+			}
 			$monitors_data[$monitor_id]['class'] = '';
 			if ($monitor['status'] == \Monitors::STATUS_DISABLED) {
 				$monitors_data[$monitor_id]['class'] = 'disabled';
 			}
 		}
+
 		return $monitors_data;
 	}
 
-	static private function setParamForParents(int $monitor_id, array &$monitors_data, int $min_time, string $param) {
+	static private function setParentAvailabilityPercent(int $parent_id, array &$monitors_data, float $availability_percent) {
+		if (!$parent_id) return;
+		if (!isset($monitors_data[$parent_id]) || !$monitors_data[$parent_id]) return;
+		if (!$monitors_data[$parent_id]['availability_percent']) {
+			$monitors_data[$parent_id]['availability_percent'] = $availability_percent;
+		} else {
+			$monitors_data[$parent_id]['availability_percent'] = min($monitors_data[$parent_id]['availability_percent'], $availability_percent);
+		}
+		if ($monitors_data[$parent_id]['monitor_parent_id']) {
+			static::setParentAvailabilityPercent($monitors_data[$parent_id]['monitor_parent_id'], $monitors_data, $monitors_data[$parent_id]['availability_percent']);
+		}
+	}
+
+	static private function setParamForParents(int $monitor_id, array &$monitors_data, int $min_time, string $param, mixed $value) {
 		if (!$monitor_id) return;
 		if (!isset($monitors_data[$monitor_id]) || !$monitors_data[$monitor_id]) return;
 		if (!isset($monitors_data[$monitor_id]['states']) || !$monitors_data[$monitor_id]['states']) return;
 		if (!isset($monitors_data[$monitor_id]['states'][$min_time]) || !$monitors_data[$monitor_id]['states'][$min_time]) return;
 		if (!isset($monitors_data[$monitor_id]['states'][$min_time][$param]) || !$monitors_data[$monitor_id]['states'][$min_time][$param]) {
-			$monitors_data[$monitor_id]['states'][$min_time][$param] = true;
+			$monitors_data[$monitor_id]['states'][$min_time][$param] = $value;
 		}
 		if ($monitors_data[$monitor_id]['monitor_parent_id']) {
-			static::setParamForParents($monitors_data[$monitor_id]['monitor_parent_id'], $monitors_data, $min_time, $param);
+			static::setParamForParents($monitors_data[$monitor_id]['monitor_parent_id'], $monitors_data, $min_time, $param, $value);
 		}
 	}
 
@@ -187,6 +222,24 @@ class MonitoringLogs extends \DB\MySQLObject {
 				) AS ranked
 			WHERE rn <= ".intval($count)."
 			ORDER BY `monitor_id`, `worker_id`, `update_time` DESC;
+		";
+		$data = [];
+		static::getDatabase()->db_GetQueryArray($sql, $data);
+		return $data;
+	}
+
+	static private function getAvailabilityPercent(int $seconds=86400): array {
+		if (!$seconds) $seconds = 86400;
+		$sql = "
+			SELECT
+				monitor_id,
+				COUNT(*) as total_checks,
+				SUM(status = 1) as successful_checks,
+				ROUND((SUM(status = 1) / COUNT(*)) * 100, 2) as availability_percent
+			FROM monitoring_logs
+			WHERE update_time >= UNIX_TIMESTAMP() - ".intval($seconds)."
+			GROUP BY monitor_id
+			ORDER BY availability_percent DESC;
 		";
 		$data = [];
 		static::getDatabase()->db_GetQueryArray($sql, $data);

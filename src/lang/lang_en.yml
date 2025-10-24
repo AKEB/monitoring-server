@@ -50,4 +50,46 @@ Monitor:
   Permissions:
     Monitor: "Access"
     CreateMonitor: "Create monitor"
+  Table:
+    Title: "Title"
+    Status: "Status"
+    Url: "URL"
+    CreateTime: "Create time"
+    UpdateTime: "Update time"
+    Actions: "Actions"
+    Delete: "Delete"
+    Root: "Home"
+  Delete:
+    Title: "Removing the monitor"
+    Confirmation: "Are you sure you want to delete the monitor {title}?"
+    MonitorNotFound: "Monitor not found"
+    PermissionDenied: "You don't have permission to delete this monitor"
+    MonitorFolderNotEmpty: "This monitor folder is not empty"
+  Edit:
+    CreateTitle: "Create monitor"
+    EditTitle: "Edit monitor &quot;%s&quot; [ID=%d]"
+    Title: "Title"
+    Type: "Type"
+    Status: "Status"
+    CreateTime: "Create time"
+    UpdateTime: "Update time"
+    Url: "URL"
+    Method: "Method"
+    Timeout: "Request timeout"
+    RepeatSeconds: "Repeat seconds"
+    SSLVerify: "SSL verify"
+    ProxyHost: "Proxy host"
+    ProxyPort: "Proxy port"
+    
+    ChangeButton: "Update"
+    CreateButton: "Create"
 
+    NameLengthError: "Name length must be between 2 and 255 characters"
+    MonitorNotFound: "Monitor not found"
+    PermissionDenied: "You don't have permission to edit this monitor"
+    NotingChanged: "Nothing changed"
+  Create:
+    PermissionDenied: "You don't have permission to create a monitor"
+  Type:
+    Curl: "Curl"
+    Folder: "Folder"

@@ -50,3 +50,46 @@ Monitor:
   Permissions:
     Monitor: "Доступ"
     CreateMonitor: "Создание монитора"
+  Table:
+    Title: "Название"
+    Status: "Статус"
+    Url: "Ссылка"
+    CreateTime: "Время создания"
+    UpdateTime: "Время обновления"
+    Actions: "Действия"
+    Delete: "Удалить"
+    Root: "Главная"
+  Delete:
+    Title: "Удаление монитора"
+    Confirmation: "Вы уверены, что хотите удалить монитор {title}?"
+    PermissionDenied: "У вас нет прав на удаление этого монитора"
+    MonitorNotFound: "Монитор не найден"
+    MonitorFolderNotEmpty: "Папка монитора не пустая"
+  Edit:
+    CreateTitle: "Создание монитора"
+    EditTitle: "Редактирование монитора &laquo;%s&raquo; [ID=%d]"
+    Title: "Название"
+    Type: "Тип"
+    Status: "Статус"
+    CreateTime: "Время создания"
+    UpdateTime: "Время обновления"
+    Url: "Ссылка"
+    Method: "Метод запроса"
+    Timeout: "Таймаут запроса в секундах"
+    RepeatSeconds: "Частота опроса в секундах"
+    SSLVerify: "SSL verify"
+    ProxyHost: "Proxy host"
+    ProxyPort: "Proxy port"
+
+    ChangeButton: "Изменить"
+    CreateButton: "Создать"
+
+    NameLengthError: "Название должно быть от 2 до 255 символов"
+    MonitorNotFound: "Монитор не найден"
+    PermissionDenied: "У вас нет прав на редактирование этого монитора"
+    NotingChanged: "Ничего не изменилось"
+  Create:
+    PermissionDenied: "У вас нет прав на создание монитора"
+  Type:
+    Curl: "Curl"
+    Folder: "Папка"

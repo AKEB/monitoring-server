@@ -321,6 +321,294 @@ class T {
 	public static function Monitor_Permissions_CreateMonitor(...$argv): string { return ''; }
 
 	/**
+	 * Monitor_Table_Title
+	 * 
+	 * @return string "Title"
+	 * @return string "Название"
+	 */
+	public static function Monitor_Table_Title(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Table_Status
+	 * 
+	 * @return string "Status"
+	 * @return string "Статус"
+	 */
+	public static function Monitor_Table_Status(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Table_Url
+	 * 
+	 * @return string "URL"
+	 * @return string "Ссылка"
+	 */
+	public static function Monitor_Table_Url(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Table_CreateTime
+	 * 
+	 * @return string "Create time"
+	 * @return string "Время создания"
+	 */
+	public static function Monitor_Table_CreateTime(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Table_UpdateTime
+	 * 
+	 * @return string "Update time"
+	 * @return string "Время обновления"
+	 */
+	public static function Monitor_Table_UpdateTime(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Table_Actions
+	 * 
+	 * @return string "Actions"
+	 * @return string "Действия"
+	 */
+	public static function Monitor_Table_Actions(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Table_Delete
+	 * 
+	 * @return string "Delete"
+	 * @return string "Удалить"
+	 */
+	public static function Monitor_Table_Delete(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Table_Root
+	 * 
+	 * @return string "Home"
+	 * @return string "Главная"
+	 */
+	public static function Monitor_Table_Root(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Delete_Title
+	 * 
+	 * @return string "Removing the monitor"
+	 * @return string "Удаление монитора"
+	 */
+	public static function Monitor_Delete_Title(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Delete_Confirmation
+	 * 
+	 * @return string "Are you sure you want to delete the monitor {title}?"
+	 * @return string "Вы уверены, что хотите удалить монитор {title}?"
+	 */
+	public static function Monitor_Delete_Confirmation(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Delete_MonitorNotFound
+	 * 
+	 * @return string "Monitor not found"
+	 * @return string "Монитор не найден"
+	 */
+	public static function Monitor_Delete_MonitorNotFound(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Delete_PermissionDenied
+	 * 
+	 * @return string "You don\'t have permission to delete this monitor"
+	 * @return string "У вас нет прав на удаление этого монитора"
+	 */
+	public static function Monitor_Delete_PermissionDenied(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Delete_MonitorFolderNotEmpty
+	 * 
+	 * @return string "This monitor folder is not empty"
+	 * @return string "Папка монитора не пустая"
+	 */
+	public static function Monitor_Delete_MonitorFolderNotEmpty(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_CreateTitle
+	 * 
+	 * @return string "Create monitor"
+	 * @return string "Создание монитора"
+	 */
+	public static function Monitor_Edit_CreateTitle(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_EditTitle
+	 * 
+	 * @return string "Edit monitor &quot;%s&quot; [ID=%d]"
+	 * @return string "Редактирование монитора &laquo;%s&raquo; [ID=%d]"
+	 */
+	public static function Monitor_Edit_EditTitle(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_Title
+	 * 
+	 * @return string "Title"
+	 * @return string "Название"
+	 */
+	public static function Monitor_Edit_Title(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_Type
+	 * 
+	 * @return string "Type"
+	 * @return string "Тип"
+	 */
+	public static function Monitor_Edit_Type(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_Status
+	 * 
+	 * @return string "Status"
+	 * @return string "Статус"
+	 */
+	public static function Monitor_Edit_Status(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_CreateTime
+	 * 
+	 * @return string "Create time"
+	 * @return string "Время создания"
+	 */
+	public static function Monitor_Edit_CreateTime(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_UpdateTime
+	 * 
+	 * @return string "Update time"
+	 * @return string "Время обновления"
+	 */
+	public static function Monitor_Edit_UpdateTime(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_Url
+	 * 
+	 * @return string "URL"
+	 * @return string "Ссылка"
+	 */
+	public static function Monitor_Edit_Url(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_Method
+	 * 
+	 * @return string "Method"
+	 * @return string "Метод запроса"
+	 */
+	public static function Monitor_Edit_Method(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_Timeout
+	 * 
+	 * @return string "Request timeout"
+	 * @return string "Таймаут запроса в секундах"
+	 */
+	public static function Monitor_Edit_Timeout(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_RepeatSeconds
+	 * 
+	 * @return string "Repeat seconds"
+	 * @return string "Частота опроса в секундах"
+	 */
+	public static function Monitor_Edit_RepeatSeconds(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_SSLVerify
+	 * 
+	 * @return string "SSL verify"
+	 * @return string "SSL verify"
+	 */
+	public static function Monitor_Edit_SSLVerify(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_ProxyHost
+	 * 
+	 * @return string "Proxy host"
+	 * @return string "Proxy host"
+	 */
+	public static function Monitor_Edit_ProxyHost(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_ProxyPort
+	 * 
+	 * @return string "Proxy port"
+	 * @return string "Proxy port"
+	 */
+	public static function Monitor_Edit_ProxyPort(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_ChangeButton
+	 * 
+	 * @return string "Update"
+	 * @return string "Изменить"
+	 */
+	public static function Monitor_Edit_ChangeButton(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_CreateButton
+	 * 
+	 * @return string "Create"
+	 * @return string "Создать"
+	 */
+	public static function Monitor_Edit_CreateButton(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_NameLengthError
+	 * 
+	 * @return string "Name length must be between 2 and 255 characters"
+	 * @return string "Название должно быть от 2 до 255 символов"
+	 */
+	public static function Monitor_Edit_NameLengthError(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_MonitorNotFound
+	 * 
+	 * @return string "Monitor not found"
+	 * @return string "Монитор не найден"
+	 */
+	public static function Monitor_Edit_MonitorNotFound(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_PermissionDenied
+	 * 
+	 * @return string "You don\'t have permission to edit this monitor"
+	 * @return string "У вас нет прав на редактирование этого монитора"
+	 */
+	public static function Monitor_Edit_PermissionDenied(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_NotingChanged
+	 * 
+	 * @return string "Nothing changed"
+	 * @return string "Ничего не изменилось"
+	 */
+	public static function Monitor_Edit_NotingChanged(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Create_PermissionDenied
+	 * 
+	 * @return string "You don\'t have permission to create a monitor"
+	 * @return string "У вас нет прав на создание монитора"
+	 */
+	public static function Monitor_Create_PermissionDenied(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Type_Curl
+	 * 
+	 * @return string "Curl"
+	 * @return string "Curl"
+	 */
+	public static function Monitor_Type_Curl(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Type_Folder
+	 * 
+	 * @return string "Folder"
+	 * @return string "Папка"
+	 */
+	public static function Monitor_Type_Folder(...$argv): string { return ''; }
+
+	/**
 	 * Framework_ServerVersion
 	 * 
 	 * @return string "Server Version"

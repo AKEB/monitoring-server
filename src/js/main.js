@@ -23,10 +23,9 @@ function MonitorsUpdate(wss, count=20) {
 				}
 				const monitorItem = $('.monitor-item[data-monitor-id="'+monitor_id+'"]');
 				const monitorBadge = $('.monitor-badge[data-monitor-id="'+monitor_id+'"]');
-				console.log(monitorBadge);
 				if (monitorBadge && monitorBadge.length > 0) {
 					$(monitorBadge[0]).removeClass("bg-secondary bg-warning bg-danger bg-success").addClass(monitor.badge_class);
-					$(monitorBadge[0]).text(monitor.badge_text);
+					$(monitorBadge[0]).text(monitor.availability_percent + '%');
 				}
 				if (monitorItem && monitorItem.length > 0) {
 					$(monitorItem[0]).removeClass("disabled").addClass(monitor.class);
@@ -37,4 +36,31 @@ function MonitorsUpdate(wss, count=20) {
 	setTimeout(function() {
 		MonitorsUpdate(wss, 5);
 	}, 10000);
+}
+
+function MonitorsCollapse() {
+	$('.monitor-folder>.monitor-title').on('click', function(){
+		const collapseId = $(this).attr('aria-controls');
+		const collapseObj = $(`#${collapseId}`);
+		if (collapseObj.hasClass('show')) {
+			collapseObj.collapse('hide');
+			$(this).addClass('collapsed');
+			localStorage.removeItem("collapseOpened_" + collapseId);
+		} else {
+			collapseObj.collapse('show');
+			$(this).removeClass('collapsed');
+			localStorage.setItem("collapseOpened_" + collapseId, true);
+		}
+	});
+
+	$(".collapse").each(function () {
+		if (localStorage.getItem("collapseOpened_" + this.id) === "true") {
+			$(this).collapse("show");
+			$('.monitor-folder>.monitor-title[aria-controls="'+$(this).attr('id')+'"]').removeClass('collapsed');
+		}
+		else {
+			$(this).collapse("hide");
+			$('.monitor-folder>.monitor-title[aria-controls="'+$(this).attr('id')+'"]').addClass('collapsed');
+		}
+	});
 }

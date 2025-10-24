@@ -73,7 +73,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 
 			$old_worker = [];
 			if (isset($params['id']) && $params['id']) {
-				if (!\Sessions::checkPermission(\Workers::PERMISSION_WORKER, $params['id'], WRITE)) {
+				if (!\Sessions::checkPermission(\Workers::PERMISSION_ACCESS, $params['id'], WRITE)) {
 					$this->error = \T::Worker_Edit_PermissionDenied();
 					break;
 				}
@@ -93,7 +93,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				}
 				$params['id'] = $old_worker['id'];
 			} else {
-				if (!\Sessions::checkPermission(\Workers::PERMISSION_CREATE_WORKER, 0, WRITE)) {
+				if (!\Sessions::checkPermission(\Workers::PERMISSION_CREATE, 0, WRITE)) {
 					$this->error = \T::Worker_Create_PermissionDenied();
 					break;
 				}
@@ -176,13 +176,13 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 			if (!$this->worker) {
 				common_redirect('/workers/');
 			}
-			$this->can_read = \Sessions::checkPermission(\Workers::PERMISSION_WORKER, $this->worker_id, READ);
+			$this->can_read = \Sessions::checkPermission(\Workers::PERMISSION_ACCESS, $this->worker_id, READ);
 			if (!$this->can_read) {
 				e403();
 			}
 		} else {
-			$this->can_read = \Sessions::checkPermission(\Workers::PERMISSION_WORKER, -1, READ);
-			$this->can_create = \Sessions::checkPermission(\Workers::PERMISSION_CREATE_WORKER, 0, WRITE);
+			$this->can_read = \Sessions::checkPermission(\Workers::PERMISSION_ACCESS, -1, READ);
+			$this->can_create = \Sessions::checkPermission(\Workers::PERMISSION_CREATE, 0, WRITE);
 			if (!$this->can_read && !$this->can_create) {
 				e403();
 			}
@@ -210,7 +210,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 
 	private function print_header() {
 		?>
-		<div class="float-start"><h2><i class="bi bi-person"></i> <?=\T::Worker_PageTitle();?></h2></div>
+		<div class="float-start"><h2><i class="bi bi-hdd-network"></i> <?=\T::Worker_PageTitle();?></h2></div>
 		<div class="clearfix"></div>
 		<?php
 	}

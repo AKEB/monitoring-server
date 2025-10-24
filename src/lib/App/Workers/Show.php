@@ -28,9 +28,9 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 	}
 
 	private function check_permissions() {
-		$this->can_read_global = \Sessions::checkPermission(\Workers::PERMISSION_WORKER, -1, READ);
-		$this->can_delete_global = \Sessions::checkPermission(\Workers::PERMISSION_WORKER, -1, DELETE);
-		$this->can_create = \Sessions::checkPermission(\Workers::PERMISSION_CREATE_WORKER, 0, WRITE);
+		$this->can_read_global = \Sessions::checkPermission(\Workers::PERMISSION_ACCESS, -1, READ);
+		$this->can_delete_global = \Sessions::checkPermission(\Workers::PERMISSION_ACCESS, -1, DELETE);
+		$this->can_create = \Sessions::checkPermission(\Workers::PERMISSION_CREATE, 0, WRITE);
 
 		if (!$this->can_read_global && !$this->can_create) {
 			e403();
@@ -48,7 +48,7 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 			return;
 		}
 
-		if (!\Sessions::checkPermission(\Workers::PERMISSION_WORKER, $workerId, DELETE)) {
+		if (!\Sessions::checkPermission(\Workers::PERMISSION_ACCESS, $workerId, DELETE)) {
 			$this->error = \T::Worker_Delete_PermissionDenied();
 			return;
 		}
@@ -66,7 +66,7 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 		$this->workers = [];
 		$data = \Workers::data();
 		foreach($data as $item) {
-			if (!\Sessions::checkPermission(\Workers::PERMISSION_WORKER, $item['id'], READ)) continue;
+			if (!\Sessions::checkPermission(\Workers::PERMISSION_ACCESS, $item['id'], READ)) continue;
 			$this->workers[$item['id']] = $item;
 		}
 	}
@@ -117,10 +117,10 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 							'update_time' => isset($item['update_time']) && $item['update_time'] > 0 ? date("Y-m-d H:i:s", $item['update_time']) : '',
 						];
 
-						$can_read = \Sessions::checkPermission(\Workers::PERMISSION_WORKER, $params['id'], READ);
+						$can_read = \Sessions::checkPermission(\Workers::PERMISSION_ACCESS, $params['id'], READ);
 						if (!$can_read) continue;
-						$can_write = \Sessions::checkPermission(\Workers::PERMISSION_WORKER, $params['id'], WRITE);
-						$can_delete = \Sessions::checkPermission(\Workers::PERMISSION_WORKER, $params['id'], DELETE);
+						$can_write = \Sessions::checkPermission(\Workers::PERMISSION_ACCESS, $params['id'], WRITE);
+						$can_delete = \Sessions::checkPermission(\Workers::PERMISSION_ACCESS, $params['id'], DELETE);
 						?>
 						<tr>
 							<th scope="row" class="align-middle"><?=$params['id'];?></th>
