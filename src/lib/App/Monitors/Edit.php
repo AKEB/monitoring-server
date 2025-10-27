@@ -105,6 +105,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 			}
 			$old_monitor = [];
 			$update_jobs = [];
+			if (!isset($data['workers'])) $data['workers'] = [];
 			if (isset($params['id']) && $params['id']) {
 				if (!$this->access_hash[$params['id']]['access'][WRITE]) {
 					$this->error = \T::Monitor_Edit_PermissionDenied();
@@ -116,17 +117,18 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					break;
 				}
 				$old_jobs = get_hash(\Jobs::data(['monitor_id' => $params['id']]), 'worker_id', 'monitor_id');
-				if (!isset($data['workers'])) $data['workers'] = [];
 				foreach($old_jobs as $worker_id=>$monitor_id) {
 					if (!isset($workers_hash[$worker_id]) || !$workers_hash[$worker_id]) continue;
 					if (!in_array($worker_id, $data['workers'])) {
 						$update_jobs[$worker_id] = -1;
 					}
 				}
-				foreach($data['workers'] as $worker_id) {
-					if (isset($update_jobs[$worker_id])) continue;
-					if (isset($old_jobs[$worker_id]) && $old_jobs[$worker_id]) continue;
-					$update_jobs[$worker_id] = 1;
+				if ($data['workers']) {
+					foreach($data['workers'] as $worker_id) {
+						if (isset($update_jobs[$worker_id])) continue;
+						if (isset($old_jobs[$worker_id]) && $old_jobs[$worker_id]) continue;
+						$update_jobs[$worker_id] = 1;
+					}
 				}
 				foreach($params as $k=>$v) {
 					if ($old_monitor[$k] == $v) {
@@ -143,9 +145,11 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					$this->error = \T::Monitor_Create_PermissionDenied();
 					break;
 				}
-				foreach($data['workers'] as $worker_id) {
-					if (isset($update_jobs[$worker_id])) continue;
-					$update_jobs[$worker_id] = 1;
+				if ($data['workers']) {
+					foreach($data['workers'] as $worker_id) {
+						if (isset($update_jobs[$worker_id])) continue;
+						$update_jobs[$worker_id] = 1;
+					}
 				}
 				$params['create_time'] = time();
 			}

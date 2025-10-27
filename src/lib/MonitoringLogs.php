@@ -12,29 +12,10 @@ class MonitoringLogs extends \DB\MySQLObject {
 
 	static public function getAvailabilityPercent(int $seconds=86400): array {
 		if (!$seconds) $seconds = 86400;
-		$sql = "
-			SELECT
-				monitor_id,
-				COUNT(*) as total_checks,
-				SUM(status = 1) as successful_checks,
-				ROUND((SUM(status = 1) / COUNT(*)) * 100, 2) as availability_percent
-			FROM monitoring_logs
-			WHERE update_time >= UNIX_TIMESTAMP() - ".intval($seconds)."
-			GROUP BY monitor_id
-			ORDER BY availability_percent DESC;
-		";
-		$data = [];
-
-		\Config::getInstance()->app_debug ?
-		error_log(
-			'List from '.(static::getDatabase()->database_master ? 'master':'slave').
-			(static::getDatabase()->database_node ? ' Node:'.static::getDatabase()->database_node:'').
-			': '.
-			$sql)
-		: null;
-
-		static::getDatabase()->db_GetQueryArray($sql, $data);
-		return $data;
+		$fields = '`monitor_id`, ROUND((SUM(`status` = 1) / COUNT(*)) * 100, 2) as `availability_percent`';
+		$sql = sql_pholder(' AND update_time >= ?', time() - intval($seconds));
+		$sql .= 'GROUP BY monitor_id ORDER BY NULL';
+		return static::data(false, $sql, $fields);
 	}
 
 	static private function getDataForParents(&$data, &$parent):bool {
@@ -62,10 +43,11 @@ class MonitoringLogs extends \DB\MySQLObject {
 				return strcasecmp($titleA, $titleB);
 			});
 			$parent_states = [];
-			foreach($data['children'] as &$monitor) {
+			foreach($data['children'] as $k=>&$monitor) {
 				if (!static::getDataForParents($monitor, $data)) {
 					$monitor = [];
 					unset($monitor);
+					unset($data['children'][$k]);
 					continue;
 				}
 
@@ -164,7 +146,6 @@ class MonitoringLogs extends \DB\MySQLObject {
 					$data['badge_class'] = $last_class;
 				}
 			}
-
 		} else {
 			if (isset($data['type']) && $data['type'] == \Monitors::TYPE_FOLDER) {
 				return false;
@@ -176,7 +157,9 @@ class MonitoringLogs extends \DB\MySQLObject {
 	static public function getMonitorsWithData(int $count=5, ?int $max_time=null): array {
 		if ($count < 1) return [];
 		if (!$max_time) $max_time = time();
+		
 		$data = \Monitors::data(false,' ORDER BY title ASC ');
+		
 		$access_hash = \Monitors::getMonitorsAccess();
 		$monitors = [];
 		foreach($data as $item) {
@@ -184,17 +167,27 @@ class MonitoringLogs extends \DB\MySQLObject {
 		}
 		if (!$max_time) $max_time= time();
 		$monitor_workers_hash = [];
+		
 		$monitor_workers_data = \Jobs::data(false, ' ORDER BY `monitor_id` ASC, `worker_id` ASC', '`monitor_id`, `worker_id`, `create_time`');
+		
 		if ($monitor_workers_data) {
 			foreach($monitor_workers_data as $item) {
 				if (!isset($monitor_workers_hash[$item['monitor_id']])) $monitor_workers_hash[$item['monitor_id']] = [];
 				$monitor_workers_hash[$item['monitor_id']][$item['worker_id']] = $item['create_time'] ? $item['create_time'] : 1;
 			}
 		}
-		$availability = static::getAvailabilityPercent();
-		if ($availability) {
-			$availability = get_hash($availability, 'monitor_id', 'availability_percent');
+		$cache = new \Cache('AvailabilityPercent_86400');
+		if ($cache->isValid()) {
+			$availability = $cache->get();
+		} else {
+			$availability = static::getAvailabilityPercent();
+			if ($availability) {
+				$availability = get_hash($availability, 'monitor_id', 'availability_percent');
+			}
+			$cache->update($availability, 30*60);
 		}
+		
+		
 		$repeat_seconds = [];
 		$global_min_time = 0;
 		$global_max_time = 0;
@@ -263,7 +256,8 @@ class MonitoringLogs extends \DB\MySQLObject {
 		} else {
 			$sql .= ' AND false ';
 		}
-		$sql .= " ORDER BY monitor_id, worker_id, update_time DESC";
+		// $sql .= " ORDER BY monitor_id, worker_id, update_time DESC";
+		$sql .= " ORDER BY NULL";
 		$fields = ' `monitor_id`, `worker_id`, `status` ,';
 		foreach($repeat_seconds as $interval_seconds) {
 			$fields .= 'FLOOR(`update_time` / '.intval($interval_seconds).') * '.intval($interval_seconds).' as `interval_time_'.intval($interval_seconds).'`,';

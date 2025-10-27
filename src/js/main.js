@@ -4,46 +4,48 @@ function printMonitors(data, level=0) {
 	for (var key in data) {
 		const monitor = data[key];
 		if (!monitor || !monitor.id) continue;
-		if (monitor.children && monitor.children.length > 0) {
-			// Folder
-			HTML += '<div class="row monitor-folder mb-1" data-monitor-id="'+monitor.id+'">';
-			let show = false;
-			if (localStorage.getItem("collapseOpened_collapseMonitors_" + monitor.id) === "true") {
-				show = true;
-			}
-			HTML += '<div class="col-9 col-md-8'+(show ? '':' collapsed')+' monitor-title" data-monitor-id="'+monitor.id+'" aria-controls="collapseMonitors_'+monitor.id+'">';
-			HTML += '<span class="ml-padding-'+level+'"></span><span class="badge rounded-pill monitor-badge '+(monitor.badge_class)+'" title="24-hours" data-monitor-id="'+monitor.id+'">'+monitor.availability_percent+'%</span>';
-			HTML += '<i class="bi bi-caret-down"></i>';
-			HTML += monitor.title;
-			HTML += '</div>';
-			HTML += '<div class="col-3 col-md-4"><div class="wrap"><div class="monitor-states" data-monitor-id="'+monitor.id+'">';
-			let statesDiv = $('.monitor-states[data-monitor-id="'+monitor.id+'"]')
-			let old_states = {};
-			if (statesDiv.length > 0) {
-				const children = $(statesDiv[0]).children('div[data-min-time]');
-				for (var i = 0; i < children.length; i++) {
-					const obj = $(children.eq(i));
-					old_states[obj.data('min-time')] = {
-						min_time: obj.data('min-time'),
-						class: obj.attr('class'),
-						title: obj.attr('title'),
-					};
+		if (monitor.type == 1) {
+			if (monitor.children && monitor.children.length > 0) {
+				// Folder
+				HTML += '<div class="row monitor-folder mb-1" data-monitor-id="'+monitor.id+'">';
+				let show = false;
+				if (localStorage.getItem("collapseOpened_collapseMonitors_" + monitor.id) === "true") {
+					show = true;
 				}
-			}
-			for (var time in monitor.states) {
-				const state = monitor.states[time];
-				old_states[time] = state;
-			}
-			for (var time in old_states) {
-				const state = old_states[time];
-				HTML += '<div data-min-time="'+ state.min_time + '" class="' + state.class + '" title="' + state.title + '"></div>';
-			}
-			HTML += '</div></div></div>';
+				HTML += '<div class="col-9 col-md-8'+(show ? '':' collapsed')+' monitor-title" data-monitor-id="'+monitor.id+'" aria-controls="collapseMonitors_'+monitor.id+'">';
+				HTML += '<span class="ml-padding-'+level+'"></span><span class="badge rounded-pill monitor-badge '+(monitor.badge_class)+'" title="24-hours" data-monitor-id="'+monitor.id+'">'+monitor.availability_percent+'%</span>';
+				HTML += '<i class="bi bi-caret-down"></i>';
+				HTML += monitor.title;
+				HTML += '</div>';
+				HTML += '<div class="col-3 col-md-4"><div class="wrap"><div class="monitor-states" data-monitor-id="'+monitor.id+'">';
+				let statesDiv = $('.monitor-states[data-monitor-id="'+monitor.id+'"]')
+				let old_states = {};
+				if (statesDiv.length > 0) {
+					const children = $(statesDiv[0]).children('div[data-min-time]');
+					for (var i = 0; i < children.length; i++) {
+						const obj = $(children.eq(i));
+						old_states[obj.data('min-time')] = {
+							min_time: obj.data('min-time'),
+							class: obj.attr('class'),
+							title: obj.attr('title'),
+						};
+					}
+				}
+				for (var time in monitor.states) {
+					const state = monitor.states[time];
+					old_states[time] = state;
+				}
+				for (var time in old_states) {
+					const state = old_states[time];
+					HTML += '<div data-min-time="'+ state.min_time + '" class="' + state.class + '" title="' + state.title + '"></div>';
+				}
+				HTML += '</div></div></div>';
 
-			HTML += '</div>';
-			HTML += '<div class="collapse'+(show ? ' show' : '')+'" id="collapseMonitors_'+monitor.id+'">';
-			HTML += printMonitors(monitor.children, level + 1 )
-			HTML += '</div>';
+				HTML += '</div>';
+				HTML += '<div class="collapse'+(show ? ' show' : '')+'" id="collapseMonitors_'+monitor.id+'">';
+				HTML += printMonitors(monitor.children, level + 1 )
+				HTML += '</div>';
+			}
 		} else {
 			// Monitor
 			HTML += '<div class="row monitor-item mb-1" data-monitor-id="'+monitor.id+'"><div class="col-9 col-md-8 monitor-title" data-monitor-id="'+monitor.id+'">';
@@ -84,7 +86,7 @@ function MonitorsUpdate(wss, count=25) {
 		if (response.message == false) {
 			console.log(response);
 		} else {
-			if (response.message && response.message.length > 0) {
+			if (response.message) {
 				const html = printMonitors(response.message, 0);
 				$('div.monitor-list-items>div.col').html(html);
 			}
