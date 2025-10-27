@@ -537,6 +537,14 @@ class T {
 	public static function Monitor_Edit_ProxyPort(...$argv): string { return ''; }
 
 	/**
+	 * Monitor_Edit_Workers
+	 * 
+	 * @return string "Workers"
+	 * @return string "Обработчики"
+	 */
+	public static function Monitor_Edit_Workers(...$argv): string { return ''; }
+
+	/**
 	 * Monitor_Edit_ChangeButton
 	 * 
 	 * @return string "Update"

@@ -7,6 +7,10 @@ div.text-success>input {
 	color: rgba(var(--bs-success-rgb), var(--bs-text-opacity)) !important;
 }
 
+.vardump {
+	height: 100%;
+}
+
 .border-red {
 	border:1px solid red;
 }

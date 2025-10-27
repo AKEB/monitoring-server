@@ -1,4 +1,4 @@
-# MyGoodIP
+# Monitoring Server
 
 ![Logo](./src/images/apple-icon-180x180.png)
 

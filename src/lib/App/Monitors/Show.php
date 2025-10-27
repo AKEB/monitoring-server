@@ -11,12 +11,12 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 	private int $parent_id = 0;
 	private array $monitors = [];
 	private array $breadcrumb = [];
+	private array $access_hash = [];
 
 	public function Run($action='list', $monitor_id=null, $parent_id=null) {
 		$this->check_auth();
-		$this->check_permissions();
-
 		$this->parent_id = intval($parent_id);
+		$this->check_permissions();
 		// if (!isset($parent_id)) {
 		// 	common_redirect('/monitors/0/');
 		// }
@@ -42,6 +42,12 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 		$this->can_read_global = \Sessions::checkPermission(\Monitors::PERMISSION_ACCESS, -1, READ);
 		$this->can_delete_global = \Sessions::checkPermission(\Monitors::PERMISSION_ACCESS, -1, DELETE);
 		$this->can_create = \Sessions::checkPermission(\Monitors::PERMISSION_CREATE, 0, WRITE);
+
+		$this->access_hash = \Monitors::getMonitorsAccess();
+
+		if ($this->parent_id && (!isset($this->access_hash[$this->parent_id]['access'][READ]) || !$this->access_hash[$this->parent_id]['access'][READ])) {
+			e403();
+		}
 
 		if (!$this->can_read_global && !$this->can_create) {
 			e403();
@@ -76,6 +82,31 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 		$newMonitor['id'] = \Monitors::save($newMonitor);
 		if ($newMonitor['id']) {
 			\Logs::create_log(\Monitors::LOGS_OBJECT, $newMonitor['id'], $newMonitor);
+
+			if (!\Sessions::in_group(\GROUPS::ADMIN_GROUP_ID, intval(\Sessions::currentUser()['id']))) {
+				$permissions = \Monitors::permissions_hash();
+				foreach($permissions as $permission => $_) {
+					$ObjectPermissions = [
+						'object' => 'user',
+						'object_id' => intval(\Sessions::currentUser()['id']),
+						'subject' => $permission,
+						'subject_id' => $newMonitor['id'],
+						READ => 1,
+						WRITE => 1,
+						DELETE => 1,
+						ACCESS_READ => 1,
+						ACCESS_WRITE => 1,
+						ACCESS_CHANGE => 1,
+						'create_time' => time(),
+						'update_time' => time(),
+						'_mode' => \DB\Common::CSMODE_INSERT,
+					];
+					$ObjectPermissions['id'] = \ObjectPermissions::save($ObjectPermissions);
+					$log_id = \Logs::create_log(\ObjectPermissions::LOGS_OBJECT, $ObjectPermissions['id'], $ObjectPermissions);
+					\Logs::add_tag($log_id, \Monitors::LOGS_OBJECT, $newMonitor['id']);
+				}
+			}
+
 			$jobs = \Jobs::data(['monitor_id'=>$monitorId]);
 			foreach($jobs as $job) {
 				unset($job['id']);
@@ -86,7 +117,7 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 				$log_id = \Logs::create_log(\Jobs::LOGS_OBJECT, $job['id'], $job);
 				\Logs::add_tag($log_id, \Monitors::LOGS_OBJECT, $newMonitor['id']);
 			}
-			common_redirect('/monitors/'.($this->parent_id ? $this->parent_id.'/':'').'edit/'.$newMonitor['id'].'/');
+			common_redirect('/monitors/'.($this->parent_id ? $this->parent_id.'/':'0/').'edit/'.$newMonitor['id'].'/');
 		}
 	}
 
@@ -136,10 +167,15 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 
 	private function get_data() {
 		$this->monitors = [];
-		$sql = sql_pholder(' AND parent_id=?', $this->parent_id);
+		$sql = '';
 		$data = \Monitors::data(false, $sql);
+		$monitors = [];
 		foreach($data as $item) {
-			if ($item['type'] != \Monitors::TYPE_FOLDER && !\Sessions::checkPermission(\Monitors::PERMISSION_ACCESS, $item['id'], READ)) continue;
+			$monitors[$item['id']] = $item;
+		}
+		foreach($monitors as $item) {
+			if ($item['parent_id'] != $this->parent_id) continue;
+			if (!$this->access_hash[$item['id']]['access'][READ]) continue;
 			$this->monitors[$item['id']] = $item;
 		}
 	}
@@ -232,10 +268,10 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 							'update_time' => isset($item['update_time']) && $item['update_time'] > 0 ? date("Y-m-d H:i:s", $item['update_time']) : '',
 						];
 
-						$can_read = \Sessions::checkPermission(\Monitors::PERMISSION_ACCESS, $params['id'], READ);
+						$can_read = $this->access_hash[$params['id']]['access'][READ];
 						if (!$can_read) continue;
-						$can_write = \Sessions::checkPermission(\Monitors::PERMISSION_ACCESS, $params['id'], WRITE);
-						$can_delete = \Sessions::checkPermission(\Monitors::PERMISSION_ACCESS, $params['id'], DELETE);
+						$can_write = $this->access_hash[$params['id']]['access'][WRITE];
+						$can_delete = $this->access_hash[$params['id']]['access'][DELETE];
 						?>
 						<tr>
 							<th scope="row" class="align-middle"><?=$params['id'];?></th>
@@ -246,7 +282,7 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 									<i class="bi bi-folder fs-4 folderActionButton pointer" data-object-id="<?=$params['id'];?>"></i>
 									<?php
 								}
-								if ($can_write) {
+								if ($can_write || $can_read) {
 									?>
 									<span class="d-inline pointer text-info editActionButton" data-object-id="<?=$params['id'];?>">
 										<?=$params['title'];?>

@@ -8,33 +8,6 @@ class Main extends \Routing_Parent implements \Routing_Interface {
 		$this->check_auth();
 		$template = new \Template();
 		echo '<h2>'.\T::MainPage().'</h2>';
-
-		$monitors = \Monitors::data(false,' ORDER BY title ASC ');
-		if ($monitors) {
-			$monitors = make_hash($monitors, 'id');
-		}
-		foreach($monitors as $monitor_id=>$monitor) {
-			if ($monitor['type'] != \Monitors::TYPE_FOLDER) {
-				if (!\Sessions::checkPermission(\Monitors::PERMISSION_ACCESS, $monitor['id'], READ)) {
-					unset($monitors[$monitor_id]);
-				}
-			}
-			if (!isset($monitor['children'])) $monitor['children'] = [];
-			if ($monitor['parent_id']) {
-				if (!isset($monitors[$monitor['parent_id']]['children'])) {
-					$monitors[$monitor['parent_id']]['children'] = [];
-				}
-				$monitors[$monitor['parent_id']]['children'][$monitor_id] = &$monitors[$monitor_id];
-			}
-		}
-		foreach($monitors as $monitor_id=>$monitor) {
-			if ($monitor['parent_id']) {
-				unset($monitors[$monitor_id]);
-			}
-		}
-
-
-
 		?>
 		<div class="row">
 			<div class="col-12 col-md-6 col-xl-6 col-xxl-5 monitor-list">
@@ -43,16 +16,12 @@ class Main extends \Routing_Parent implements \Routing_Interface {
 
 					</div>
 				</div>
-				<div class="row monitor-list-items">
-					<div class="col">
-						<?php
-						$this->print_monitors($monitors, 0);
-						?>
-					</div>
-				</div>
+				<div class="row monitor-list-items"><div class="col"></div></div>
 			</div>
 			<div class="col">
+				<?php
 
+				?>
 			</div>
 		</div>
 		<script nonce="<?=\CSP::nonceRandom();?>">
@@ -65,29 +34,6 @@ class Main extends \Routing_Parent implements \Routing_Interface {
 	}
 
 	private function print_monitors(array $monitors=[], int $level=0) {
-		// Нужно отсортировать массив по полю title
-		usort($monitors, function($a, $b){
-			$titleA = $a['title'];
-			$titleB = $b['title'];
-
-			// Проверяем, начинается ли строка с русской буквы
-			$isRussianA = preg_match('/^[а-яё]/iu', $titleA);
-			$isRussianB = preg_match('/^[а-яё]/iu', $titleB);
-
-			// Если одна строка начинается с русской буквы, а другая - нет,
-			// русская строка должна идти первой
-			if ($isRussianA && !$isRussianB) {
-				return -1;
-			}
-			if (!$isRussianA && $isRussianB) {
-				return 1;
-			}
-
-			// Если обе строки начинаются с русских букв или обе с английских,
-			// сортируем регистронезависимо
-			return strcasecmp($titleA, $titleB);
-		});
-
 		foreach($monitors as $item) {
 			if ($item['type'] == \Monitors::TYPE_FOLDER) {
 				// continue;

@@ -7,7 +7,7 @@ class MonitorsWebsocket extends \Websocket_Parent {
 			if (!$user) {
 				return false;
 			}
-			$data = \MonitoringLogs::getMonitorsWithLogs($this->params['count']??10);
+			$data = \MonitoringLogs::getMonitorsWithData($this->params['count']??10);
 			return $data;
 		}
 		return false;

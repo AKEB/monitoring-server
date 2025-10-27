@@ -80,7 +80,7 @@ Monitor:
     SSLVerify: "SSL verify"
     ProxyHost: "Proxy host"
     ProxyPort: "Proxy port"
-    
+    Workers: "Workers"
     ChangeButton: "Update"
     CreateButton: "Create"
 
