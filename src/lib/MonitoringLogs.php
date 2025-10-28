@@ -19,7 +19,10 @@ class MonitoringLogs extends \DB\MySQLObject {
 	}
 
 	static private function getDataForParents(&$data, &$parent):bool {
+		$children_has_error = [];
+		$children_has_warning = [];
 		if (isset($data['children']) && $data['children']) {
+			error_log(sprintf("data %d %s %d", $data['id']??0, $data['title']??'', count($data['children']??[])));
 			$data['states'] = [];
 			usort($data['children'], function($a, $b){
 				$titleA = $a['title'];
@@ -50,13 +53,16 @@ class MonitoringLogs extends \DB\MySQLObject {
 					unset($data['children'][$k]);
 					continue;
 				}
+				error_log(sprintf("monitor %d %s", $monitor['id']??0, $monitor['title']??''));
 
 				$data['repeat_seconds'] = max($data['repeat_seconds']??0, $monitor['repeat_seconds']??0);
 				$data['max_time'] = max($data['max_time']??0, $monitor['max_time']??0);
+
 				if (!isset($data['min_time']) || !$data['min_time']) $data['min_time'] = $monitor['min_time']??0;
 				else $data['min_time'] = min($data['min_time'], $monitor['min_time']??0);
-				if (!isset($data['availability_percent']) || !$data['availability_percent']) $data['availability_percent'] = $monitor['availability_percent']??0;
-				else $data['availability_percent'] = min($data['availability_percent'], $monitor['availability_percent']??0);
+
+				$data['availability_percent'] = min($data['availability_percent']??100, $monitor['availability_percent']??0);
+
 				if (!isset($data['workers']) || !$data['workers']) $data['workers'] = $monitor['workers']??[];
 				else {
 					foreach($monitor['workers'] as $worker_id=>$start_time) {
@@ -64,6 +70,7 @@ class MonitoringLogs extends \DB\MySQLObject {
 						else $data['workers'][$worker_id] = min($data['workers'][$worker_id], $start_time);
 					}
 				}
+
 				$last_class = '';
 				for($i=$monitor['min_time']; $i<=$monitor['max_time']; $i+=intval($monitor['repeat_seconds'])) {
 					if ($i > time()) continue;
@@ -87,6 +94,7 @@ class MonitoringLogs extends \DB\MySQLObject {
 						$parent_states[$i]['min_state'] = min($monitor['states'][$i]['min_state'], $parent_states[$i]['min_state']);
 						$parent_states[$i]['max_state'] = max($monitor['states'][$i]['max_state'], $parent_states[$i]['max_state']);
 					}
+
 					if (!$workers) {
 						$monitor['states'][$i]['min_state'] = static::STATE_UNKNOWN;
 						$monitor['states'][$i]['max_state'] = static::STATE_UNKNOWN;
@@ -96,22 +104,50 @@ class MonitoringLogs extends \DB\MySQLObject {
 
 						$monitor['states'][$i]['class'] = '';
 					} else {
-						if ($monitor['states'][$i]['max_state'] == $monitor['states'][$i]['min_state']) {
-							if ($monitor['states'][$i]['max_state'] == static::STATE_ERROR) {
-								$parent_states[$i]['min_state'] = static::STATE_ERROR;
-								$parent_states[$i]['max_state'] = static::STATE_ERROR;
-								$monitor['states'][$i]['class'] = 'bg-danger';
+						if (!isset($monitor['states'][$i]['class']) || !$monitor['states'][$i]['class']) {
+							if ($monitor['states'][$i]['max_state'] == $monitor['states'][$i]['min_state']) {
+								if ($monitor['states'][$i]['max_state'] == static::STATE_ERROR) {
+									$parent_states[$i]['min_state'] = static::STATE_ERROR;
+									$parent_states[$i]['max_state'] = static::STATE_ERROR;
+									$monitor['states'][$i]['class'] = 'bg-danger';
+									$monitor['states'][$i]['error'] = true;
+									$children_has_error[$i] = true;
+								}
+								if ($monitor['states'][$i]['max_state'] == static::STATE_SUCCESS) {
+									$monitor['states'][$i]['error'] = false;
+									$monitor['states'][$i]['warning'] = false;
+									$monitor['states'][$i]['class'] = 'bg-success';
+								}
+								if ($monitor['states'][$i]['max_state'] == static::STATE_UNKNOWN) {
+									$monitor['states'][$i]['class'] = 'bg-secondary';
+									$monitor['states'][$i]['error'] = false;
+									$monitor['states'][$i]['warning'] = false;
+								}
+							} else {
+								if ($monitor['states'][$i]['max_state'] == static::STATE_ERROR) {
+									$monitor['states'][$i]['class'] = 'bg-warning';
+									$children_has_warning[$i] = true;
+									$monitor['states'][$i]['warning'] = true;
+								}
+								if ($monitor['states'][$i]['max_state'] == static::STATE_SUCCESS) {
+									$monitor['states'][$i]['class'] = 'bg-warning';
+									$monitor['states'][$i]['warning'] = true;
+									$children_has_warning[$i] = true;
+								}
 							}
-							if ($monitor['states'][$i]['max_state'] == static::STATE_SUCCESS) $monitor['states'][$i]['class'] = 'bg-success';
-							if ($monitor['states'][$i]['max_state'] == static::STATE_UNKNOWN) $monitor['states'][$i]['class'] = 'bg-secondary';
-						} else {
-							if ($monitor['states'][$i]['max_state'] == static::STATE_ERROR) $monitor['states'][$i]['class'] = 'bg-warning';
-							if ($monitor['states'][$i]['max_state'] == static::STATE_SUCCESS) $monitor['states'][$i]['class'] = 'bg-warning';
 						}
 					}
+					if (isset($monitor['states'][$i]['error']) && $monitor['states'][$i]['error']) {
+						$children_has_error[$i] = true;
+					}
+					if (isset($monitor['states'][$i]['warning']) && $monitor['states'][$i]['warning']) {
+						$children_has_warning[$i] = true;
+					}
+
 					$last_class = $monitor['states'][$i]['class'];
 				}
 				$monitor['badge_class'] = $last_class;
+
 
 				$last_class = '';
 				for($i=$data['min_time']; $i<=$data['max_time']; $i+=intval($data['repeat_seconds'])) {
@@ -139,17 +175,38 @@ class MonitoringLogs extends \DB\MySQLObject {
 						$data['states'][$i]['min_state'] = min($data['states'][$i]['min_state'], $data['states'][$i]['workers'][$worker_id]);
 						$data['states'][$i]['max_state'] = max($data['states'][$i]['max_state'], $data['states'][$i]['workers'][$worker_id]);
 					}
-					if ($data['states'][$i]['max_state'] == static::STATE_ERROR) $data['states'][$i]['class'] = 'bg-danger';
-					elseif ($data['states'][$i]['max_state'] == static::STATE_SUCCESS) $data['states'][$i]['class'] = 'bg-success';
-					elseif ($data['states'][$i]['max_state'] == static::STATE_UNKNOWN) $data['states'][$i]['class'] = 'bg-secondary';
+					if (!isset($data['states'][$i]['class']) || !$data['states'][$i]['class']) {
+						if ((isset($children_has_error[$i]) && $children_has_error[$i]) || $data['states'][$i]['max_state'] == static::STATE_ERROR) {
+							$children_has_error[$i] = true;
+							$data['states'][$i]['error'] = true;
+							$data['states'][$i]['class'] = 'bg-danger';
+						}
+						elseif ((isset($children_has_warning[$i]) && $children_has_warning[$i])) {
+							$data['states'][$i]['class'] = 'bg-warning';
+							$data['states'][$i]['warning'] = true;
+						}
+						elseif ($data['states'][$i]['max_state'] == static::STATE_SUCCESS) $data['states'][$i]['class'] = 'bg-success';
+						elseif ($data['states'][$i]['max_state'] == static::STATE_UNKNOWN) $data['states'][$i]['class'] = 'bg-secondary';
+					}
 					$last_class = $data['states'][$i]['class'];
 					$data['badge_class'] = $last_class;
 				}
 			}
-		} else {
-			if (isset($data['type']) && $data['type'] == \Monitors::TYPE_FOLDER) {
-				return false;
+		}
+		if (isset($data['type']) && $data['type'] == \Monitors::TYPE_FOLDER) {
+			if ($children_has_warning) {
+				foreach($children_has_warning as $i=>$_) {
+					$data['states'][$i]['class'] = 'bg-warning';
+					$data['states'][$i]['warning'] = true;
+				}
 			}
+			if ($children_has_error) {
+				foreach($children_has_error as $i=>$_) {
+					$data['states'][$i]['class'] = 'bg-danger';
+					$data['states'][$i]['error'] = true;
+				}
+			}
+			if (!isset($data['children']) || !$data['children']) return false;
 		}
 		return true;
 	}
@@ -157,9 +214,9 @@ class MonitoringLogs extends \DB\MySQLObject {
 	static public function getMonitorsWithData(int $count=5, ?int $max_time=null): array {
 		if ($count < 1) return [];
 		if (!$max_time) $max_time = time();
-		
+
 		$data = \Monitors::data(false,' ORDER BY title ASC ');
-		
+
 		$access_hash = \Monitors::getMonitorsAccess();
 		$monitors = [];
 		foreach($data as $item) {
@@ -167,9 +224,9 @@ class MonitoringLogs extends \DB\MySQLObject {
 		}
 		if (!$max_time) $max_time= time();
 		$monitor_workers_hash = [];
-		
+
 		$monitor_workers_data = \Jobs::data(false, ' ORDER BY `monitor_id` ASC, `worker_id` ASC', '`monitor_id`, `worker_id`, `create_time`');
-		
+
 		if ($monitor_workers_data) {
 			foreach($monitor_workers_data as $item) {
 				if (!isset($monitor_workers_hash[$item['monitor_id']])) $monitor_workers_hash[$item['monitor_id']] = [];
@@ -186,8 +243,8 @@ class MonitoringLogs extends \DB\MySQLObject {
 			}
 			$cache->update($availability, 30*60);
 		}
-		
-		
+
+
 		$repeat_seconds = [];
 		$global_min_time = 0;
 		$global_max_time = 0;
@@ -215,7 +272,7 @@ class MonitoringLogs extends \DB\MySQLObject {
 			$global_max_time = $global_max_time ? max($global_max_time, $monitor_max_time) : $monitor_max_time;
 			$global_min_time = $global_min_time ? min($global_min_time, $monitor_min_time) : $monitor_min_time;
 
-			if (!isset($monitor['availability_percent'])) $monitor['availability_percent'] = round($availability[$monitor_id]??0, 2);
+			if (!isset($monitor['availability_percent'])) $monitor['availability_percent'] = round($availability[$monitor_id]??100, 2);
 			if (!isset($monitor['workers'])) $monitor['workers'] = $monitor_workers_hash[$monitor['id']]??[];
 			if (!isset($monitor['states'])) $monitor['states'] = [];
 

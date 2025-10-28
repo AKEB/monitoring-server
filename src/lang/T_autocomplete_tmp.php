@@ -521,6 +521,22 @@ class T {
 	public static function Monitor_Edit_SSLVerify(...$argv): string { return ''; }
 
 	/**
+	 * Monitor_Edit_SSLVerifyHost
+	 * 
+	 * @return string "SSL verify host"
+	 * @return string "SSL verify host"
+	 */
+	public static function Monitor_Edit_SSLVerifyHost(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_ResponseCode
+	 * 
+	 * @return string "Allowed status codes"
+	 * @return string "Допустимые коды статуса"
+	 */
+	public static function Monitor_Edit_ResponseCode(...$argv): string { return ''; }
+
+	/**
 	 * Monitor_Edit_ProxyHost
 	 * 
 	 * @return string "Proxy host"
@@ -529,12 +545,12 @@ class T {
 	public static function Monitor_Edit_ProxyHost(...$argv): string { return ''; }
 
 	/**
-	 * Monitor_Edit_ProxyPort
+	 * Monitor_Edit_ProxyType
 	 * 
-	 * @return string "Proxy port"
-	 * @return string "Proxy port"
+	 * @return string "Proxy type"
+	 * @return string "Proxy type"
 	 */
-	public static function Monitor_Edit_ProxyPort(...$argv): string { return ''; }
+	public static function Monitor_Edit_ProxyType(...$argv): string { return ''; }
 
 	/**
 	 * Monitor_Edit_Workers

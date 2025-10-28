@@ -107,12 +107,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/AKEB/Framework-AKEB-framework.git",
-                "reference": "915c7d7d0fb641d4fb5eaa7966e2070163916581"
+                "reference": "e322c9543e7732f7f4c36a51ab41561e577371dd"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/AKEB/Framework-AKEB-framework/zipball/915c7d7d0fb641d4fb5eaa7966e2070163916581",
-                "reference": "915c7d7d0fb641d4fb5eaa7966e2070163916581",
+                "url": "https://api.github.com/repos/AKEB/Framework-AKEB-framework/zipball/e322c9543e7732f7f4c36a51ab41561e577371dd",
+                "reference": "e322c9543e7732f7f4c36a51ab41561e577371dd",
                 "shasum": ""
             },
             "require": {
@@ -160,7 +160,7 @@
                 "source": "https://github.com/AKEB/Framework-AKEB-framework",
                 "wiki": "https://github.com/AKEB/Framework-AKEB-framework/wiki"
             },
-            "time": "2025-10-27T16:04:11+00:00"
+            "time": "2025-10-28T10:45:19+00:00"
         },
         {
             "name": "akeb/logger",

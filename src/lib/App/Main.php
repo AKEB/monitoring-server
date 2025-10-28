@@ -20,7 +20,7 @@ class Main extends \Routing_Parent implements \Routing_Interface {
 			</div>
 			<div class="col">
 				<?php
-					// vardump(\MonitoringLogs::getMonitorsWithData(5));
+					// vardump(\MonitoringLogs::getMonitorsWithData(5)[3]);
 				?>
 			</div>
 		</div>

@@ -34,6 +34,34 @@ class Monitors extends \DB\MySQLObject implements \PermissionSubject_Interface {
 		];
 	}
 
+	static public function proxy_type_hash(): array {
+		return [
+			CURLPROXY_HTTP => 'CURLPROXY_HTTP',
+			CURLPROXY_HTTPS => 'CURLPROXY_HTTPS',
+			CURLPROXY_HTTP_1_0 => 'CURLPROXY_HTTP_1_0',
+			CURLPROXY_SOCKS4 => 'CURLPROXY_SOCKS4',
+			CURLPROXY_SOCKS4A => 'CURLPROXY_SOCKS4A',
+			CURLPROXY_SOCKS5 => 'CURLPROXY_SOCKS5',
+			CURLPROXY_SOCKS5_HOSTNAME => 'CURLPROXY_SOCKS5_HOSTNAME',
+		];
+	}
+
+	static public function response_code_hash(): array {
+		$return = [
+			1 => '100-199',
+			2 => '200-299',
+			3 => '300-399',
+			4 => '400-499',
+			5 => '500-599',
+		];
+		for($i=100; $i<=599; $i++) {
+			$return[$i] = $i;
+		}
+		return $return;
+	}
+
+
+
 	static private function setAccessForChild(&$data) {
 		// vardump($data);
 		foreach($data as $k=>$v) {

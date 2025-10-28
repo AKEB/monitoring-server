@@ -8,7 +8,7 @@ class Migration_0004 {
 		global $db;
 		$db->execSQL("
 			ALTER TABLE `monitoring_monitor`
-				ADD `create_time` INT NOT NULL DEFAULT 0 AFTER `proxy_port`,
+				ADD `create_time` INT NOT NULL DEFAULT 0 AFTER `proxy_type`,
 				ADD `update_time` INT NOT NULL DEFAULT 0
 			;
 		");

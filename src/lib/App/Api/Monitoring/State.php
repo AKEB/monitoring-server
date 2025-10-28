@@ -98,7 +98,17 @@ class State extends \Routing_Parent implements \Routing_Interface {
 		}
 		if (!isset($job_response['response']) || !$job_response['response'] || !is_array($job_response['response'])) return false;
 		$status = \MonitoringLogs::STATUS_FAIL;
-		if ($job_response['response']['status_code'] >= 200 && $job_response['response']['status_code'] < 300) {
+
+		$monitor['response_code'] = explode(',', $monitor['response_code']??'');
+
+		if (
+			($job_response['response']['status_code'] >= 100 && in_array($job_response['response']['status_code'], $monitor['response_code'])) ||
+			(in_array(1, $monitor['response_code']) && $job_response['response']['status_code'] >= 100 && $job_response['response']['status_code'] < 200) ||
+			(in_array(2, $monitor['response_code']) && $job_response['response']['status_code'] >= 200 && $job_response['response']['status_code'] < 300) ||
+			(in_array(3, $monitor['response_code']) && $job_response['response']['status_code'] >= 300 && $job_response['response']['status_code'] < 400) ||
+			(in_array(4, $monitor['response_code']) && $job_response['response']['status_code'] >= 400 && $job_response['response']['status_code'] < 500) ||
+			(in_array(5, $monitor['response_code']) && $job_response['response']['status_code'] >= 500 && $job_response['response']['status_code'] < 600)
+		) {
 			$status = \MonitoringLogs::STATUS_GOOD;
 		}
 		$params = [

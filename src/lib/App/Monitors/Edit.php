@@ -59,9 +59,10 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				$data['type'] = trim($data['type']);
 				$params['type'] = intval($data['type']);
 			}
-			if (isset($data['status'])) {
-				$data['status'] = trim($data['status']);
-				$params['status'] = intval($data['status']);
+			if (isset($data['status']) && $data['status'] == 'true') {
+				$params['status'] = 1;
+			} else {
+				$params['status'] = 0;
 			}
 
 
@@ -83,17 +84,29 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					$params['repeat_seconds'] = intval($data['repeat_seconds']);
 					if ($params['repeat_seconds'] < 60) $params['repeat_seconds'] = 60;
 				}
-				if (isset($data['ssl_verify'])) {
-					$data['ssl_verify'] = trim($data['ssl_verify']);
-					$params['ssl_verify'] = intval($data['ssl_verify']);
+				if (isset($data['ssl_verify']) && $data['ssl_verify'] == 'true') {
+					$params['ssl_verify'] = 1;
+				} else {
+					$params['ssl_verify'] = 0;
 				}
+				if (isset($data['ssl_verify_host']) && $data['ssl_verify_host'] == 'true') {
+					$params['ssl_verify_host'] = 1;
+				} else {
+					$params['ssl_verify_host'] = 0;
+				}
+
+				if (isset($data['response_code'])) {
+					$data['response_code'] = array_map('intval',array_map('trim',$data['response_code']));
+					$params['response_code'] = implode(',', $data['response_code']);
+				}
+
 				if (isset($data['proxy_host'])) {
 					$data['proxy_host'] = trim($data['proxy_host']);
 					$params['proxy_host'] = $data['proxy_host'];
 				}
-				if (isset($data['proxy_port'])) {
-					$data['proxy_port'] = trim($data['proxy_port']);
-					$params['proxy_port'] = intval($data['proxy_port']);
+				if (isset($data['proxy_type'])) {
+					$data['proxy_type'] = trim($data['proxy_type']);
+					$params['proxy_type'] = intval($data['proxy_type']);
 				}
 			}
 			$workers_hash = [];
@@ -242,7 +255,13 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				}
 			}
 			if ($monitor_id) {
-				common_redirect('/monitors/'.$this->parent_id.'/edit/' . $monitor_id . '/');
+				$monitor = \Monitors::get(['id' => $monitor_id]);
+				if ($monitor['type'] == \Monitors::TYPE_FOLDER) {
+					common_redirect('/monitors/'.$monitor['id'].'/');
+				} else {
+					common_redirect('/monitors/'.$monitor['parent_id'].'/');
+				}
+				// common_redirect('/monitors/'.$this->parent_id.'/edit/' . $monitor_id . '/');
 			} else {
 				common_redirect('/monitors/'.$this->parent_id.'/');
 			}
@@ -290,6 +309,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					$this->monitor['workers'][$v['worker_id']] = true;
 				}
 			}
+			$this->monitor['response_code'] = explode(',', $this->monitor['response_code']??'');
 		} else {
 			$this->monitor['status'] = \Monitors::STATUS_ENABLED;
 			$this->monitor['type'] = 0;
@@ -297,6 +317,10 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 			$this->monitor['timeout'] = 48;
 			$this->monitor['repeat_seconds'] = 60;
 			$this->monitor['ssl_verify'] = 1;
+			$this->monitor['ssl_verify_host'] = 1;
+			$this->monitor['proxy_type'] = 0;
+			$this->monitor['workers'] = [];
+			$this->monitor['response_code'] = [2];
 		}
 
 		$this->workers_hash = [];
@@ -418,7 +442,17 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 						'global-class' => 'type-dependence type-'.\Monitors::TYPE_CURL,
 						'readonly' => !($this->access_hash[$this->monitor['id']]['access'][WRITE]??$this->can_create),
 					]);
+					echo $this->template?->html_select('response_code[]', \Monitors::response_code_hash(), $this->monitor['response_code']??[], \T::Monitor_Edit_ResponseCode(), false,[
+						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+						'multiple' => 'multiple',
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_CURL,
+						'readonly' => !($this->access_hash[$this->monitor['id']]['access'][WRITE]??$this->can_create),
+					]);
 					echo $this->template->html_switch("ssl_verify", intval($this->monitor['ssl_verify']??0), \T::Monitor_Edit_SSLVerify(), false,[
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_CURL,
+						'readonly' => !($this->access_hash[$this->monitor['id']]['access'][WRITE]??$this->can_create),
+					]);
+					echo $this->template->html_switch("ssl_verify_host", intval($this->monitor['ssl_verify_host']??0), \T::Monitor_Edit_SSLVerifyHost(), false,[
 						'global-class' => 'type-dependence type-'.\Monitors::TYPE_CURL,
 						'readonly' => !($this->access_hash[$this->monitor['id']]['access'][WRITE]??$this->can_create),
 					]);
@@ -427,7 +461,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 						'global-class' => 'type-dependence type-'.\Monitors::TYPE_CURL,
 						'readonly' => !($this->access_hash[$this->monitor['id']]['access'][WRITE]??$this->can_create),
 					]);
-					echo $this->template->html_input("proxy_port", $this->monitor['proxy_port']??'', \T::Monitor_Edit_ProxyPort(), false, [
+					echo $this->template?->html_select('proxy_type', \Monitors::proxy_type_hash(), $this->monitor['proxy_type']??0, \T::Monitor_Edit_ProxyType(), false,[
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
 						'global-class' => 'type-dependence type-'.\Monitors::TYPE_CURL,
 						'readonly' => !($this->access_hash[$this->monitor['id']]['access'][WRITE]??$this->can_create),

@@ -29,8 +29,10 @@ class Migration_0003 {
 				`timeout` INT NOT NULL DEFAULT '24',
 				`repeat_seconds` int DEFAULT 30,
 				`ssl_verify` TINYINT NOT NULL DEFAULT '1',
+				`ssl_verify_host` TINYINT NOT NULL DEFAULT '1',
+				`response_code` text NOT NULL,
 				`proxy_host` CHAR(32) NOT NULL DEFAULT '',
-				`proxy_port` MEDIUMINT NOT NULL DEFAULT '0',
+				`proxy_type` MEDIUMINT NOT NULL DEFAULT '0',
 				PRIMARY KEY (`id`),
 				INDEX (`type`, `status`)
 			) ENGINE=InnoDB

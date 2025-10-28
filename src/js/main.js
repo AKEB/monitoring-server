@@ -5,7 +5,7 @@ function printMonitors(data, level=0) {
 		const monitor = data[key];
 		if (!monitor || !monitor.id) continue;
 		if (monitor.type == 1) {
-			if (monitor.children && monitor.children.length > 0) {
+			if (monitor.children) {
 				// Folder
 				HTML += '<div class="row monitor-folder mb-1" data-monitor-id="'+monitor.id+'">';
 				let show = false;
