@@ -93,7 +93,7 @@ class Monitors extends \DB\MySQLObject implements \PermissionSubject_Interface {
 
 	static public function getMonitorsAccess() {
 		if (!static::$monitorsForAccess) {
-			$data = \Monitors::data(false,' ORDER BY NULL ', '`id`, `parent_id`');
+			$data = \Monitors::data(false,' ORDER BY NULL ', '`id`, `parent_id`, `type`, `title`');
 			foreach($data as $item) {
 				if (!isset(static::$monitorsForAccess[$item['id']])) {
 					static::$monitorsForAccess[$item['id']] = [];
@@ -101,6 +101,8 @@ class Monitors extends \DB\MySQLObject implements \PermissionSubject_Interface {
 				}
 				static::$monitorsForAccess[$item['id']]['id'] = $item['id'];
 				static::$monitorsForAccess[$item['id']]['parent_id'] = $item['parent_id'];
+				static::$monitorsForAccess[$item['id']]['type'] = $item['type'];
+				static::$monitorsForAccess[$item['id']]['title'] = $item['title'];
 				static::$monitorsForAccess[$item['id']]['access'] = [
 					READ => \Sessions::checkPermission(\Monitors::PERMISSION_ACCESS, $item['id'], READ),
 					WRITE => \Sessions::checkPermission(\Monitors::PERMISSION_ACCESS, $item['id'], WRITE),
@@ -146,5 +148,75 @@ class Monitors extends \DB\MySQLObject implements \PermissionSubject_Interface {
 		return [
 			static::PERMISSION_ACCESS => \T::Monitor_Permissions_Monitor(),
 		];
+	}
+
+	static public function folders_hash(): array {
+		$data = \Monitors::data(['type' => \Monitors::TYPE_FOLDER], '', '`id`, `parent_id`, `title`');
+		$folders_hash = [];
+		foreach($data as $item) {
+			if (!isset($folders_hash[$item['id']])) {
+				$folders_hash[$item['id']] = $item;
+				$folders_hash[$item['id']]['children'] = [];
+			}
+			$folders_hash[$item['id']]['id'] = $item['id'];
+			$folders_hash[$item['id']]['parent_id'] = $item['parent_id'];
+			$folders_hash[$item['id']]['title'] = $item['title'];
+			if (!isset($folders_hash[$item['parent_id']])) {
+				$folders_hash[$item['parent_id']] = [];
+			}
+			$folders_hash[$item['parent_id']]['children'][$item['id']] = &$folders_hash[$item['id']];
+		}
+		$access_hash = \Monitors::getMonitorsAccess();
+		foreach($folders_hash as $k=>$v) {
+			if ($k == 0) continue;
+			if (!($access_hash[$k]['access'][READ]??false)) {
+				unset($folders_hash[$v['parent_id']]['children'][$v['id']]);
+				$folders_hash[$k] = [];
+				unset($folders_hash[$k]);
+				$folders_hash[$k] = null;
+				continue;
+			}
+		}
+		return $folders_hash[0]['children'] ?? [];
+	}
+
+	static public function get_folder_titles(&$options_hash, $data, $level) {
+		if (!$data) return;
+		usort($data, function($a, $b){
+			$titleA = $a['title'];
+			$titleB = $b['title'];
+
+			// Проверяем, начинается ли строка с русской буквы
+			$isRussianA = preg_match('/^[а-яё]/iu', $titleA);
+			$isRussianB = preg_match('/^[а-яё]/iu', $titleB);
+
+			// Если одна строка начинается с русской буквы, а другая - нет,
+			// русская строка должна идти первой
+			if ($isRussianA && !$isRussianB) {
+				return -1;
+			}
+			if (!$isRussianA && $isRussianB) {
+				return 1;
+			}
+
+			// Если обе строки начинаются с русских букв или обе с английских,
+			// сортируем регистронезависимо
+			return strcasecmp($titleA, $titleB);
+		});
+
+		foreach($data as $v) {
+			$options_hash[$v['id']] = str_repeat('&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;', $level).$v['title'];
+			if ($v['children']) {
+				static::get_folder_titles($options_hash, $v['children'], $level+1);
+			}
+		}
+	}
+
+	static public function get_folder_hash_options_hash() {
+		$folders_hash = \Monitors::folders_hash();
+		$options_hash = [];
+		$options_hash[0] = \T::Monitor_Table_Root();
+		static::get_folder_titles($options_hash, $folders_hash, 1);
+		return $options_hash;
 	}
 }

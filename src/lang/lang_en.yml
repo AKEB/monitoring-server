@@ -58,6 +58,8 @@ Monitor:
     UpdateTime: "Update time"
     Actions: "Actions"
     Delete: "Delete"
+    Edit: "Edit"
+    Copy: "Copy"
     Root: "Home"
   Delete:
     Title: "Removing the monitor"
@@ -95,3 +97,16 @@ Monitor:
   Type:
     Curl: "Curl"
     Folder: "Folder"
+
+Dashboard:
+  Response: "Response"
+  AVGResponse: "Average response time"
+  Uptime: "Uptime"
+  Last: "Last"
+  24Hours: "24-hours"
+  7Days: "7 days"
+  30Days: "30 days"
+  CertExpire: "Certificate expires"
+  Day: "Day"
+  Days: "Days"
+  Days5: "Days"

@@ -1,5 +1,11 @@
+let monitorShowTimeout;
+let monitorUpdateTimeout;
+let monitorSearchTimeout;
+let selectedMonitorId;
+let monitorChart;
 
-function printMonitors(data, level=0) {
+
+function printMonitors(data, level=0, searchText='') {
 	let HTML = '';
 	for (var key in data) {
 		const monitor = data[key];
@@ -12,7 +18,7 @@ function printMonitors(data, level=0) {
 				if (localStorage.getItem("collapseOpened_collapseMonitors_" + monitor.id) === "true") {
 					show = true;
 				}
-				HTML += '<div class="col-9 col-md-8'+(show ? '':' collapsed')+' monitor-title" data-monitor-id="'+monitor.id+'" aria-controls="collapseMonitors_'+monitor.id+'">';
+				HTML += '<div class="col-9 col-md-8'+(show ? '':' collapsed')+' monitor-title" data-search-text="'+searchText + monitor.title +'" data-monitor-id="'+monitor.id+'" aria-controls="collapseMonitors_'+monitor.id+'">';
 				HTML += '<span class="ml-padding-'+level+'"></span><span class="badge rounded-pill monitor-badge '+(monitor.badge_class)+'" title="24-hours" data-monitor-id="'+monitor.id+'">'+monitor.availability_percent+'%</span>';
 				HTML += '<i class="bi bi-caret-down"></i>';
 				HTML += monitor.title;
@@ -43,12 +49,12 @@ function printMonitors(data, level=0) {
 
 				HTML += '</div>';
 				HTML += '<div class="collapse'+(show ? ' show' : '')+'" id="collapseMonitors_'+monitor.id+'">';
-				HTML += printMonitors(monitor.children, level + 1 )
+				HTML += printMonitors(monitor.children, level + 1, searchText + monitor.title + ' | ' );
 				HTML += '</div>';
 			}
 		} else {
 			// Monitor
-			HTML += '<div class="row monitor-item mb-1" data-monitor-id="'+monitor.id+'"><div class="col-9 col-md-8 monitor-title" data-monitor-id="'+monitor.id+'">';
+			HTML += '<div class="row monitor-item mb-1" data-monitor-id="'+monitor.id+'"><div class="col-9 col-md-8 monitor-title pointer" data-search-text="'+searchText + monitor.title +'" data-monitor-id="'+monitor.id+'">';
 			HTML += '<span class="ml-padding-'+level+'"></span><span class="badge rounded-pill monitor-badge '+(monitor.badge_class)+'" title="24-hours" data-monitor-id="'+monitor.id+'">'+monitor.availability_percent+'%</span>'+"\n";
 			HTML += monitor.title;
 			HTML += '</div>';
@@ -80,8 +86,8 @@ function printMonitors(data, level=0) {
 	return HTML;
 }
 
-
-function MonitorsUpdate(wss, count=25) {
+function MonitorsUpdate(count=25) {
+	clearTimeout(monitorUpdateTimeout);
 	wss.send('monitors_update',{'count':count},(response)=>{
 		if (response.message == false) {
 			console.log(response);
@@ -89,12 +95,100 @@ function MonitorsUpdate(wss, count=25) {
 			if (response.message) {
 				const html = printMonitors(response.message, 0);
 				$('div.monitor-list-items>div.col').html(html);
+				filterAndHideMonitors();
 			}
 		}
-	})
-	setTimeout(function() {
-		MonitorsUpdate(wss, 5);
-	}, 20000);
+	});
+	monitorUpdateTimeout = setTimeout(function() {
+		MonitorsUpdate(5);
+	}, 30000);
+}
+
+function filterAndHideMonitors() {
+	searchText = document.getElementById('monitorSearch').value;
+	console.log('filterAndHideMonitors', searchText);
+	const allMonitors = document.querySelectorAll('.monitor-item, .monitor-folder');
+	let hasResults = false;
+
+	allMonitors.forEach(monitor => {
+		const title = monitor.querySelector('.monitor-title');
+		const text = title ? (title.dataset.searchText || title.textContent || title.innerText) : '';
+		const matches = searchText === '' ||
+					text.toLowerCase().includes(searchText.toLowerCase());
+
+		if (matches) {
+			$(monitor).show();
+			hasResults = true;
+
+			// Показываем родительские контейнеры
+			showParentContainers(monitor);
+		} else {
+			$(monitor).hide();
+		}
+	});
+
+	if (searchText === '') {
+		restoreMonitorsCollapseFromLocalStorage();
+	}
+
+	// Показать/скрыть сообщение "нет результатов"
+	const noResults = document.getElementById('noResults') || createNoResultsMessage();
+	noResults.style.display = hasResults || searchText === '' ? 'none' : 'block';
+}
+
+function showParentContainers(element) {
+	let parent = element.parentElement;
+	searchText = document.getElementById('monitorSearch').value;
+	while (parent && !parent.classList.contains('monitor-list-items')) {
+		if (parent.classList.contains('collapse')) {
+			// $(parent).show();
+			if (searchText !== '') {
+				$(parent).collapse('show');
+			}
+			
+			// Показать заголовок папки
+			const folderId = parent.id.split('_')[1];
+			const folder = document.querySelector(`.monitor-folder[data-monitor-id="${folderId}"]`);
+			const folderTitle = document.querySelector(`.monitor-folder[data-monitor-id="${folderId}"]>.monitor-title`);
+			if (folder && folderTitle) {
+				$(folder).show();
+				if (searchText !== '') {
+					$(folderTitle).removeClass('collapsed');
+				}
+			}
+		}
+		parent = parent.parentElement;
+	}
+}
+
+function createNoResultsMessage() {
+	const message = document.createElement('div');
+	message.id = 'noResults';
+	message.textContent = monitorsNotFound;
+	message.style.cssText = 'text-align: center; padding: 20px; color: #666;';
+
+	const container = document.querySelector('.monitor-list-items');
+	container.appendChild(message);
+	return message;
+}
+
+function clearSearch() {
+	document.getElementById('monitorSearch').value = '';
+	filterAndHideMonitors('');
+}
+
+function restoreMonitorsCollapseFromLocalStorage() {
+	$('.monitor-folder>.monitor-title').each(function() {
+		const collapseId = $(this).attr('aria-controls');
+		const collapseObj = $(`#${collapseId}`);
+		if (localStorage.getItem("collapseOpened_" + collapseId) === "true") {
+			collapseObj.collapse('show');
+			$(this).removeClass('collapsed');
+		} else {
+			collapseObj.collapse('hide');
+			$(this).addClass('collapsed');
+		}
+	});
 }
 
 function MonitorsCollapse() {
@@ -112,3 +206,455 @@ function MonitorsCollapse() {
 		}
 	});
 }
+
+function updateMonitorWorkersLogs(data) {
+	const monitorWorkersLogs = $('#monitor-workers-logs');
+	const keys = Object.keys(data.logs).sort((a, b) => a - b);
+	const last40Keys = keys.slice(-40);
+	HTML = '';
+	for (let worker_id in data.workers) {
+		const worker = data.workers[worker_id];
+		const logs = data.logs[worker_id];
+		HTML += '<div class="row">';
+			HTML += '<div class="col-3 col-sm-2 align-middle lh-3">'+worker.title+'</div><div class="col-9 col-sm-10">';
+				HTML += '<div class="wrap"><div class="monitor-states-big" data-monitor-id="7">';
+					for (let i in last40Keys) {
+						const time = last40Keys[i];
+						const log_workers = data.logs[time];
+						const log = log_workers[worker_id];
+						let className = 'bg-secondary';
+						let title = log_workers.title;
+						if (log) {
+							if (log.status == 0) {
+								className = "bg-danger";
+							} else if (log['status'] == 1) {
+								className = "bg-success";
+							}
+							title = log.title;
+						}
+						HTML += '<div data-min-time="'+ time + '" class="' + className + '" title="' + title + '"></div>';
+					}
+				HTML += '</div></div>';
+			HTML += '</div>';
+		HTML += '</div>';
+	}
+	monitorWorkersLogs.html(HTML);
+}
+
+function updateMonitorLastInfo(data) {
+	const monitorWorkersLogs = $('#monitor-last-info');
+	HTML = '';
+	HTML += '<div class="card monitor-info mb-3">';
+	HTML += '<div class="card-body row">';
+		HTML += '<div class="center col-4 col-lg mb-3">';
+			HTML += Dashboard_Response+'<br/>';
+			HTML += '<span class="text-secondary fs-7">('+Dashboard_Last+')</span><br/>';
+			HTML += (data['avg_response_time'] ? data['avg_response_time'] : '');
+		HTML += '</div>';
+
+		HTML += '<div class="center col-4 col-lg mb-3">';
+			HTML += Dashboard_AVGResponse+'<br/>';
+			HTML += '<span class="text-secondary fs-7">('+Dashboard_24Hours+')</span><br/>';
+			HTML += (data['avg_response_time_1d'] ? data['avg_response_time_1d'] : '');
+		HTML += '</div>';
+
+		HTML += '<div class="center col-4 col-lg mb-3">';
+			HTML += Dashboard_Uptime+'<br/>';
+			HTML += '<span class="text-secondary fs-7">('+Dashboard_24Hours+')</span><br/>';
+			HTML += (data['uptime_1'] ? data['uptime_1']+'%' : '');
+		HTML += '</div>';
+		HTML += '<div class="center col-4 col-lg mb-3">';
+			HTML += Dashboard_Uptime+'<br/>';
+			HTML += '<span class="text-secondary fs-7">('+Dashboard_30Days+')</span><br/>';
+			HTML += (data['uptime_30'] ? data['uptime_30']+'%' : '');
+		HTML += '</div>';
+
+		if (data['cert_expire']) {
+			HTML += '<div class="center col-4 col-lg mb-3">'+Dashboard_CertExpire+'<br/>';
+			HTML += '<span class="text-secondary fs-7">('+(data['cert_expire'] ? data['cert_expire'] : '')+')</span><br/>';
+			HTML += (data['cert_expire_days'] ? data['cert_expire_days'] : '')+'</div>';
+		}
+	HTML += '</div>';
+	HTML += '</div>';
+	monitorWorkersLogs.html(HTML);
+}
+
+function printMonitorData(data, period) {
+	let HTML = '';
+	data.monitor = data.monitor || {};
+	$('title').html('Monitoring - Monitor: ' + data.monitor.title);
+	data.logs = data.logs || {};
+	data.workers = data.workers || {};
+	cardObj = $('div.monitor-dashboard div.card#monitor-data-'+data.monitor.id);
+
+	if (!cardObj || cardObj.length < 1) {
+		HTML += '<div class="card" id="monitor-data-'+data.monitor.id+'">';
+		HTML += '<div class="card-header bg-transparent"><h3>'+data.monitor.title+'</h3></div>';
+		HTML += '<div class="card-body">';
+		HTML += '<div id="monitor-workers-logs"></div>';
+		HTML += '<div id="monitor-last-info"></div>';
+		HTML += '<div id="monitor-charts">';
+			HTML += '<div class="card chart mb-3">';
+				HTML += '<div class="card-body">';
+					HTML += '<div class="float-end"><select data-width="fit" data-container="body" data-style-base="btn btn-sm" name="period" class="selectpicker" id="chart-period">';
+					HTML += '<option value="0.5" '+(period == "0.5" ? 'selected':'')+'>30 Minutes</option>';
+					HTML += '<option value="1" '+(period == "1" ? 'selected':'')+'>1 Hour</option>';
+					HTML += '<option value="4" '+(period == "4" ? 'selected':'')+'>4 Hours</option>';
+					HTML += '<option value="6" '+(period == "6" ? 'selected':'')+'>6 Hours</option>';
+					HTML += '<option value="24" '+(period == "24" ? 'selected':'')+'>24 Hours</option>';
+					HTML += '</select></div>';
+					HTML += '<div class="clearfix"></div>';
+					HTML += '<div id="MonitorEChart" class="MonitorEChart"></div>';
+				HTML += '</div>';
+			HTML += '</div>';
+		HTML += '</div>';
+		HTML += '</div>';
+		HTML += '</div>';
+		$('div.monitor-dashboard').html(HTML);
+		$('#chart-period').selectpicker('render');
+		initECharts();
+	}
+	updateMonitorWorkersLogs(data);
+	updateMonitorLastInfo(data);
+	updateECharts(data);
+
+}
+
+function initECharts() {
+	const chartDom = document.getElementById('MonitorEChart');
+	monitorChart = echarts.init(chartDom);
+	const option = {
+		tooltip: {
+			trigger: 'axis',
+			axisPointer: {
+				type: 'cross',
+				label: {
+					backgroundColor: '#0dcaf0'
+				}
+			},
+			formatter: function(params) {
+				let result = params[0].axisValue + '<br/>';
+				params.forEach(function(item) {
+					if (item.value != null) {
+						let valueText = item.value >= 1000 ? 
+							(item.value / 1000).toFixed(2) + ' s' : 
+							item.value + ' ms';
+						result += item.seriesName + ': ' + valueText + '<br/>';
+					}
+				});
+				return result;
+			}
+		},
+		
+		grid: {
+			left: '3%',
+			right: '4%',
+			bottom: '3%',
+			top: '60px',
+			containLabel: true
+		},
+		
+		yAxis: {
+			type: 'value',
+			axisLabel: {
+				formatter: function(value) {
+					if (value >= 1000) {
+						return (value / 1000) + ' s';
+					} else {
+						return value + ' ms';
+					}
+				}
+			},
+			name: 'Response time',
+			nameLocation: 'end',
+			nameGap: 15
+		},
+
+		dataZoom: [
+			{
+				type: 'inside',
+				start: 0,
+				end: 100
+			},
+			{
+				type: 'slider',
+				start: 0,
+				end: 100
+			}
+		],
+		
+		legend: {
+			data: Object.values({}).map(w => w.title),
+			top: 10,
+			type: 'scroll'
+		},
+		
+		xAxis: {
+			type: 'category',
+			boundaryGap: true,
+			data: []
+		},
+
+		series: []
+	};
+	monitorChart.setOption(option);
+	// Обработчик изменения размера окна
+	window.addEventListener('resize', function() {
+		monitorChart.resize();
+	});
+}
+
+
+function updateECharts(data) {
+	let series = [];
+	let xAxisData = [];
+
+	// Функция для поиска периодов без данных
+	function findNoDataPeriods(dataArray, timeKeys) {
+		const periods = [];
+		let currentPeriod = null;
+		
+		for (let i = 0; i < dataArray.length; i++) {
+			if (dataArray[i] === null) {
+				if (currentPeriod === null) {
+					currentPeriod = { 
+						start: timeKeys[i === 0 ? i : i-1], 
+						startIndex: i === 0 ? i : i-1
+					};
+				}
+				currentPeriod.end = timeKeys[i === dataArray.length - 1 ? i : i+1];
+				currentPeriod.endIndex = i === dataArray.length - 1 ? i : i+1;
+			} else {
+				if (currentPeriod !== null) {
+					// Добавляем период только если он длится более 1 точки
+					if (currentPeriod.endIndex - currentPeriod.startIndex > 0) {
+						periods.push([
+							{
+								xAxis: (new Date(currentPeriod.start * 1000)).toLocaleTimeString(),
+							},
+							{
+								xAxis: (new Date(currentPeriod.end * 1000)).toLocaleTimeString(),
+							}
+						]);
+					}
+					currentPeriod = null;
+				}
+			}
+		}
+		
+		// Добавляем последний период, если он есть и достаточно длинный
+		if (currentPeriod !== null && currentPeriod.endIndex - currentPeriod.startIndex > 2) {
+			periods.push([
+				{ 
+					xAxis: (new Date(currentPeriod.start * 1000)).toLocaleTimeString(),
+				},
+				{ 
+					xAxis: (new Date(currentPeriod.end * 1000)).toLocaleTimeString(),
+				}
+			]);
+		}
+		
+		return periods;
+	}
+	// Получаем отсортированные ключи времени
+	const timeKeys = Object.keys(data.logs_chart).sort((a, b) => a - b);
+
+	// Подготовка данных для ECharts
+	for (let worker_id in data.workers) {
+		const worker = data.workers[worker_id];
+		let workerData = [];
+		
+		// Собираем данные по времени
+		for (let time of timeKeys) {
+			if (xAxisData.length < timeKeys.length) {
+				// Форматируем дату для отображения
+				const date = new Date(time * 1000);
+				xAxisData.push(date.toLocaleTimeString());
+			}
+			
+			const log_workers = data.logs_chart[time];
+			const log = log_workers[worker_id];
+			
+			if (log != 'null') {
+				workerData.push(log);
+			} else {
+				workerData.push(null); // ECharts использует null для пропущенных данных
+			}
+		}
+		// Находим периоды без данных для этого воркера
+		const noDataPeriods = findNoDataPeriods(workerData, timeKeys);
+		series.push({
+			name: worker.title,
+			type: 'line',
+			data: workerData,
+			// smooth: 0.05,
+			symbol: 'circle',
+			symbolSize: 4,
+			// lineStyle: {
+			// 	width: 1
+			// },
+			connectNulls: false,
+			// emphasis: {
+			// 	focus: 'series'
+			// },
+			markArea: noDataPeriods.length > 0 ? {
+				itemStyle: {
+					color: 'rgba(220, 53, 69, 0.5)'
+				},
+				data: noDataPeriods
+			} : undefined
+		});
+	}
+
+	const option = {
+		legend: {
+			data: Object.values(data.workers).map(w => w.title),
+			top: 10,
+			type: 'scroll'
+		},
+		xAxis: {
+			type: 'category',
+			boundaryGap: true,
+			data: xAxisData
+		},
+		series: series
+	}
+
+	monitorChart.setOption(option);
+}
+
+function MonitorShowData(monitorId, period=1) {
+	clearTimeout(monitorShowTimeout);
+	selectedMonitorId = monitorId;
+	wss.send('monitor_show_data',{'monitor_id':monitorId, 'period': period},(response)=>{
+		if (response.message == false) {
+			console.log(response);
+		} else {
+			if (response.message) {
+				printMonitorData(response.message, period);
+			}
+		}
+	});
+	monitorShowTimeout = setTimeout(function() {
+		MonitorShowData(monitorId, period);
+	}, 60000);
+}
+
+function showMonitorDashboard() {
+	const navButtons = document.querySelectorAll('button[data-target]');
+	const monitorList = document.getElementById('monitor-list');
+	const monitorDashboard = document.getElementById('monitor-dashboard');
+
+	navButtons.forEach(btn => btn.classList.remove('active'));
+
+	navButtons.forEach(button => {
+		const target = button.getAttribute('data-target');
+		if (target === 'monitor-dashboard') {
+			button.classList.add('active');
+		}
+	});
+	if (window.innerWidth < 992) {
+		monitorList.classList.remove('active');
+		monitorDashboard.classList.add('active');
+	} else {
+		monitorList.classList.add('active');
+		monitorDashboard.classList.add('active');
+	}
+
+}
+
+function list_dashboard_mobile(dashboard_active=false) {
+	const navButtons = document.querySelectorAll('button[data-target]');
+	const monitorList = document.getElementById('monitor-list');
+	const monitorDashboard = document.getElementById('monitor-dashboard');
+
+	if (window.innerWidth < 992) {
+		monitorList.classList.remove('active');
+		monitorDashboard.classList.remove('active');
+		if (dashboard_active) {
+			monitorDashboard.classList.add('active');
+		} else {
+			monitorList.classList.add('active');
+		}
+	} else {
+		monitorList.classList.add('active');
+		monitorDashboard.classList.add('active');
+	}
+
+	navButtons.forEach(button => {
+		button.addEventListener('click', function() {
+			const target = this.getAttribute('data-target');
+			
+			// Убираем активный класс у всех кнопок
+			navButtons.forEach(btn => btn.classList.remove('active'));
+			// Добавляем активный класс текущей кнопке
+			this.classList.add('active');
+			
+			// Скрываем все блоки
+			monitorList.classList.remove('active');
+			monitorDashboard.classList.remove('active');
+			
+			// Показываем выбранный блок
+			if (target === 'monitor-list') {
+				monitorList.classList.add('active');
+			} else if (target === 'monitor-dashboard') {
+				monitorDashboard.classList.add('active');
+			}
+		});
+	});
+
+	 window.addEventListener('resize', function() {
+		if (window.innerWidth >= 992) {
+			// На больших экранах показываем оба блока
+			monitorList.classList.add('active');
+			monitorDashboard.classList.add('active');
+		} else {
+			// На маленьких экранах показываем только активный блок
+			const activeButton = document.querySelector('[data-target].active');
+			if (activeButton) {
+				const target = activeButton.getAttribute('data-target');
+				monitorList.classList.remove('active');
+				monitorDashboard.classList.remove('active');
+				
+				if (target === 'monitor-list') {
+					monitorList.classList.add('active');
+				} else if (target === 'monitor-dashboard') {
+					monitorDashboard.classList.add('active');
+				}
+			}
+		}
+	});
+}
+
+$(document).ready(function() {
+	$('body').delegate('.monitor-item>.monitor-title', 'click', function(){
+		Loading = '<div class="d-flex justify-content-center"><div class="spinner-border text-warning" role="status"><span class="visually-hidden">Loading...</span></div></div>';
+		$('div.monitor-dashboard').html(Loading);
+		history.pushState({'action': 'monitor', 'monitorId': $(this).data('monitor-id')}, null, "/monitor/" + $(this).data('monitor-id') + "/");
+		selectedMonitorId = $(this).data('monitor-id');
+		MonitorShowData($(this).data('monitor-id'));
+		showMonitorDashboard();
+		document.querySelectorAll('body')[0].scrollIntoView();
+	});
+	$('body').delegate('#chart-period', 'change', function() {
+		MonitorShowData(selectedMonitorId, $(this).val());
+	});
+
+	$('#monitorSearch').on('input', function() {
+		clearTimeout(monitorSearchTimeout);
+		monitorSearchTimeout = setTimeout(function() {
+			filterAndHideMonitors();
+		}, 500);
+	});
+
+	// Обработчик события popstate (когда пользователь нажимает назад/вперед)
+	window.addEventListener('popstate', function(event) {
+		if (event.state && event.state.action && event.state.action == 'monitor' && event.state.monitorId) {
+			Loading = '<div class="d-flex justify-content-center"><div class="spinner-border text-warning" role="status"><span class="visually-hidden">Loading...</span></div></div>';
+			$('div.monitor-dashboard').html(Loading);
+			selectedMonitorId = event.state.monitorId;
+			MonitorShowData(event.state.monitorId);
+		}
+	});
+
+});

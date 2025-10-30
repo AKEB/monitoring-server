@@ -35,6 +35,7 @@ require_once("./autoload.php");
 \Template::addCSSFile('/css/main.css');
 
 // Add another js files
+\Template::addJSFile('/js/echarts.min.js');
 \Template::addJSFile('/js/locale_'.\T::getCurrentLanguage().'.js');
 \Template::addJSFile('/js/main.js');
 
@@ -44,6 +45,7 @@ require_once("./autoload.php");
 
 // Add another Websocket item
 \Websocket::addAction('monitors_update', '\\MonitorsWebsocket');
+\Websocket::addAction('monitor_show_data', '\\MonitorsWebsocket');
 
 // ADD Another Routes
 \Routes::addRoute('/workers/edit/(?P<worker_id>\d+)/', '\\App\\Workers\\Edit');
@@ -57,6 +59,7 @@ require_once("./autoload.php");
 \Routes::addRoute('/monitors/(?P<parent_id>\d+)/', '\\App\\Monitors\\Show');
 \Routes::addRoute('/monitors/', '\\App\\Monitors\\Show');
 
+\Routes::addRoute('/monitor/(?P<monitor_id>\d+)/', '\\App\\Main');
 
 new \Routing();
 

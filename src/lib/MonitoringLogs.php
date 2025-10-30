@@ -10,10 +10,14 @@ class MonitoringLogs extends \DB\MySQLObject {
 	const STATE_SUCCESS = 1;
 	const STATE_ERROR = 2;
 
-	static public function getAvailabilityPercent(int $seconds=86400): array {
+	static public function getAvailabilityPercent(int $seconds=86400, ?int $monitor_id=null): array {
 		if (!$seconds) $seconds = 86400;
 		$fields = '`monitor_id`, ROUND((SUM(`status` = 1) / COUNT(*)) * 100, 2) as `availability_percent`';
+		$fields .= ', ROUND((SUM(`total_time_us`) / COUNT(*)), 1) as `avg_response_time`';
 		$sql = sql_pholder(' AND update_time >= ?', time() - intval($seconds));
+		if ($monitor_id) {
+			$sql .= sql_pholder(' AND monitor_id = ?', $monitor_id);
+		}
 		$sql .= 'GROUP BY monitor_id ORDER BY NULL';
 		return static::data(false, $sql, $fields);
 	}
@@ -111,7 +115,6 @@ class MonitoringLogs extends \DB\MySQLObject {
 									$parent_states[$i]['max_state'] = static::STATE_ERROR;
 									$monitor['states'][$i]['class'] = 'bg-danger';
 									$monitor['states'][$i]['error'] = true;
-									$children_has_error[$i] = true;
 								}
 								if ($monitor['states'][$i]['max_state'] == static::STATE_SUCCESS) {
 									$monitor['states'][$i]['error'] = false;
@@ -126,21 +129,18 @@ class MonitoringLogs extends \DB\MySQLObject {
 							} else {
 								if ($monitor['states'][$i]['max_state'] == static::STATE_ERROR) {
 									$monitor['states'][$i]['class'] = 'bg-warning';
-									$children_has_warning[$i] = true;
 									$monitor['states'][$i]['warning'] = true;
 								}
 								if ($monitor['states'][$i]['max_state'] == static::STATE_SUCCESS) {
 									$monitor['states'][$i]['class'] = 'bg-warning';
 									$monitor['states'][$i]['warning'] = true;
-									$children_has_warning[$i] = true;
 								}
 							}
 						}
 					}
 					if (isset($monitor['states'][$i]['error']) && $monitor['states'][$i]['error']) {
 						$children_has_error[$i] = true;
-					}
-					if (isset($monitor['states'][$i]['warning']) && $monitor['states'][$i]['warning']) {
+					} elseif (isset($monitor['states'][$i]['warning']) && $monitor['states'][$i]['warning']) {
 						$children_has_warning[$i] = true;
 					}
 
@@ -176,12 +176,10 @@ class MonitoringLogs extends \DB\MySQLObject {
 						$data['states'][$i]['max_state'] = max($data['states'][$i]['max_state'], $data['states'][$i]['workers'][$worker_id]);
 					}
 					if (!isset($data['states'][$i]['class']) || !$data['states'][$i]['class']) {
-						if ((isset($children_has_error[$i]) && $children_has_error[$i]) || $data['states'][$i]['max_state'] == static::STATE_ERROR) {
-							$children_has_error[$i] = true;
+						if ((isset($children_has_error[$i]) && $children_has_error[$i])) {
 							$data['states'][$i]['error'] = true;
 							$data['states'][$i]['class'] = 'bg-danger';
-						}
-						elseif ((isset($children_has_warning[$i]) && $children_has_warning[$i])) {
+						} elseif ((isset($children_has_warning[$i]) && $children_has_warning[$i])) {
 							$data['states'][$i]['class'] = 'bg-warning';
 							$data['states'][$i]['warning'] = true;
 						}
@@ -354,5 +352,120 @@ class MonitoringLogs extends \DB\MySQLObject {
 		return $monitors[0]['children']??[];
 	}
 
+	static public function getMonitorData(int $monitor_id, float $period): array {
+		$return = [];
+		if (!$monitor_id) return $return;
+		$monitor = \Monitors::get(['id' => $monitor_id]);
+		if (!$monitor) return $return;
+		if(!isset($monitor['repeat_seconds']) || !$monitor['repeat_seconds']) $monitor['repeat_seconds'] = 60;
+		$return['monitor'] = $monitor;
 
+		$jobs = \Jobs::data(['monitor_id' => $monitor['id']],'','`worker_id`, `create_time`');
+		$workers_hash = [];
+		$worker_data_for_charts = [];
+		foreach($jobs as $item) {
+			$workers_hash[$item['worker_id']] = $item;
+			$worker_data_for_charts[$item['worker_id']] = 'null';
+		}
+		if ($workers_hash) {
+			$workers = \Workers::data(['id' => array_keys($workers_hash)],'','`id`, `title`');
+			foreach($workers as $item) {
+				$workers_hash[$item['id']]['title'] = $item['title'] ?? '';
+			}
+		}
+		$return['workers'] = $workers_hash;
+
+		$sql = '';
+		$sql .= sql_pholder(' AND `monitor_id` = ?', $monitor_id);
+		if ($workers_hash) {
+			$sql .= sql_pholder(' AND `worker_id` IN (?@)', array_keys($workers_hash));
+		}
+		$sql .= sql_pholder(' AND `update_time` >= ? AND `update_time` <= ? ', time() - 60*60, time());
+		$sql .= ' ORDER BY `interval_time` ASC';
+		$fields = '`worker_id`, `status`, ';
+		$fields .= 'FLOOR(`update_time` / '.intval($monitor['repeat_seconds']).') * '.intval($monitor['repeat_seconds']).' as `interval_time`,';
+		$fields .= '`total_time_us`, `status_code`, `status_text`, `cert_expire` ';
+		$logs = static::data(false, $sql, $fields);
+		$logs_hash = [];
+		$last_data = [];
+		foreach($logs as $item) {
+			$item['title'] = date("Y-m-d H:i:s",$item['interval_time']).' - '.$item['status_code'].' '.$item['status_text'];
+			$logs_hash[$item['interval_time']]['title'] = date("H:i:s",$item['interval_time']);
+			$logs_hash[$item['interval_time']][$item['worker_id']] = $item;
+			$last_data[$item['worker_id']] = $item;
+		}
+		$return['logs'] = $logs_hash;
+
+
+		$interval = intval($monitor['repeat_seconds']);
+		// if ($period >= 24) {
+		// 	$interval = max($interval, 30*60);
+		// } elseif ($period >= 6) {
+		// 	$interval = max($interval, 10*60);
+		// } elseif ($period >= 4) {
+		// 	$interval = max($interval, 5*60);
+		// } elseif ($period >= 1) {
+		// 	$interval = max($interval, 1*60);
+		// }
+		$sql = '';
+		$sql .= sql_pholder(' AND `monitor_id` = ?', $monitor_id);
+		if ($workers_hash) {
+			$sql .= sql_pholder(' AND `worker_id` IN (?@)', array_keys($workers_hash));
+		}
+		$sql .= sql_pholder(' AND `update_time` >= ? AND `update_time` <= ? ', time() - $period*60*60, time());
+		$sql .= ' AND `status_code` <> 0';
+		$sql .= ' GROUP BY 1,2 ORDER BY 2 ASC';
+		$fields = '`worker_id`, ';
+		$fields .= 'FLOOR(`update_time` / '.intval($interval).') * '.intval($interval).' as `interval_time`,';
+		$fields .= 'MAX(`total_time_us`) as `total_time_us`';
+		$logs = static::data(false, $sql, $fields);
+		$logs_hash = [];
+		for($i=time() - $period*60*60; $i<=time(); $i+=intval($interval)) {
+			$time = intval($i / intval($interval)) * intval($interval);
+			$logs_hash[$time] = $worker_data_for_charts;
+		}
+		foreach($logs as $item) {
+			$logs_hash[$item['interval_time']][$item['worker_id']] = ceil($item['total_time_us']/1000);
+		}
+		$return['logs_chart'] = $logs_hash;
+
+		$uptime_30 = static::getAvailabilityPercent(30*86400, $monitor_id);
+		$uptime_1 = static::getAvailabilityPercent(86400, $monitor_id);
+		if ($uptime_1 && isset($uptime_1[0]) && $uptime_1[0]['avg_response_time']) {
+			$return['avg_response_time_1d'] = ceil($uptime_1[0]['avg_response_time'] / 1000).' ms';
+		} else {
+			$return['avg_response_time_1d'] = '';
+		}
+		$uptime_30 = $uptime_30 && $uptime_30[0] ? $uptime_30[0]['availability_percent']??'' : '';
+		$uptime_1 = $uptime_1 && $uptime_1[0] ? $uptime_1[0]['availability_percent']??'' : '';
+		if ($uptime_30 >=100) $uptime_30 = 100;
+		if ($uptime_1 >=100) $uptime_1 = 100;
+		$return['uptime_30'] = $uptime_30;
+		$return['uptime_1'] = $uptime_1;
+
+		$avg_response_time = 0;
+		$cert_expire_time = 0;
+		foreach($last_data as $item) {
+			$avg_response_time += $item['total_time_us'];
+			if (!$cert_expire_time) $cert_expire_time = $item['cert_expire'];
+			else $cert_expire_time = min($cert_expire_time, $item['cert_expire']);
+		}
+		$count = 1;
+		if ($last_data) {
+			$count = count($last_data);
+		}
+		$avg_response_time = ceil(($avg_response_time / $count) / 1000);
+		$return['avg_response_time'] = $avg_response_time.' ms';
+
+		if (!$cert_expire_time || $cert_expire_time < time()) {
+			$return['cert_expire'] = '';
+			$return['cert_expire_days'] = '';
+		} else {
+			$cert_expire_days = intval( ( $cert_expire_time - time() ) / 86400 );
+			$return['cert_expire'] = date("Y-m-d",$cert_expire_time);
+			$return['cert_expire_days'] = $cert_expire_days . ' '.(\T::declension($cert_expire_days, \T::Dashboard_Day(), \T::Dashboard_Days(), \T::Dashboard_Days5()));
+
+		}
+		return $return;
+	}
 }

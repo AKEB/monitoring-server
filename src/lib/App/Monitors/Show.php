@@ -30,7 +30,7 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 		$this->get_data();
 		$this->get_breadcrumb();
 
-		$this->template = new \Template();
+		$this->template = new \Template('Monitors');
 		$this->print_header();
 		$this->print_breadcrumb();
 		$this->print_table();
@@ -282,9 +282,9 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 									<i class="bi bi-folder fs-4 folderActionButton pointer" data-object-id="<?=$params['id'];?>"></i>
 									<?php
 								}
-								if ($can_write || $can_read) {
+								if ($params['type'] == \Monitors::TYPE_FOLDER) {
 									?>
-									<span class="d-inline pointer text-info editActionButton" data-object-id="<?=$params['id'];?>">
+									<span class="d-inline pointer text-info folderActionButton" data-object-id="<?=$params['id'];?>">
 										<?=$params['title'];?>
 									</span>
 									<?php
@@ -302,7 +302,12 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 							<td class="align-middle text-center"><?=$params['create_time'];?></td>
 							<td class="align-middle text-center"><?=$params['update_time'];?></td>
 							<td class="align-middle text-center">
-								<i class="bi bi-copy fs-4 text-info pointer copyActionButton" data-object-id="<?=$params['id'];?>"></i>
+								<?php if ($can_write || $can_read) {
+									?><i class="bi bi-pencil-square fs-4 text-info editActionButton pointer" title="<?=\T::Monitor_Table_Edit();?>" data-object-id="<?=$params['id'];?>"></i><?php
+								} else {
+									?><i class="bi bi-pencil-square fs-4 text-secondary" title="<?=\T::Monitor_Table_Edit();?>"></i><?php
+								} ?>
+								<i class="bi bi-copy fs-4 text-info pointer copyActionButton" title="<?=\T::Monitor_Table_Copy();?>" data-object-id="<?=$params['id'];?>"></i>
 
 								<?php if ($this->can_delete_global) {?>
 									<?php

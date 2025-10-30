@@ -377,6 +377,22 @@ class T {
 	public static function Monitor_Table_Delete(...$argv): string { return ''; }
 
 	/**
+	 * Monitor_Table_Edit
+	 * 
+	 * @return string "Edit"
+	 * @return string "Редактировать"
+	 */
+	public static function Monitor_Table_Edit(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Table_Copy
+	 * 
+	 * @return string "Copy"
+	 * @return string "Копировать"
+	 */
+	public static function Monitor_Table_Copy(...$argv): string { return ''; }
+
+	/**
 	 * Monitor_Table_Root
 	 * 
 	 * @return string "Home"
@@ -631,6 +647,94 @@ class T {
 	 * @return string "Папка"
 	 */
 	public static function Monitor_Type_Folder(...$argv): string { return ''; }
+
+	/**
+	 * Dashboard_Response
+	 * 
+	 * @return string "Response"
+	 * @return string "Ответ"
+	 */
+	public static function Dashboard_Response(...$argv): string { return ''; }
+
+	/**
+	 * Dashboard_AVGResponse
+	 * 
+	 * @return string "Average response time"
+	 * @return string "Среднее время ответа"
+	 */
+	public static function Dashboard_AVGResponse(...$argv): string { return ''; }
+
+	/**
+	 * Dashboard_Uptime
+	 * 
+	 * @return string "Uptime"
+	 * @return string "Uptime"
+	 */
+	public static function Dashboard_Uptime(...$argv): string { return ''; }
+
+	/**
+	 * Dashboard_Last
+	 * 
+	 * @return string "Last"
+	 * @return string "Последний"
+	 */
+	public static function Dashboard_Last(...$argv): string { return ''; }
+
+	/**
+	 * Dashboard_24Hours
+	 * 
+	 * @return string "24-hours"
+	 * @return string "24-часа"
+	 */
+	public static function Dashboard_24Hours(...$argv): string { return ''; }
+
+	/**
+	 * Dashboard_7Days
+	 * 
+	 * @return string "7 days"
+	 * @return string "7 дней"
+	 */
+	public static function Dashboard_7Days(...$argv): string { return ''; }
+
+	/**
+	 * Dashboard_30Days
+	 * 
+	 * @return string "30 days"
+	 * @return string "30 дней"
+	 */
+	public static function Dashboard_30Days(...$argv): string { return ''; }
+
+	/**
+	 * Dashboard_CertExpire
+	 * 
+	 * @return string "Certificate expires"
+	 * @return string "Сертификат истекает"
+	 */
+	public static function Dashboard_CertExpire(...$argv): string { return ''; }
+
+	/**
+	 * Dashboard_Day
+	 * 
+	 * @return string "Day"
+	 * @return string "День"
+	 */
+	public static function Dashboard_Day(...$argv): string { return ''; }
+
+	/**
+	 * Dashboard_Days
+	 * 
+	 * @return string "Days"
+	 * @return string "Дня"
+	 */
+	public static function Dashboard_Days(...$argv): string { return ''; }
+
+	/**
+	 * Dashboard_Days5
+	 * 
+	 * @return string "Days"
+	 * @return string "Дней"
+	 */
+	public static function Dashboard_Days5(...$argv): string { return ''; }
 
 	/**
 	 * Framework_ServerVersion

@@ -20,7 +20,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 		$this->processRequest();
 		$this->get_data();
 		$this->get_breadcrumb();
-		$this->template = new \Template();
+		$this->template = new \Template('Monitor edit');
 		$this->print_header();
 		$this->print_breadcrumb();
 		$this->print_forms();
@@ -109,6 +109,12 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					$params['proxy_type'] = intval($data['proxy_type']);
 				}
 			}
+			if (isset($data['parent_id'])) {
+				$data['parent_id'] = trim($data['parent_id']);
+				$params['parent_id'] = intval($data['parent_id']);
+			} else {
+				$params['parent_id'] = $this->parent_id;
+			}
 			$workers_hash = [];
 			$all_jobs = \Workers::data(false, ' ORDER BY `title` ASC', '`id`, `title`');
 			if ($all_jobs) {
@@ -166,7 +172,6 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				}
 				$params['create_time'] = time();
 			}
-			$params['parent_id'] = $this->parent_id;
 			$params['update_time'] = time();
 
 			$monitor_id = 0;
@@ -309,7 +314,10 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					$this->monitor['workers'][$v['worker_id']] = true;
 				}
 			}
-			$this->monitor['response_code'] = explode(',', $this->monitor['response_code']??'');
+			if (isset($this->monitor['response_code']) && !is_array($this->monitor['response_code'])) {
+				$this->monitor['response_code'] = explode(',', $this->monitor['response_code']??'');
+			}
+
 		} else {
 			$this->monitor['status'] = \Monitors::STATUS_ENABLED;
 			$this->monitor['type'] = 0;
@@ -321,6 +329,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 			$this->monitor['proxy_type'] = 0;
 			$this->monitor['workers'] = [];
 			$this->monitor['response_code'] = [2];
+			$this->monitor['parent_id'] = $this->parent_id;
 		}
 
 		$this->workers_hash = [];
@@ -399,7 +408,6 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				</h3></div>
 				<form class="card-body needs-validation" method="post" novalidate>
 					<input type="hidden" name="id" value="<?=$this->monitor['id'];?>"/>
-					<input type="hidden" name="parent_id" value="<?=$this->parent_id;?>"/>
 					<?php
 					echo $this->template->html_input("title", $this->monitor['title']??'', \T::Monitor_Edit_Title(), true, [
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
@@ -464,6 +472,10 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					echo $this->template?->html_select('proxy_type', \Monitors::proxy_type_hash(), $this->monitor['proxy_type']??0, \T::Monitor_Edit_ProxyType(), false,[
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
 						'global-class' => 'type-dependence type-'.\Monitors::TYPE_CURL,
+						'readonly' => !($this->access_hash[$this->monitor['id']]['access'][WRITE]??$this->can_create),
+					]);
+					echo $this->template?->html_select('parent_id', \Monitors::get_folder_hash_options_hash(), $this->monitor['parent_id']??0, \T::Monitor_Edit_ParentFolder(), false,[
+						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
 						'readonly' => !($this->access_hash[$this->monitor['id']]['access'][WRITE]??$this->can_create),
 					]);
 					if ($this->monitor['id']) {

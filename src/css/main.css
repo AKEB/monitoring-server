@@ -45,6 +45,10 @@ div.text-success>input {
 	/* line-height: 2rem; */
 }
 
+.monitor-states-big {
+	line-height: 3rem;
+}
+
 .monitor-states>div {
 	display:inline-flex;
 	flex-shrink: 0;
@@ -53,25 +57,37 @@ div.text-success>input {
 	width: 0.3125rem;
 	height: 1.0rem;
 	--bs-bg-opacity: 1;
+	vertical-align: middle;
 }
 
-.monitor-states>div.bg-success {
+.monitor-states-big>div {
+	display:inline-flex;
+	flex-shrink: 0;
+	border-radius:50rem;
+	margin:0.125rem;
+	width: 0.625rem;
+	height: 2.0rem;
+	--bs-bg-opacity: 1;
+	vertical-align: middle;
+}
+
+.monitor-states>div.bg-success, .monitor-states-big>div.bg-success {
 	background-color: rgba(var(--bs-success-rgb), var(--bs-bg-opacity)) !important;
 }
 
-.monitor-states>div.bg-warning {
+.monitor-states>div.bg-warning, .monitor-states-big>div.bg-warning {
 	background-color: rgba(var(--bs-warning-rgb), var(--bs-bg-opacity)) !important;
 }
 
-.monitor-states>div.bg-secondary {
+.monitor-states>div.bg-secondary, .monitor-states-big>div.bg-secondary {
 	background-color: rgba(var(--bs-secondary-rgb), var(--bs-bg-opacity)) !important;
 }
 
-.monitor-states>div.bg-primary {
+.monitor-states>div.bg-primary, .monitor-states-big>div.bg-primary {
 	background-color: rgba(var(--bs-primary-rgb), var(--bs-bg-opacity)) !important;
 }
 
-.monitor-states>div:hover {
+.monitor-states>div:hover, .monitor-states-big>div:hover {
 	transition: all ease-in-out .15s;
 	opacity: .8;
 	transform: scale(1.5)
@@ -96,6 +112,73 @@ div.text-success>input {
 .monitor-item.disabled, .monitor-folder.disabled {
 	opacity: 0.3;
 }
+
+.center {
+	text-align: center;
+}
+
+.MonitorEChart {
+	width: 100%;
+	height: 25rem;
+}
+
+.fs-7 {
+	font-size: 0.875rem;
+}
+.card.monitor-info {
+	font-size: 1rem;
+}
+
+.card.chart {
+	--bs-card-spacer-y: 0rem;
+	--bs-card-spacer-x: 0rem;
+}
+
+.card.chart div.float-end {
+	padding-right: 0.4rem;
+	padding-top: 0.4rem;
+}
+
+@media (max-width: 576px) {
+	.fs-7 {
+		font-size: 0.6875rem;
+	}
+	.card.monitor-info {
+		font-size: 0.75rem;
+		--bs-card-spacer-y: 0.5rem;
+		--bs-card-spacer-x: 0.5rem;
+	}
+}
+
+@media (max-width: 991px) {
+	.footer-main {
+		padding-bottom: 5rem !important;
+	}
+}
+
+.lh-3 {
+	line-height: 3rem;
+}
+
+.monitor-list,
+.monitor-dashboard {
+	display: none;
+}
+
+/* Показываем активный блок */
+.monitor-list.active,
+.monitor-dashboard.active {
+	display: block;
+}
+/* @media (min-width: 992px) {
+	.monitor-list,
+	.monitor-dashboard {
+		display: block !important;
+	}
+	.fixed-bottom {
+		display: none !important;
+	}
+} */
 
 .ml-padding-1 {
 	margin-left: calc(var(--mon-list-padding) * 1);

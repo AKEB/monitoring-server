@@ -58,6 +58,8 @@ Monitor:
     UpdateTime: "Время обновления"
     Actions: "Действия"
     Delete: "Удалить"
+    Edit: "Редактировать"
+    Copy: "Копировать"
     Root: "Главная"
   Delete:
     Title: "Удаление монитора"
@@ -95,3 +97,16 @@ Monitor:
   Type:
     Curl: "Curl"
     Folder: "Папка"
+
+Dashboard:
+  Response: "Ответ"
+  AVGResponse: "Среднее время ответа"
+  Uptime: "Uptime"
+  Last: "Последний"
+  24Hours: "24-часа"
+  7Days: "7 дней"
+  30Days: "30 дней"
+  CertExpire: "Сертификат истекает"
+  Day: "День"
+  Days: "Дня"
+  Days5: "Дней"
