@@ -412,7 +412,7 @@ class MonitoringLogs extends \DB\MySQLObject {
 		if ($workers_hash) {
 			$sql .= sql_pholder(' AND `worker_id` IN (?@)', array_keys($workers_hash));
 		}
-		$sql .= sql_pholder(' AND `update_time` >= ? AND `update_time` <= ? ', time() - $period*60*60, time());
+		$sql .= sql_pholder(' AND `update_time` >= ? AND `update_time` <= ? ', time() - $period*60*60 - $interval, time());
 		$sql .= ' AND `status_code` <> 0';
 		$sql .= ' GROUP BY 1,2 ORDER BY 2 ASC';
 		$fields = '`worker_id`, ';

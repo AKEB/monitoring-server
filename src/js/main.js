@@ -289,7 +289,7 @@ function printMonitorData(data, period) {
 
 	if (!cardObj || cardObj.length < 1) {
 		HTML += '<div class="card" id="monitor-data-'+data.monitor.id+'">';
-		HTML += '<div class="card-header bg-transparent"><h3>'+data.monitor.title+'</h3></div>';
+		HTML += '<div class="card-header bg-transparent"><h5>'+data.monitor.title+'</h5></div>';
 		HTML += '<div class="card-body">';
 		HTML += '<div id="monitor-workers-logs"></div>';
 		HTML += '<div id="monitor-last-info"></div>';
@@ -349,7 +349,7 @@ function initECharts() {
 		grid: {
 			left: '3%',
 			right: '4%',
-			bottom: '3%',
+			bottom: '60px',
 			top: '60px',
 			containLabel: true
 		},
