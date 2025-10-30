@@ -297,11 +297,11 @@ function printMonitorData(data, period) {
 			HTML += '<div class="card chart mb-3">';
 				HTML += '<div class="card-body">';
 					HTML += '<div class="float-end"><select data-width="fit" data-container="body" data-style-base="btn btn-sm" name="period" class="selectpicker" id="chart-period">';
-					HTML += '<option value="0.5" '+(period == "0.5" ? 'selected':'')+'>30 Minutes</option>';
-					HTML += '<option value="1" '+(period == "1" ? 'selected':'')+'>1 Hour</option>';
-					HTML += '<option value="4" '+(period == "4" ? 'selected':'')+'>4 Hours</option>';
-					HTML += '<option value="6" '+(period == "6" ? 'selected':'')+'>6 Hours</option>';
-					HTML += '<option value="24" '+(period == "24" ? 'selected':'')+'>24 Hours</option>';
+					HTML += '<option value="0.5" '+(period == "0.5" ? 'selected':'')+'>'+Dashboard_Charts_30Minutes+'</option>';
+					HTML += '<option value="1" '+(period == "1" ? 'selected':'')+'>'+Dashboard_Charts_1Hour+'</option>';
+					HTML += '<option value="4" '+(period == "4" ? 'selected':'')+'>'+Dashboard_Charts_4Hours+'</option>';
+					HTML += '<option value="6" '+(period == "6" ? 'selected':'')+'>'+Dashboard_Charts_6Hours+'</option>';
+					HTML += '<option value="24" '+(period == "24" ? 'selected':'')+'>'+Dashboard_Charts_24Hours+'</option>';
 					HTML += '</select></div>';
 					HTML += '<div class="clearfix"></div>';
 					HTML += '<div id="MonitorEChart" class="MonitorEChart"></div>';
@@ -365,7 +365,7 @@ function initECharts() {
 					}
 				}
 			},
-			name: 'Response time',
+			name: Dashboard_Charts_ResponseTime,
 			nameLocation: 'end',
 			nameGap: 15
 		},
