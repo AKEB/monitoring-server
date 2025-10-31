@@ -1,12 +1,21 @@
+// Глобальные переменные для таймаутов и идентификатора выбранного монитора
 let monitorShowTimeout;
 let monitorUpdateTimeout;
 let monitorSearchTimeout;
 let selectedMonitorId;
 let monitorChart;
 
-
+/**
+ * Рекурсивно генерирует HTML-представление списка мониторов.
+ * @param {Object} data - Данные мониторов для отображения.
+ * @param {number} [level=0] - Уровень вложенности для отступов.
+ * @param {string} [searchText=''] - Текст для поиска, используется для атрибута data-search-text.
+ * @returns {string} - Сгенерированный HTML.
+ */
 function printMonitors(data, level=0, searchText='') {
+	// Инициализация HTML-строки
 	let HTML = '';
+	// Перебор всех мониторов в предоставленных данных
 	for (var key in data) {
 		const monitor = data[key];
 		if (!monitor || !monitor.id) continue;
@@ -14,15 +23,18 @@ function printMonitors(data, level=0, searchText='') {
 			if (monitor.children) {
 				// Folder
 				HTML += '<div class="row monitor-folder mb-1" data-monitor-id="'+monitor.id+'">';
+				// Проверка, была ли папка открыта ранее (состояние из localStorage)
 				let show = false;
 				if (localStorage.getItem("collapseOpened_collapseMonitors_" + monitor.id) === "true") {
 					show = true;
 				}
+				// Заголовок папки с отступом, значком доступности и иконкой сворачивания
 				HTML += '<div class="col-9 col-md-8'+(show ? '':' collapsed')+' monitor-title" data-search-text="'+searchText + monitor.title +'" data-monitor-id="'+monitor.id+'" aria-controls="collapseMonitors_'+monitor.id+'">';
 				HTML += '<span class="ml-padding-'+level+'"></span><span class="badge rounded-pill monitor-badge '+(monitor.badge_class)+'" title="24-hours" data-monitor-id="'+monitor.id+'">'+monitor.availability_percent+'%</span>';
 				HTML += '<i class="bi bi-caret-down"></i>';
 				HTML += monitor.title;
 				HTML += '</div>';
+				// Блок с полосками состояний (uptime bars)
 				HTML += '<div class="col-3 col-md-4"><div class="wrap"><div class="monitor-states" data-monitor-id="'+monitor.id+'">';
 				let statesDiv = $('.monitor-states[data-monitor-id="'+monitor.id+'"]')
 				let old_states = {};
@@ -48,6 +60,7 @@ function printMonitors(data, level=0, searchText='') {
 				HTML += '</div></div></div>';
 
 				HTML += '</div>';
+				// Рекурсивный вызов для дочерних элементов
 				HTML += '<div class="collapse'+(show ? ' show' : '')+'" id="collapseMonitors_'+monitor.id+'">';
 				HTML += printMonitors(monitor.children, level + 1, searchText + monitor.title + ' | ' );
 				HTML += '</div>';
@@ -55,9 +68,11 @@ function printMonitors(data, level=0, searchText='') {
 		} else {
 			// Monitor
 			HTML += '<div class="row monitor-item mb-1" data-monitor-id="'+monitor.id+'"><div class="col-9 col-md-8 monitor-title pointer" data-search-text="'+searchText + monitor.title +'" data-monitor-id="'+monitor.id+'">';
+			// Заголовок монитора с отступом и значком доступности
 			HTML += '<span class="ml-padding-'+level+'"></span><span class="badge rounded-pill monitor-badge '+(monitor.badge_class)+'" title="24-hours" data-monitor-id="'+monitor.id+'">'+monitor.availability_percent+'%</span>'+"\n";
 			HTML += monitor.title;
 			HTML += '</div>';
+			// Блок с полосками состояний (uptime bars)
 			HTML += '<div class="col-3 col-md-4"><div class="wrap"><div class="monitor-states" data-monitor-id="'+monitor.id+'">';
 			let statesDiv = $('.monitor-states[data-monitor-id="'+monitor.id+'"]')
 			let old_states = {};
@@ -86,8 +101,13 @@ function printMonitors(data, level=0, searchText='') {
 	return HTML;
 }
 
+/**
+ * Запрашивает и обновляет список мониторов.
+ * @param {number} [count=25] - Количество последних состояний для загрузки.
+ */
 function MonitorsUpdate(count=25) {
 	clearTimeout(monitorUpdateTimeout);
+	// Отправка запроса на обновление через WebSocket
 	wss.send('monitors_update',{'count':count},(response)=>{
 		if (response.message == false) {
 			console.log(response);
@@ -99,11 +119,15 @@ function MonitorsUpdate(count=25) {
 			}
 		}
 	});
+	// Установка таймаута для следующего обновления через 30 секунд
 	monitorUpdateTimeout = setTimeout(function() {
 		MonitorsUpdate(5);
 	}, 30000);
 }
 
+/**
+ * Фильтрует и скрывает мониторы на основе текста поиска.
+ */
 function filterAndHideMonitors() {
 	searchText = document.getElementById('monitorSearch').value;
 	console.log('filterAndHideMonitors', searchText);
@@ -112,6 +136,7 @@ function filterAndHideMonitors() {
 
 	allMonitors.forEach(monitor => {
 		const title = monitor.querySelector('.monitor-title');
+		// Получаем текст для поиска из специального атрибута или из содержимого
 		const text = title ? (title.dataset.searchText || title.textContent || title.innerText) : '';
 		const matches = searchText === '' ||
 					text.toLowerCase().includes(searchText.toLowerCase());
@@ -127,6 +152,7 @@ function filterAndHideMonitors() {
 		}
 	});
 
+	// Если поиск пуст, восстанавливаем состояние свернутых/развернутых папок
 	if (searchText === '') {
 		restoreMonitorsCollapseFromLocalStorage();
 	}
@@ -136,6 +162,10 @@ function filterAndHideMonitors() {
 	noResults.style.display = hasResults || searchText === '' ? 'none' : 'block';
 }
 
+/**
+ * Рекурсивно показывает родительские контейнеры для найденного элемента.
+ * @param {HTMLElement} element - Элемент, родительские контейнеры которого нужно показать.
+ */
 function showParentContainers(element) {
 	let parent = element.parentElement;
 	searchText = document.getElementById('monitorSearch').value;
@@ -161,6 +191,10 @@ function showParentContainers(element) {
 	}
 }
 
+/**
+ * Создает и добавляет сообщение "Мониторы не найдены", если оно еще не существует.
+ * @returns {HTMLElement} - Элемент сообщения.
+ */
 function createNoResultsMessage() {
 	const message = document.createElement('div');
 	message.id = 'noResults';
@@ -172,11 +206,17 @@ function createNoResultsMessage() {
 	return message;
 }
 
+/**
+ * Очищает поле поиска и обновляет отображение мониторов.
+ */
 function clearSearch() {
 	document.getElementById('monitorSearch').value = '';
 	filterAndHideMonitors('');
 }
 
+/**
+ * Восстанавливает состояние свернутых/развернутых папок из localStorage.
+ */
 function restoreMonitorsCollapseFromLocalStorage() {
 	$('.monitor-folder>.monitor-title').each(function() {
 		const collapseId = $(this).attr('aria-controls');
@@ -191,6 +231,9 @@ function restoreMonitorsCollapseFromLocalStorage() {
 	});
 }
 
+/**
+ * Инициализирует обработчики для сворачивания/разворачивания папок.
+ */
 function MonitorsCollapse() {
 	$('body').delegate('.monitor-folder>.monitor-title', 'click', function(){
 		const collapseId = $(this).attr('aria-controls');
@@ -207,10 +250,15 @@ function MonitorsCollapse() {
 	});
 }
 
+/**
+ * Обновляет лог воркеров монитора (полоски состояний).
+ * @param {Object} data - Данные монитора.
+ */
 function updateMonitorWorkersLogs(data) {
 	const monitorWorkersLogs = $('#monitor-workers-logs');
 	const keys = Object.keys(data.logs).sort((a, b) => a - b);
 	const last40Keys = keys.slice(-40);
+	// Генерация HTML для каждого воркера
 	HTML = '';
 	for (let worker_id in data.workers) {
 		const worker = data.workers[worker_id];
@@ -241,6 +289,10 @@ function updateMonitorWorkersLogs(data) {
 	monitorWorkersLogs.html(HTML);
 }
 
+/**
+ * Обновляет информационную карточку с последними данными монитора.
+ * @param {Object} data - Данные монитора.
+ */
 function updateMonitorLastInfo(data) {
 	const monitorWorkersLogs = $('#monitor-last-info');
 	HTML = '';
@@ -279,6 +331,11 @@ function updateMonitorLastInfo(data) {
 	monitorWorkersLogs.html(HTML);
 }
 
+/**
+ * Отображает данные для выбранного монитора, включая графики и логи.
+ * @param {Object} data - Данные монитора.
+ * @param {string|number} period - Период для отображения на графике.
+ */
 function printMonitorData(data, period) {
 	let HTML = '';
 	data.monitor = data.monitor || {};
@@ -287,6 +344,7 @@ function printMonitorData(data, period) {
 	data.workers = data.workers || {};
 	cardObj = $('div.monitor-dashboard div.card#monitor-data-'+data.monitor.id);
 
+	// Если карточка для этого монитора еще не создана, генерируем HTML
 	if (!cardObj || cardObj.length < 1) {
 		HTML += '<div class="card" id="monitor-data-'+data.monitor.id+'">';
 		HTML += '<div class="card-header bg-transparent"><h5>'+data.monitor.title+'</h5></div>';
@@ -317,13 +375,18 @@ function printMonitorData(data, period) {
 	updateMonitorWorkersLogs(data);
 	updateMonitorLastInfo(data);
 	updateECharts(data);
-
 }
 
+/**
+ * Инициализирует график ECharts с базовыми настройками.
+ */
 function initECharts() {
+	// Определяем тему в зависимости от системных настроек
 	const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
 	const chartDom = document.getElementById('MonitorEChart');
 	monitorChart = echarts.init(chartDom, isDark ? 'dark' : 'light');
+	
+	// Базовые опции для графика
 	const option = {
 		backgroundColor: 'rgba(0,0,0,0)',
 		darkMode: isDark,
@@ -335,6 +398,7 @@ function initECharts() {
 					backgroundColor: '#0dcaf0'
 				}
 			},
+			// Форматирование всплывающей подсказки
 			formatter: function(params) {
 				let result = params[0].axisValue + '<br/>';
 				params.forEach(function(item) {
@@ -349,6 +413,7 @@ function initECharts() {
 			}
 		},
 		
+		// Панель инструментов (сохранение как изображение)
 		 toolbox: {
 			show: true,
 			feature: {
@@ -356,6 +421,7 @@ function initECharts() {
 			}
 		},
 
+		// Отступы для графика
 		grid: {
 			left: '3%',
 			right: '4%',
@@ -364,6 +430,7 @@ function initECharts() {
 			containLabel: true
 		},
 		
+		// Настройки оси Y
 		yAxis: {
 			type: 'value',
 			axisLabel: {
@@ -380,6 +447,7 @@ function initECharts() {
 			nameGap: 15
 		},
 
+		// Настройки масштабирования (зума)
 		dataZoom: [
 			{
 				type: 'inside',
@@ -393,6 +461,7 @@ function initECharts() {
 			}
 		],
 		
+		// Легенда графика
 		legend: {
 			data: Object.values({}).map(w => w.title),
 			top: 10,
@@ -408,10 +477,12 @@ function initECharts() {
 		series: []
 	};
 	monitorChart.setOption(option);
+	
 	// Обработчик изменения размера окна
 	window.addEventListener('resize', function() {
 		monitorChart.resize();
 	});
+	// Обработчик изменения темы (светлая/темная)
 	window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
 		const isDark = e.matches;
 		
@@ -435,7 +506,10 @@ function initECharts() {
 	});
 }
 
-
+/**
+ * Обновляет данные на графике ECharts.
+ * @param {Object} data - Новые данные для отображения.
+ */
 function updateECharts(data) {
 	let series = [];
 	let xAxisData = [];
@@ -506,7 +580,7 @@ function updateECharts(data) {
 		let workerData = [];
 		let statusData = [];
 		let noDataPeriods = [];
-		let lastError = false;
+		let lastError = false; // Флаг для отслеживания, был ли предыдущий лог ошибкой
 		// Собираем данные по времени
 		for (let i = 0; i < timeKeys.length; i++) {
 			const time = timeKeys[i];
@@ -526,12 +600,14 @@ function updateECharts(data) {
 				};
 			}
 			
+			// Если есть данные о времени выполнения, добавляем их
 			if (log && log['time'] != null) {
 				workerData.push(log['time']);
 				if (log['status'] == 1) {
 					lastError = false;
 				}
 			} else {
+				// Если данных нет, добавляем "No Data" линию
 				// Не выполнять для последнего элемента
 				if (!lastError && i < timeKeys.length - 1) {
 					noDataPeriods.push([
@@ -558,6 +634,7 @@ function updateECharts(data) {
 				workerData.push(null); // ECharts использует null для пропущенных данных
 			}
 			statusData.push(Number(log['status'] ? log['status'] : 0));
+			// Если статус 0 (ошибка), добавляем "Error" линию
 			if (Number(log['status']) == 0 && log['time'] != null) {
 				if (!lastError) {
 					noDataPeriods.push([
@@ -586,6 +663,7 @@ function updateECharts(data) {
 		const noDataPeriodsArea = findNoDataPeriods(workerData, statusData, timeKeys);
 
 		series.push({
+			// Настройки для одной серии (одного воркера)
 			name: worker.title,
 			type: 'line',
 			data: workerData,
@@ -605,6 +683,7 @@ function updateECharts(data) {
 		});
 	}
 
+	// Обновляем опции графика с новыми данными
 	const option = {
 		legend: {
 			data: Object.values(data.workers).map(w => w.title),
@@ -622,8 +701,13 @@ function updateECharts(data) {
 	monitorChart.setOption(option);
 }
 
+/**
+ * Запрашивает и отображает данные для конкретного монитора.
+ * @param {number} monitorId - ID монитора.
+ * @param {number|string} [period=1] - Период для отображения данных (в часах).
+ */
 function MonitorShowData(monitorId, period=1) {
-	clearTimeout(monitorShowTimeout);
+	clearTimeout(monitorShowTimeout); // Очищаем предыдущий таймаут
 	selectedMonitorId = monitorId;
 	wss.send('monitor_show_data',{'monitor_id':monitorId, 'period': period},(response)=>{
 		if (response.message == false) {
@@ -634,11 +718,15 @@ function MonitorShowData(monitorId, period=1) {
 			}
 		}
 	});
+	// Устанавливаем таймаут для автоматического обновления через 60 секунд
 	monitorShowTimeout = setTimeout(function() {
 		MonitorShowData(monitorId, period);
 	}, 60000);
 }
 
+/**
+ * Переключает вид на панель дашборда монитора.
+ */
 function showMonitorDashboard() {
 	const navButtons = document.querySelectorAll('button[data-target]');
 	const monitorList = document.getElementById('monitor-list');
@@ -662,6 +750,10 @@ function showMonitorDashboard() {
 
 }
 
+/**
+ * Управляет отображением панелей списка и дашборда для мобильных устройств.
+ * @param {boolean} [dashboard_active=false] - Флаг, указывающий, активен ли дашборд.
+ */
 function list_dashboard_mobile(dashboard_active=false) {
 	const navButtons = document.querySelectorAll('button[data-target]');
 	const monitorList = document.getElementById('monitor-list');
@@ -726,6 +818,7 @@ function list_dashboard_mobile(dashboard_active=false) {
 }
 
 $(document).ready(function() {
+	// Делегированный обработчик клика на заголовок монитора
 	$('body').delegate('.monitor-item>.monitor-title', 'click', function(){
 		Loading = '<div class="d-flex justify-content-center"><div class="spinner-border text-warning" role="status"><span class="visually-hidden">Loading...</span></div></div>';
 		$('div.monitor-dashboard').html(Loading);
@@ -735,10 +828,12 @@ $(document).ready(function() {
 		showMonitorDashboard();
 		document.querySelectorAll('body')[0].scrollIntoView();
 	});
+	// Обработчик изменения периода на графике
 	$('body').delegate('#chart-period', 'change', function() {
 		MonitorShowData(selectedMonitorId, $(this).val());
 	});
 
+	// Обработчик ввода в поле поиска с задержкой
 	$('#monitorSearch').on('input', function() {
 		clearTimeout(monitorSearchTimeout);
 		monitorSearchTimeout = setTimeout(function() {
