@@ -508,7 +508,8 @@ function updateECharts(data) {
 		let noDataPeriods = [];
 		let lastError = false;
 		// Собираем данные по времени
-		for (let time of timeKeys) {
+		for (let i = 0; i < timeKeys.length; i++) {
+			const time = timeKeys[i];
 			if (xAxisData.length < timeKeys.length) {
 				// Форматируем дату для отображения
 				const date = new Date(time * 1000);
@@ -517,21 +518,22 @@ function updateECharts(data) {
 			
 			const log_workers = data.logs_chart[time];
 			let log = log_workers[worker_id];
-
+			
 			if (!log) {
 				log = {
 					'status': 0,
 					'time': null
 				};
 			}
-
+			
 			if (log && log['time'] != null) {
 				workerData.push(log['time']);
 				if (log['status'] == 1) {
 					lastError = false;
 				}
 			} else {
-				if (!lastError) {
+				// Не выполнять для последнего элемента
+				if (!lastError && i < timeKeys.length - 1) {
 					noDataPeriods.push([
 						{
 							name: "No Data",
