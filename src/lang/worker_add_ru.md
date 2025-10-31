@@ -12,16 +12,16 @@
         image: "akeb/monitoring-worker:latest"
         restart: always
         environment:
-          - TZ=UTC
-          - WORKER_KEY_HASH=${WORKER_KEY_HASH}
-          - SERVER_HOST=${SERVER_HOST}
-          # - WORKER_THREADS=4
-          # - JOBS_GET_TIMEOUT=10
-          # - PROXY_HOST=
-          # - PROXY_TYPE=
-          # - LOOP_TIMEOUT=200000
-          # - RESPONSE_SEND_TIMEOUT=10
-          # - LOGS_WRITE_TIMEOUT=10
+          - TZ=${TZ:-UTC} # UTC
+          - SERVER_HOST=${SERVER_HOST} # Адрес сервера https://monitoring.example.com/
+          - WORKER_KEY_HASH=${WORKER_KEY_HASH} # Hash обработчика. Получить его нужно на сайте сервера
+          - WORKER_THREADS=${WORKER_THREADS:-10} # Кол-во потоков обработчика
+          - JOBS_GET_TIMEOUT=${JOBS_GET_TIMEOUT:-10} # Как часто запрашивать новые данные в сервера (в секундах)
+          - PROXY_HOST=${PROXY_HOST:-} # Proxy host
+          - PROXY_TYPE=${PROXY_TYPE:-} # Proxy type
+          - LOOP_TIMEOUT=${LOOP_TIMEOUT:-200000} # Задержка в цикле обработки (в миллисекундах)
+          - RESPONSE_SEND_TIMEOUT=${RESPONSE_SEND_TIMEOUT:-10} # Как часто отправлять данные на сервер (в секундах)
+          - LOGS_WRITE_TIMEOUT=${LOGS_WRITE_TIMEOUT:-10} # Как часто писать сообщения в логах (в секундах)
 
 Запустите docker compose: `docker compose up -d`
 ----------------------------------

@@ -6,9 +6,6 @@ services:
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      # MYSQL_DATABASE: ${MYSQL_DB_NAME}
-      # MYSQL_USER: ${MYSQL_USERNAME}
-      # MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     volumes:
       - ./mysql_data:/var/lib/mysql
     healthcheck:

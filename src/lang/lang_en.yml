@@ -15,6 +15,8 @@ Worker:
     LastActiveTime: "Last active time"
     CreateTime: "Create time"
     UpdateTime: "Update time"
+    ProtocolVersion: "Protocol version"
+    WorkerVersion: "Worker version"
     Actions: "Actions"
     Delete: "Delete"
   Delete:
@@ -35,6 +37,8 @@ Worker:
     LoopTimeout: "Loop timeout"
     ResponseSendTimeout: "Response send timeout"
     LogsWriteTimeout: "Logs write timeout"
+    ProtocolVersion: "Protocol version"
+    WorkerVersion: "Worker version"
     ChangeButton: "Update"
     CreateButton: "Create"
     NameLengthError: "Name length must be between 2 and 255 characters"

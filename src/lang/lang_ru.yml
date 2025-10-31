@@ -15,6 +15,8 @@ Worker:
     LastActiveTime: "Время последнего обращения"
     CreateTime: "Время создания"
     UpdateTime: "Время обновления"
+    ProtocolVersion: "Версия протокола"
+    WorkerVersion: "Версия обработчика"
     Actions: "Действия"
     Delete: "Удалить"
   Delete:
@@ -35,6 +37,8 @@ Worker:
     LoopTimeout: "Таймаут цикла"
     ResponseSendTimeout: "Таймаут отправки ответа"
     LogsWriteTimeout: "Таймаут записи логов"
+    ProtocolVersion: "Версия протокола"
+    WorkerVersion: "Версия обработчика"
     ChangeButton: "Изменить"
     CreateButton: "Создать"
     NameLengthError: "Название должно быть от 2 до 255 символов"

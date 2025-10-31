@@ -89,6 +89,22 @@ class T {
 	public static function Worker_Table_UpdateTime(...$argv): string { return ''; }
 
 	/**
+	 * Worker_Table_ProtocolVersion
+	 * 
+	 * @return string "Protocol version"
+	 * @return string "Версия протокола"
+	 */
+	public static function Worker_Table_ProtocolVersion(...$argv): string { return ''; }
+
+	/**
+	 * Worker_Table_WorkerVersion
+	 * 
+	 * @return string "Worker version"
+	 * @return string "Версия обработчика"
+	 */
+	public static function Worker_Table_WorkerVersion(...$argv): string { return ''; }
+
+	/**
 	 * Worker_Table_Actions
 	 * 
 	 * @return string "Actions"
@@ -231,6 +247,22 @@ class T {
 	 * @return string "Таймаут записи логов"
 	 */
 	public static function Worker_Edit_LogsWriteTimeout(...$argv): string { return ''; }
+
+	/**
+	 * Worker_Edit_ProtocolVersion
+	 * 
+	 * @return string "Protocol version"
+	 * @return string "Версия протокола"
+	 */
+	public static function Worker_Edit_ProtocolVersion(...$argv): string { return ''; }
+
+	/**
+	 * Worker_Edit_WorkerVersion
+	 * 
+	 * @return string "Worker version"
+	 * @return string "Версия обработчика"
+	 */
+	public static function Worker_Edit_WorkerVersion(...$argv): string { return ''; }
 
 	/**
 	 * Worker_Edit_ChangeButton

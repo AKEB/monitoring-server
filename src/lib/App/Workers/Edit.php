@@ -244,6 +244,10 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 						}
 						echo $this->template->html_input("create_date", $this->worker['create_date']??'', \T::Worker_Edit_CreateTime(), false, ['readonly' => true]);
 						echo $this->template->html_input("update_date", $this->worker['update_date']??'', \T::Worker_Edit_UpdateTime(), false, ['readonly' => true]);
+
+						echo $this->template->html_input("protocol_version", $this->worker['protocol_version']??'', \T::Worker_Edit_ProtocolVersion(), false, ['readonly' => true]);
+						echo $this->template->html_input("worker_version", $this->worker['worker_version']??'', \T::Worker_Edit_WorkerVersion(), false, ['readonly' => true]);
+
 						echo $this->template->html_input("last_active_date", $status, \T::Worker_Edit_LastActiveTime(), false, [
 							'readonly' => true,
 							'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6 '.$status_class,

@@ -97,8 +97,12 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 						<th scope="col" class="align-middle" data-priority="1">ID</th>
 						<th scope="col" class="align-middle" data-priority="2"><?=\T::Worker_Table_Title();?></th>
 						<th scope="col" class="align-middle" data-priority="4"><?=\T::Worker_Table_LastActiveTime();?></th>
-						<th scope="col" class="align-middle text-center" data-priority="6"><?=\T::Worker_Table_CreateTime();?></th>
-						<th scope="col" class="align-middle text-center" data-priority="5"><?=\T::Worker_Table_UpdateTime();?></th>
+
+						<th scope="col" class="align-middle text-center" data-priority="6"><?=\T::Worker_Table_ProtocolVersion();?></th>
+						<th scope="col" class="align-middle text-center" data-priority="5"><?=\T::Worker_Table_WorkerVersion();?></th>
+
+						<th scope="col" class="align-middle text-center" data-priority="8"><?=\T::Worker_Table_CreateTime();?></th>
+						<th scope="col" class="align-middle text-center" data-priority="7"><?=\T::Worker_Table_UpdateTime();?></th>
 						<th scope="col" class="align-middle text-center" data-priority="3"><?=\T::Worker_Table_Actions();?></th>
 					</tr>
 				</thead>
@@ -112,6 +116,8 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 						$params = [
 							'id' => intval($item['id'] ?? 0),
 							'title' => htmlspecialchars(trim($item['title'] ?? '')),
+							'protocol_version' => htmlspecialchars(trim($item['protocol_version'] ?? '')),
+							'worker_version' => htmlspecialchars(trim($item['worker_version'] ?? '')),
 							'last_active_time' => isset($item['last_active_time']) && $item['last_active_time'] > 0 ? date("Y-m-d H:i:s", $item['last_active_time']) : '',
 							'create_time' => isset($item['create_time']) && $item['create_time'] > 0 ? date("Y-m-d H:i:s", $item['create_time']) : '',
 							'update_time' => isset($item['update_time']) && $item['update_time'] > 0 ? date("Y-m-d H:i:s", $item['update_time']) : '',
@@ -142,6 +148,8 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 								?>
 							</td>
 							<td class="align-middle text-center"><?=($online ? '<span class="text-success">Online</span>: ':'<span class="text-danger">Offline</span>: ');?><?=$params['last_active_time'];?></td>
+							<td class="align-middle text-center"><?=$params['protocol_version'];?></td>
+							<td class="align-middle text-center"><?=$params['worker_version'];?></td>
 							<td class="align-middle text-center"><?=$params['create_time'];?></td>
 							<td class="align-middle text-center"><?=$params['update_time'];?></td>
 							<td class="align-middle text-center">
