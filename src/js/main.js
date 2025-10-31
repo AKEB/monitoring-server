@@ -321,9 +321,12 @@ function printMonitorData(data, period) {
 }
 
 function initECharts() {
+	const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
 	const chartDom = document.getElementById('MonitorEChart');
-	monitorChart = echarts.init(chartDom);
+	monitorChart = echarts.init(chartDom, isDark ? 'dark' : 'light');
 	const option = {
+		backgroundColor: 'rgba(0,0,0,0)',
+		darkMode: isDark,
 		tooltip: {
 			trigger: 'axis',
 			axisPointer: {
@@ -346,6 +349,13 @@ function initECharts() {
 			}
 		},
 		
+		 toolbox: {
+			show: true,
+			feature: {
+			saveAsImage: {}
+			}
+		},
+
 		grid: {
 			left: '3%',
 			right: '4%',
@@ -402,6 +412,27 @@ function initECharts() {
 	window.addEventListener('resize', function() {
 		monitorChart.resize();
 	});
+	window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+		const isDark = e.matches;
+		
+		// Сохраняем текущие опции графика
+		const currentOption = monitorChart.getOption();
+		console.log(currentOption);
+		// Меняем тему
+		monitorChart.setTheme(isDark ? 'dark' : 'light');
+		
+		// Обновляем опции с учетом новой темы
+		monitorChart.setOption({
+			backgroundColor: isDark ? 'rgba(0,0,0,1)' : 'rgba(255,255,255,0)',
+			darkMode: isDark
+		});
+		
+		// Применяем заново текущие данные
+		monitorChart.setOption(currentOption);
+		
+		// Перерисовываем график
+		monitorChart.resize();
+	});
 }
 
 
@@ -409,21 +440,22 @@ function updateECharts(data) {
 	let series = [];
 	let xAxisData = [];
 
-	// Функция для поиска периодов без данных
-	function findNoDataPeriods(dataArray, timeKeys) {
+	function findNoDataPeriods(dataArray, statusData, timeKeys) {
 		const periods = [];
 		let currentPeriod = null;
 		
 		for (let i = 0; i < dataArray.length; i++) {
-			if (dataArray[i] === null) {
+			if (dataArray[i] === null || statusData[i] === 0) {
 				if (currentPeriod === null) {
 					currentPeriod = { 
-						start: timeKeys[i === 0 ? i : i-1], 
-						startIndex: i === 0 ? i : i-1
+						start: timeKeys[i], 
+						startIndex: i,
+						status: statusData[i],
+						color: dataArray[i] === null ? 'rgba(255, 193, 7, 0.1)' : 'rgba(220, 53, 69, 0.1)',
 					};
 				}
-				currentPeriod.end = timeKeys[i === dataArray.length - 1 ? i : i+1];
-				currentPeriod.endIndex = i === dataArray.length - 1 ? i : i+1;
+				currentPeriod.end = timeKeys[i];
+				currentPeriod.endIndex = i;
 			} else {
 				if (currentPeriod !== null) {
 					// Добавляем период только если он длится более 1 точки
@@ -431,6 +463,9 @@ function updateECharts(data) {
 						periods.push([
 							{
 								xAxis: (new Date(currentPeriod.start * 1000)).toLocaleTimeString(),
+								itemStyle: {
+									color: currentPeriod.color
+								},
 							},
 							{
 								xAxis: (new Date(currentPeriod.end * 1000)).toLocaleTimeString(),
@@ -443,10 +478,13 @@ function updateECharts(data) {
 		}
 		
 		// Добавляем последний период, если он есть и достаточно длинный
-		if (currentPeriod !== null && currentPeriod.endIndex - currentPeriod.startIndex > 2) {
+		if (currentPeriod !== null && currentPeriod.endIndex - currentPeriod.startIndex > 0) {
 			periods.push([
 				{ 
 					xAxis: (new Date(currentPeriod.start * 1000)).toLocaleTimeString(),
+					itemStyle: {
+						color: currentPeriod.color
+					},
 				},
 				{ 
 					xAxis: (new Date(currentPeriod.end * 1000)).toLocaleTimeString(),
@@ -456,14 +494,19 @@ function updateECharts(data) {
 		
 		return periods;
 	}
+
 	// Получаем отсортированные ключи времени
 	const timeKeys = Object.keys(data.logs_chart).sort((a, b) => a - b);
+
+
 
 	// Подготовка данных для ECharts
 	for (let worker_id in data.workers) {
 		const worker = data.workers[worker_id];
 		let workerData = [];
-		
+		let statusData = [];
+		let noDataPeriods = [];
+		let lastError = false;
 		// Собираем данные по времени
 		for (let time of timeKeys) {
 			if (xAxisData.length < timeKeys.length) {
@@ -473,36 +516,90 @@ function updateECharts(data) {
 			}
 			
 			const log_workers = data.logs_chart[time];
-			const log = log_workers[worker_id];
-			
-			if (log != 'null') {
-				workerData.push(log);
+			let log = log_workers[worker_id];
+
+			if (!log) {
+				log = {
+					'status': 0,
+					'time': null
+				};
+			}
+
+			if (log && log['time'] != null) {
+				workerData.push(log['time']);
+				if (log['status'] == 1) {
+					lastError = false;
+				}
 			} else {
+				if (!lastError) {
+					noDataPeriods.push([
+						{
+							name: "No Data",
+							xAxis: (new Date(time * 1000)).toLocaleTimeString(),
+							y: '80%',
+							symbol: 'none',
+							lineStyle: {
+								color: "rgba(255, 193, 7, 0.5)",
+								type: "solid",
+								symbol: 'none',
+								width: 3,
+							}
+						},
+						{
+							xAxis: (new Date(time * 1000)).toLocaleTimeString(),
+							y: '15%',
+							symbol: 'none',
+						}
+					]);
+					lastError = true;
+				}
 				workerData.push(null); // ECharts использует null для пропущенных данных
 			}
+			statusData.push(Number(log['status'] ? log['status'] : 0));
+			if (Number(log['status']) == 0 && log['time'] != null) {
+				if (!lastError) {
+					noDataPeriods.push([
+						{
+							name: "Error",
+							xAxis: (new Date(time * 1000)).toLocaleTimeString(),
+							y: '80%',
+							symbol: 'none',
+							lineStyle: {
+								color: "rgba(220, 53, 69, 1)",
+								type: "solid",
+								symbol: 'none',
+								width: 3,
+							}
+						},
+						{
+							xAxis: (new Date(time * 1000)).toLocaleTimeString(),
+							y: '15%',
+							symbol: 'none',
+						}
+					]);
+					lastError = true;
+				}
+			}
 		}
-		// Находим периоды без данных для этого воркера
-		const noDataPeriods = findNoDataPeriods(workerData, timeKeys);
+		const noDataPeriodsArea = findNoDataPeriods(workerData, statusData, timeKeys);
+
 		series.push({
 			name: worker.title,
 			type: 'line',
 			data: workerData,
-			// smooth: 0.05,
 			symbol: 'circle',
 			symbolSize: 4,
-			// lineStyle: {
-			// 	width: 1
-			// },
 			connectNulls: false,
-			// emphasis: {
-			// 	focus: 'series'
-			// },
-			markArea: noDataPeriods.length > 0 ? {
+			markLine: noDataPeriods.length > 0 ? {
+				data: noDataPeriods,
+			} : undefined,
+			markArea: noDataPeriodsArea.length > 0 ? {
 				itemStyle: {
-					color: 'rgba(220, 53, 69, 0.5)'
+					color: 'rgba(220, 53, 69, 0.1)'
 				},
-				data: noDataPeriods
+				data: noDataPeriodsArea
 			} : undefined
+
 		});
 	}
 

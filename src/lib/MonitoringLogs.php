@@ -365,7 +365,10 @@ class MonitoringLogs extends \DB\MySQLObject {
 		$worker_data_for_charts = [];
 		foreach($jobs as $item) {
 			$workers_hash[$item['worker_id']] = $item;
-			$worker_data_for_charts[$item['worker_id']] = 'null';
+			$worker_data_for_charts[$item['worker_id']] = [
+				'status' => null,
+				'time' => null
+			];
 		}
 		if ($workers_hash) {
 			$workers = \Workers::data(['id' => array_keys($workers_hash)],'','`id`, `title`');
@@ -384,12 +387,12 @@ class MonitoringLogs extends \DB\MySQLObject {
 		$sql .= ' ORDER BY `interval_time` ASC';
 		$fields = '`worker_id`, `status`, ';
 		$fields .= 'FLOOR(`update_time` / '.intval($monitor['repeat_seconds']).') * '.intval($monitor['repeat_seconds']).' as `interval_time`,';
-		$fields .= '`total_time_us`, `status_code`, `status_text`, `cert_expire` ';
+		$fields .= '`total_time_us`, `status_code`, `response_error`, `cert_expire` ';
 		$logs = static::data(false, $sql, $fields);
 		$logs_hash = [];
 		$last_data = [];
 		foreach($logs as $item) {
-			$item['title'] = date("Y-m-d H:i:s",$item['interval_time']).' - '.$item['status_code'].' '.$item['status_text'];
+			$item['title'] = date("Y-m-d H:i:s",$item['interval_time']).' - '.$item['status_code'].' '.$item['response_error'];
 			$logs_hash[$item['interval_time']]['title'] = date("H:i:s",$item['interval_time']);
 			$logs_hash[$item['interval_time']][$item['worker_id']] = $item;
 			$last_data[$item['worker_id']] = $item;
@@ -413,11 +416,11 @@ class MonitoringLogs extends \DB\MySQLObject {
 			$sql .= sql_pholder(' AND `worker_id` IN (?@)', array_keys($workers_hash));
 		}
 		$sql .= sql_pholder(' AND `update_time` >= ? AND `update_time` <= ? ', time() - $period*60*60 - $interval, time());
-		$sql .= ' AND `status_code` <> 0';
-		$sql .= ' GROUP BY 1,2 ORDER BY 2 ASC';
+		// $sql .= ' AND `status_code` <> 0';
+		$sql .= ' ORDER BY 2 ASC';
 		$fields = '`worker_id`, ';
 		$fields .= 'FLOOR(`update_time` / '.intval($interval).') * '.intval($interval).' as `interval_time`,';
-		$fields .= 'MAX(`total_time_us`) as `total_time_us`';
+		$fields .= '`total_time_us`, `status`';
 		$logs = static::data(false, $sql, $fields);
 		$logs_hash = [];
 		for($i=time() - $period*60*60; $i<=time(); $i+=intval($interval)) {
@@ -425,7 +428,15 @@ class MonitoringLogs extends \DB\MySQLObject {
 			$logs_hash[$time] = $worker_data_for_charts;
 		}
 		foreach($logs as $item) {
-			$logs_hash[$item['interval_time']][$item['worker_id']] = ceil($item['total_time_us']/1000);
+			if (isset($logs_hash[$item['interval_time']][$item['worker_id']])) {
+				$logs_hash[$item['interval_time']][$item['worker_id']]['status'] = min($logs_hash[$item['interval_time']][$item['worker_id']]['status']??\MonitoringLogs::STATUS_GOOD, intval($item['status']));
+				$logs_hash[$item['interval_time']][$item['worker_id']]['time'] = max($logs_hash[$item['interval_time']][$item['worker_id']]['time'], ceil($item['total_time_us']/1000));
+			} else {
+				$logs_hash[$item['interval_time']][$item['worker_id']] = [
+					'status' => intval($item['status']),
+					'time' => ceil($item['total_time_us']/1000)
+				];
+			}
 		}
 		$return['logs_chart'] = $logs_hash;
 

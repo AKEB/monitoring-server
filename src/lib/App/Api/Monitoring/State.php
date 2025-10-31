@@ -118,8 +118,9 @@ class State extends \Routing_Parent implements \Routing_Interface {
 			'status' => $status,                                       // int DEFAULT 0,
 			'update_time' => $job_response['update_time'] ?? 0,        // int DEFAULT 0,
 			'status_code' => $job_response['response']['status_code'] ?? 0,        // int DEFAULT 0,
-			'status_text' => $job_response['response']['status_text'] ?? '',        // char(16) DEFAULT '',
-			// 'response_text' => $job_response['response']['response_text'] ?? '',      // char(64) DEFAULT '',
+
+			'response_error_num' => $job_response['response']['response_error_num'] ?? '',        // int DEFAULT 0,
+			'response_error' => $job_response['response']['response_error'] ?? '',        // char(255) DEFAULT '',
 
 			'redirect_count' => $job_response['response']['redirect_count'] ?? 0,
 			'total_time' => $job_response['response']['total_time'] ?? 0.0,
