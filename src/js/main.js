@@ -393,7 +393,8 @@ function initECharts() {
 			axisPointer: {
 				type: 'cross',
 				label: {
-					backgroundColor: '#0dcaf0'
+					backgroundColor: '#0dcaf0',
+					color: 'rgba(255,255,255,1)'
 				}
 			},
 			// Форматирование всплывающей подсказки
