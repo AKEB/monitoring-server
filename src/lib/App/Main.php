@@ -54,8 +54,6 @@ class Main extends \Routing_Parent implements \Routing_Interface {
 		<?php
 
 		// $user = \Sessions::currentUser();
-		// vardump($user['permissions']);
-		// vardump(\Monitors::getUserPermissions($user));
 
 		?>
 		<script nonce="<?=\CSP::nonceRandom();?>">

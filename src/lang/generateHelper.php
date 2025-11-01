@@ -56,7 +56,6 @@ $code = "<?php\n";
 $code .= "class T {\n";
 
 foreach($data as $k=>$v) {
-
 	$code .= "\t/**\n";
 	$code .= "\t * $k\n";
 	$code .= "\t * \n";
