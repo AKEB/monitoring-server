@@ -12,7 +12,6 @@ class Main extends \Routing_Parent implements \Routing_Interface {
 		$this->template = new \Template('Main page');
 		?>
 		<div class="row">
-
 			<div class="col-12 col-lg-8 col-xl-5 monitor-list" id="monitor-list">
 				<div class="row monitor-list-filter">
 					<div class="col">
@@ -38,9 +37,7 @@ class Main extends \Routing_Parent implements \Routing_Interface {
 					</div>
 				</div></div>
 			</div>
-
 			<div class="col-12 col-xl-7 monitor-dashboard" id="monitor-dashboard"></div>
-
 		</div>
 		<div class="d-lg-none fixed-bottom border-top p-2">
 			<nav class="navbar bg-dark fixed-bottom bg-body-tertiary">

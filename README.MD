@@ -114,6 +114,7 @@ services:
     image: mysql:latest
     restart: always
     environment:
+      TZ: ${TZ:-UTC}
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
     volumes:
       - ./mysql_data:/var/lib/mysql
@@ -128,6 +129,8 @@ services:
     container_name: "monitoring-memcached"
     image: memcached
     restart: always
+    environment:
+      TZ: ${TZ:-UTC}
     command:
       - --conn-limit=1024
       - --memory-limit=32

@@ -1,12 +1,12 @@
 #!/bin/bash
 
-LOG="/var/log/php/mngr_worker.log"
+LOG="/var/log/php/mngr_aggregate.log"
 PHP="php -d memory_limit=512M -d allow_url_fopen=true -d error_log=${LOG}"
 
 while [ 1 ] ;
 do
      # Сохраняем весь вывод скрипта
-    output=`${PHP} mngr_worker.php ${1}`
+    output=`${PHP} mngr_aggregate.php ${1}`
     status=$?
     if [ $status -eq 0 ]
     then

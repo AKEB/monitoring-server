@@ -10,20 +10,6 @@ class MonitoringLogs extends \DB\MySQLObject {
 	const STATE_SUCCESS = 1;
 	const STATE_ERROR = 2;
 
-	static public function getAvailabilityPercent(int $seconds=86400, ?int $monitor_id=null): array {
-		if (!$seconds) $seconds = 86400;
-		$fields = '`monitor_id`, ROUND((SUM(`status` = 1) / COUNT(*)) * 100, 2) as `availability_percent`';
-		if ($seconds <= 86400) {
-			$fields .= ', ROUND((SUM(`total_time_us`) / COUNT(*)), 1) as `avg_response_time`';
-		}
-		$sql = sql_pholder(' AND update_time >= ?', time() - intval($seconds));
-		if ($monitor_id) {
-			$sql .= sql_pholder(' AND monitor_id = ?', $monitor_id);
-		}
-		$sql .= 'GROUP BY 1 ORDER BY NULL';
-		return static::data(false, $sql, $fields);
-	}
-
 	static private function getDataForParents(&$data, &$parent):bool {
 		$children_has_error = [];
 		$children_has_warning = [];
@@ -237,7 +223,7 @@ class MonitoringLogs extends \DB\MySQLObject {
 		if ($cache->isValid()) {
 			$availability = $cache->get();
 		} else {
-			$availability = static::getAvailabilityPercent();
+			$availability = \MonitoringAvailabilityPercent::getAvailabilityPercent();
 			if ($availability) {
 				$availability = get_hash($availability, 'monitor_id', 'availability_percent');
 			}
@@ -473,18 +459,25 @@ class MonitoringLogs extends \DB\MySQLObject {
 		$return['logs_chart'] = $logs_hash;
 
 		$start_time = microtime(true);
-		$uptime_30 = static::getAvailabilityPercent(30*86400, $monitor_id);
-		$return['mysql_time']['MonitoringLogs::getAvailabilityPercent_30'] = round(microtime(true) - $start_time,3);
+		$uptime_30 = \MonitoringAvailabilityPercent::getAvailabilityPercent(30*86400, $monitor_id);
+		$return['mysql_time']['MonitoringAvailabilityPercent::getAvailabilityPercent_30'] = round(microtime(true) - $start_time,3);
 
 		$start_time = microtime(true);
-		$uptime_1 = static::getAvailabilityPercent(86400, $monitor_id);
-		$return['mysql_time']['MonitoringLogs::getAvailabilityPercent_1'] = round(microtime(true) - $start_time,3);
+		$uptime_1 = \MonitoringAvailabilityPercent::getAvailabilityPercent(86400, $monitor_id);
+		$return['mysql_time']['MonitoringAvailabilityPercent::getAvailabilityPercent_1'] = round(microtime(true) - $start_time,3);
 
 		if ($uptime_1 && isset($uptime_1[0]) && $uptime_1[0]['avg_response_time']) {
-			$return['avg_response_time_1d'] = ceil($uptime_1[0]['avg_response_time'] / 1000).' ms';
+			$return['avg_response_time_1d'] = ceil($uptime_1[0]['avg_response_time']).' ms';
 		} else {
 			$return['avg_response_time_1d'] = '';
 		}
+
+		if ($uptime_30 && isset($uptime_30[0]) && $uptime_30[0]['avg_response_time']) {
+			$return['avg_response_time_30d'] = ceil($uptime_30[0]['avg_response_time']).' ms';
+		} else {
+			$return['avg_response_time_30d'] = '';
+		}
+
 		$uptime_30 = $uptime_30 && $uptime_30[0] ? $uptime_30[0]['availability_percent']??'' : '';
 		$uptime_1 = $uptime_1 && $uptime_1[0] ? $uptime_1[0]['availability_percent']??'' : '';
 		if ($uptime_30 >=100) $uptime_30 = 100;

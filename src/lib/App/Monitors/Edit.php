@@ -79,6 +79,10 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					$data['timeout'] = trim($data['timeout']);
 					$params['timeout'] = intval($data['timeout']);
 				}
+				if (isset($data['max_redirects'])) {
+					$data['max_redirects'] = trim($data['max_redirects']);
+					$params['max_redirects'] = intval($data['max_redirects']);
+				}
 				if (isset($data['repeat_seconds'])) {
 					$data['repeat_seconds'] = trim($data['repeat_seconds']);
 					$params['repeat_seconds'] = intval($data['repeat_seconds']);
@@ -323,6 +327,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 			$this->monitor['type'] = 0;
 			$this->monitor['method'] = 'GET';
 			$this->monitor['timeout'] = 48;
+			$this->monitor['max_redirects'] = 10;
 			$this->monitor['repeat_seconds'] = 60;
 			$this->monitor['ssl_verify'] = 1;
 			$this->monitor['ssl_verify_host'] = 1;
@@ -445,6 +450,12 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 						'readonly' => !($this->access_hash[$this->monitor['id']]['access'][WRITE]??$this->can_create),
 					]);
 					echo $this->template->html_input("repeat_seconds", $this->monitor['repeat_seconds']??0, \T::Monitor_Edit_RepeatSeconds(), false, [
+						'type' => 'number',
+						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_CURL,
+						'readonly' => !($this->access_hash[$this->monitor['id']]['access'][WRITE]??$this->can_create),
+					]);
+					echo $this->template->html_input("max_redirects", $this->monitor['max_redirects']??0, \T::Monitor_Edit_MaxRedirects(), false, [
 						'type' => 'number',
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
 						'global-class' => 'type-dependence type-'.\Monitors::TYPE_CURL,

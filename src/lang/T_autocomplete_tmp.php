@@ -553,6 +553,14 @@ class T {
 	public static function Monitor_Edit_Timeout(...$argv): string { return ''; }
 
 	/**
+	 * Monitor_Edit_MaxRedirects
+	 * 
+	 * @return string "Max redirects"
+	 * @return string "Максимум редиректов"
+	 */
+	public static function Monitor_Edit_MaxRedirects(...$argv): string { return ''; }
+
+	/**
 	 * Monitor_Edit_RepeatSeconds
 	 * 
 	 * @return string "Repeat seconds"

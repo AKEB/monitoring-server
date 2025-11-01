@@ -1,4 +1,3 @@
 #!/bin/bash
 
-nohup ./mngr_worker.sh 1 &
-
+nohup ./mngr_aggregate.sh 1 &

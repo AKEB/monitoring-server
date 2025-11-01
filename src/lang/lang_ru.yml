@@ -82,6 +82,7 @@ Monitor:
     Url: "Ссылка"
     Method: "Метод запроса"
     Timeout: "Таймаут запроса в секундах"
+    MaxRedirects: "Максимум редиректов"
     RepeatSeconds: "Частота опроса в секундах"
     SSLVerify: "SSL verify"
     SSLVerifyHost: "SSL verify host"

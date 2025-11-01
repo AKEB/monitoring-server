@@ -82,6 +82,7 @@ Monitor:
     Url: "URL"
     Method: "Method"
     Timeout: "Request timeout"
+    MaxRedirects: "Max redirects"
     RepeatSeconds: "Repeat seconds"
     SSLVerify: "SSL verify"
     SSLVerifyHost: "SSL verify host"
