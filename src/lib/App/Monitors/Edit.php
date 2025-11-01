@@ -514,7 +514,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 
 			function monitor_type_select() {
 				const selected_type = $('#type').val();
-				console.log(selected_type);
+				// console.log(selected_type);
 				$('.type-dependence').each(function(){
 					$(this).hide();
 				});

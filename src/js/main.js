@@ -128,7 +128,7 @@ function MonitorsUpdate(count=25) {
  */
 function filterAndHideMonitors() {
 	searchText = document.getElementById('monitorSearch').value;
-	console.log('filterAndHideMonitors', searchText);
+	// console.log('filterAndHideMonitors', searchText);
 	const allMonitors = document.querySelectorAll('.monitor-item, .monitor-folder');
 	let hasResults = false;
 
@@ -487,7 +487,7 @@ function initECharts() {
 		
 		// Сохраняем текущие опции графика
 		const currentOption = monitorChart.getOption();
-		console.log(currentOption);
+		// console.log(currentOption);
 		// Меняем тему
 		monitorChart.setTheme(isDark ? 'dark' : 'light');
 		
