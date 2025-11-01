@@ -3,7 +3,7 @@ services:
   mysql:
     container_name: monitoring-mysql
     image: mysql:latest
-    restart: unless-stopped
+    restart: always
     environment:
       TZ: ${TZ:-UTC}
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
@@ -18,7 +18,8 @@ services:
   
   memcached:
     container_name: "monitoring-memcached"
-    image: memcached
+    image: memcached:latest
+    restart: always
     environment:
       TZ: ${TZ:-UTC}
     command:
@@ -28,9 +29,9 @@ services:
     
   server:
     container_name: "monitoring-server"
-    image: "akeb/monitoring:local"
-    restart: unless-stopped
     build: .
+    image: "akeb/monitoring:local"
+    restart: always
     env_file:
       - ./.env
     volumes:

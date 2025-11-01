@@ -1,7 +1,8 @@
 services:
   server:
     environment:
-      - DEVELOPMENT=true
+      DEVELOPMENT: true
+      APP_DEBUG: true
 
   phpmyadmin:
     container_name: phpmyadmin

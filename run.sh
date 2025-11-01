@@ -21,7 +21,7 @@ build() {
 
 start() {
 	echo "Starting..."
-	rm -rf src/vendor/ src/composer.lock
+	# rm -rf src/vendor/ src/composer.lock
 	if [ "$build" = "true" ]; then
 		run_cmd "up -d --build" 2>/dev/null
 	else
@@ -34,7 +34,7 @@ serve() {
 	# Регистрируем обработчики
 	trap stop SIGINT SIGTERM
 	
-	rm -rf src/vendor/ src/composer.lock
+	# rm -rf src/vendor/ src/composer.lock
 	if [ "$build" = "true" ]; then
 		run_cmd "up --build" 2>/dev/null
 	else
