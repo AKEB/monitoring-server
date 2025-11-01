@@ -19,7 +19,7 @@ class Monitors extends \DB\MySQLObject implements \PermissionSubject_Interface {
 	static public function subject_hash(): array {
 		$data_hash = [];
 		foreach(static::permissions_subject_hash() as $subject_id=>$permissionTitle) {
-			if (!\Sessions::checkPermission(static::PERMISSION_ACCESS, $subject_id, ACCESS_WRITE)) {
+			if (!\Sessions::checkPermission(\Monitors::PERMISSION_ACCESS, $subject_id, ACCESS_WRITE)) {
 				continue;
 			}
 			$data_hash[$subject_id] = $permissionTitle;
@@ -60,8 +60,6 @@ class Monitors extends \DB\MySQLObject implements \PermissionSubject_Interface {
 		return $return;
 	}
 
-
-
 	static private function setAccessForChild(&$data) {
 		// vardump($data);
 		foreach($data as $k=>$v) {
@@ -91,35 +89,58 @@ class Monitors extends \DB\MySQLObject implements \PermissionSubject_Interface {
 		}
 	}
 
-	static public function getMonitorsAccess() {
-		if (!static::$monitorsForAccess) {
+	static private function getMonitorsAccess(?array $user=null) {
+		if (!isset($user) || !$user) {
+			$user = \Sessions::currentUser();
+		}
+
+		if (!isset(static::$monitorsForAccess[$user['id']]) || !static::$monitorsForAccess[$user['id']]) {
 			$data = \Monitors::data(false,' ORDER BY NULL ', '`id`, `parent_id`, `type`, `title`');
 			foreach($data as $item) {
-				if (!isset(static::$monitorsForAccess[$item['id']])) {
-					static::$monitorsForAccess[$item['id']] = [];
-					static::$monitorsForAccess[$item['id']]['children'] = [];
+				if (!isset(static::$monitorsForAccess[$user['id']][$item['id']])) {
+					static::$monitorsForAccess[$user['id']][$item['id']] = [];
+					static::$monitorsForAccess[$user['id']][$item['id']]['children'] = [];
 				}
-				static::$monitorsForAccess[$item['id']]['id'] = $item['id'];
-				static::$monitorsForAccess[$item['id']]['parent_id'] = $item['parent_id'];
-				static::$monitorsForAccess[$item['id']]['type'] = $item['type'];
-				static::$monitorsForAccess[$item['id']]['title'] = $item['title'];
-				static::$monitorsForAccess[$item['id']]['access'] = [
-					READ => \Sessions::checkPermission(\Monitors::PERMISSION_ACCESS, $item['id'], READ),
-					WRITE => \Sessions::checkPermission(\Monitors::PERMISSION_ACCESS, $item['id'], WRITE),
-					DELETE => \Sessions::checkPermission(\Monitors::PERMISSION_ACCESS, $item['id'], DELETE),
-					ACCESS_READ => \Sessions::checkPermission(\Monitors::PERMISSION_ACCESS, $item['id'], ACCESS_READ),
-					ACCESS_WRITE => \Sessions::checkPermission(\Monitors::PERMISSION_ACCESS, $item['id'], ACCESS_WRITE),
-					ACCESS_CHANGE => \Sessions::checkPermission(\Monitors::PERMISSION_ACCESS, $item['id'], ACCESS_CHANGE),
+				static::$monitorsForAccess[$user['id']][$item['id']]['id'] = $item['id'];
+				static::$monitorsForAccess[$user['id']][$item['id']]['parent_id'] = $item['parent_id'];
+				static::$monitorsForAccess[$user['id']][$item['id']]['type'] = $item['type'];
+				static::$monitorsForAccess[$user['id']][$item['id']]['title'] = $item['title'];
+				static::$monitorsForAccess[$user['id']][$item['id']]['access'] = [
+					READ => \Sessions::checkPermission(\Monitors::PERMISSION_ACCESS, $item['id'], READ, $user),
+					WRITE => \Sessions::checkPermission(\Monitors::PERMISSION_ACCESS, $item['id'], WRITE, $user),
+					DELETE => \Sessions::checkPermission(\Monitors::PERMISSION_ACCESS, $item['id'], DELETE, $user),
+					ACCESS_READ => \Sessions::checkPermission(\Monitors::PERMISSION_ACCESS, $item['id'], ACCESS_READ, $user),
+					ACCESS_WRITE => \Sessions::checkPermission(\Monitors::PERMISSION_ACCESS, $item['id'], ACCESS_WRITE, $user),
+					ACCESS_CHANGE => \Sessions::checkPermission(\Monitors::PERMISSION_ACCESS, $item['id'], ACCESS_CHANGE, $user),
 				];
-				if (!isset(static::$monitorsForAccess[$item['parent_id']]['children'])) {
-					static::$monitorsForAccess[$item['parent_id']]['children'] = [];
+				if (!isset(static::$monitorsForAccess[$user['id']][$item['parent_id']]['children'])) {
+					static::$monitorsForAccess[$user['id']][$item['parent_id']]['children'] = [];
 				}
-				static::$monitorsForAccess[$item['parent_id']]['children'][$item['id']] = &static::$monitorsForAccess[$item['id']];
+				static::$monitorsForAccess[$user['id']][$item['parent_id']]['children'][$item['id']] = &static::$monitorsForAccess[$user['id']][$item['id']];
 			}
-			static::setAccessForChild(static::$monitorsForAccess);
-			static::setAccessForParent(static::$monitorsForAccess, 0);
+			static::setAccessForChild(static::$monitorsForAccess[$user['id']]);
+			// static::setAccessForParent(static::$monitorsForAccess[$user['id']], 0);
 		}
-		return static::$monitorsForAccess;
+		return static::$monitorsForAccess[$user['id']];
+	}
+
+	static public function getUserPermissions(array $user): array {
+		$permissions = [];
+		$access_hash = \Monitors::getMonitorsAccess($user);
+		foreach(static::permissions_subject_hash() as $subject_id=>$_) {
+			$permissions[\Monitors::PERMISSION_ACCESS][$subject_id] = [
+				READ => isset($access_hash[$subject_id]['access'][READ]) && $access_hash[$subject_id]['access'][READ] ? 1 : 0,
+				WRITE => isset($access_hash[$subject_id]['access'][WRITE]) && $access_hash[$subject_id]['access'][WRITE] ? 1 : 0,
+				DELETE => isset($access_hash[$subject_id]['access'][DELETE]) && $access_hash[$subject_id]['access'][DELETE] ? 1 : 0,
+				ACCESS_READ => isset($access_hash[$subject_id]['access'][ACCESS_READ]) && $access_hash[$subject_id]['access'][ACCESS_READ] ? 1 : 0,
+				ACCESS_WRITE => isset($access_hash[$subject_id]['access'][ACCESS_WRITE]) && $access_hash[$subject_id]['access'][ACCESS_WRITE] ? 1 : 0,
+				ACCESS_CHANGE => isset($access_hash[$subject_id]['access'][ACCESS_CHANGE]) && $access_hash[$subject_id]['access'][ACCESS_CHANGE] ? 1 : 0,
+			];
+			if (array_sum($permissions[\Monitors::PERMISSION_ACCESS][$subject_id]) == 0) {
+				unset($permissions[\Monitors::PERMISSION_ACCESS][$subject_id]);
+			}
+		}
+		return $permissions;
 	}
 
 	static public function HTTP_methods(): array {
@@ -140,13 +161,14 @@ class Monitors extends \DB\MySQLObject implements \PermissionSubject_Interface {
 		$data = static::data();
 		$permissions_hash = [];
 		foreach($data as $item) {
-			$permissions_hash[$item['id']] = $item['title'];
+			$permissions_hash[$item['id']] = ($item['type'] == static::TYPE_FOLDER ? \T::Monitor_Permissions_Folder().': ' : \T::Monitor_Permissions_Monitor().': ') .$item['title'];
 		}
 		return $permissions_hash;
 	}
+
 	static public function permissions_hash(): array {
 		return [
-			static::PERMISSION_ACCESS => \T::Monitor_Permissions_Monitor(),
+			static::PERMISSION_ACCESS => \T::Monitor_Permissions_Access(),
 		];
 	}
 
@@ -166,10 +188,9 @@ class Monitors extends \DB\MySQLObject implements \PermissionSubject_Interface {
 			}
 			$folders_hash[$item['parent_id']]['children'][$item['id']] = &$folders_hash[$item['id']];
 		}
-		$access_hash = \Monitors::getMonitorsAccess();
 		foreach($folders_hash as $k=>$v) {
 			if ($k == 0) continue;
-			if (!($access_hash[$k]['access'][READ]??false)) {
+			if (!\Sessions::checkPermission(\Monitors::PERMISSION_ACCESS, $k, READ)) {
 				unset($folders_hash[$v['parent_id']]['children'][$v['id']]);
 				$folders_hash[$k] = [];
 				unset($folders_hash[$k]);

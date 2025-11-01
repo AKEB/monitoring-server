@@ -9,6 +9,10 @@ class Main extends \Routing_Parent implements \Routing_Interface {
 	public function Run(?int $monitor_id=null) {
 		$this->check_auth();
 		$this->monitor_id = intval($monitor_id);
+		if ($this->monitor_id && !\Sessions::checkPermission(\Monitors::PERMISSION_ACCESS, $this->monitor_id, READ)) {
+			e403();
+		}
+
 		$this->template = new \Template('Main page');
 		?>
 		<div class="row">
@@ -47,6 +51,13 @@ class Main extends \Routing_Parent implements \Routing_Interface {
 				</div>
 			</nav>
 		</div>
+		<?php
+
+		// $user = \Sessions::currentUser();
+		// vardump($user['permissions']);
+		// vardump(\Monitors::getUserPermissions($user));
+
+		?>
 		<script nonce="<?=\CSP::nonceRandom();?>">
 			$(document).ready(function() {
 				$('footer').addClass('footer-main');

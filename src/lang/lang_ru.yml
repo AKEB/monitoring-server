@@ -52,8 +52,10 @@ Monitor:
   Menu: "Мониторы"
   PageTitle: "Мониторы"
   Permissions:
-    Monitor: "Доступ"
+    Access: "Доступ"
     CreateMonitor: "Создание монитора"
+    Folder: "Папка"
+    Monitor: "Монитор"
   Table:
     Title: "Название"
     Status: "Статус"

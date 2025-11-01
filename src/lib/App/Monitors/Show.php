@@ -11,7 +11,6 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 	private int $parent_id = 0;
 	private array $monitors = [];
 	private array $breadcrumb = [];
-	private array $access_hash = [];
 
 	public function Run($action='list', $monitor_id=null, $parent_id=null) {
 		$this->check_auth();
@@ -43,9 +42,7 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 		$this->can_delete_global = \Sessions::checkPermission(\Monitors::PERMISSION_ACCESS, -1, DELETE);
 		$this->can_create = \Sessions::checkPermission(\Monitors::PERMISSION_CREATE, 0, WRITE);
 
-		$this->access_hash = \Monitors::getMonitorsAccess();
-
-		if ($this->parent_id && (!isset($this->access_hash[$this->parent_id]['access'][READ]) || !$this->access_hash[$this->parent_id]['access'][READ])) {
+		if ($this->parent_id && !\Sessions::checkPermission(\Monitors::PERMISSION_ACCESS, $this->parent_id, READ)) {
 			e403();
 		}
 
@@ -175,7 +172,7 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 		}
 		foreach($monitors as $item) {
 			if ($item['parent_id'] != $this->parent_id) continue;
-			if (!$this->access_hash[$item['id']]['access'][READ]) continue;
+			if (!\Sessions::checkPermission(\Monitors::PERMISSION_ACCESS, $item['id'], READ)) continue;
 			$this->monitors[$item['id']] = $item;
 		}
 	}
@@ -268,10 +265,10 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 							'update_time' => isset($item['update_time']) && $item['update_time'] > 0 ? date("Y-m-d H:i:s", $item['update_time']) : '',
 						];
 
-						$can_read = $this->access_hash[$params['id']]['access'][READ];
+						$can_read = \Sessions::checkPermission(\Monitors::PERMISSION_ACCESS, $params['id'], READ);
 						if (!$can_read) continue;
-						$can_write = $this->access_hash[$params['id']]['access'][WRITE];
-						$can_delete = $this->access_hash[$params['id']]['access'][DELETE];
+						$can_write = \Sessions::checkPermission(\Monitors::PERMISSION_ACCESS, $params['id'], WRITE);
+						$can_delete = \Sessions::checkPermission(\Monitors::PERMISSION_ACCESS, $params['id'], DELETE);
 						?>
 						<tr>
 							<th scope="row" class="align-middle"><?=$params['id'];?></th>
@@ -302,12 +299,14 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 							<td class="align-middle text-center"><?=$params['create_time'];?></td>
 							<td class="align-middle text-center"><?=$params['update_time'];?></td>
 							<td class="align-middle text-center">
-								<?php if ($can_write || $can_read) {
-									?><i class="bi bi-pencil-square fs-4 text-info editActionButton pointer" title="<?=\T::Monitor_Table_Edit();?>" data-object-id="<?=$params['id'];?>"></i><?php
+								<?php if ($can_write) {
+									?><i class="bi bi-pencil-square me-2 fs-4 text-info editActionButton pointer" title="<?=\T::Monitor_Table_Edit();?>" data-object-id="<?=$params['id'];?>"></i><?php
+								} elseif ($can_read) {
+									?><i class="bi bi-eye fs-4 me-2 text-info editActionButton pointer" title="<?=\T::Monitor_Table_Edit();?>" data-object-id="<?=$params['id'];?>"></i><?php
 								} else {
-									?><i class="bi bi-pencil-square fs-4 text-secondary" title="<?=\T::Monitor_Table_Edit();?>"></i><?php
+									?><i class="bi bi-pencil-square me-2 fs-4 text-secondary" title="<?=\T::Monitor_Table_Edit();?>"></i><?php
 								} ?>
-								<i class="bi bi-copy fs-4 text-info pointer copyActionButton" title="<?=\T::Monitor_Table_Copy();?>" data-object-id="<?=$params['id'];?>"></i>
+								<i class="bi bi-copy fs-4 me-2 text-info pointer copyActionButton" title="<?=\T::Monitor_Table_Copy();?>" data-object-id="<?=$params['id'];?>"></i>
 
 								<?php if ($this->can_delete_global) {?>
 									<?php

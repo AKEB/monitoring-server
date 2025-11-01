@@ -203,7 +203,6 @@ class MonitoringLogs extends \DB\MySQLObject {
 
 		$data = \Monitors::data(false,' ORDER BY title ASC ');
 
-		$access_hash = \Monitors::getMonitorsAccess();
 		$monitors = [];
 		foreach($data as $item) {
 			$monitors[$item['id']] = $item;
@@ -240,7 +239,7 @@ class MonitoringLogs extends \DB\MySQLObject {
 			if (!isset($monitor['type'])) continue;
 			if ($monitor['status'] == \Monitors::STATUS_DISABLED) continue;
 			if ($monitor['type'] != \Monitors::TYPE_FOLDER) {
-				if (!$access_hash[$monitor_id]['access'][READ]) {
+				if (!\Sessions::checkPermission(\Monitors::PERMISSION_ACCESS, $monitor_id, READ)) {
 					unset($monitors[$monitor_id]);
 					continue;
 				}
@@ -345,12 +344,7 @@ class MonitoringLogs extends \DB\MySQLObject {
 		if (!$monitor_id) return $return;
 		$return['start_work_time'] = microtime(true);
 
-		$start_time = microtime(true);
-		$access_hash = \Monitors::getMonitorsAccess();
-		$return['mysql_time']['Monitors::getMonitorsAccess'] = round(microtime(true) - $start_time,3);
-
-		if (!isset($access_hash[$monitor_id]) || !$access_hash[$monitor_id]) return $return;
-		if (!$access_hash[$monitor_id]['access'][READ]) return $return;
+		if (!\Sessions::checkPermission(\Monitors::PERMISSION_ACCESS, $monitor_id, READ)) return $return;
 
 		$start_time = microtime(true);
 		$monitor = \Monitors::get(['id' => $monitor_id]);

@@ -38,4 +38,8 @@ class Workers extends \DB\MySQLObject implements \PermissionSubject_Interface {
 		];
 	}
 
+	static public function getUserPermissions(array $user): array {
+		return [];
+	}
+
 }

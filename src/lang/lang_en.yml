@@ -52,8 +52,10 @@ Monitor:
   Menu: "Monitors"
   PageTitle: "Monitors"
   Permissions:
-    Monitor: "Access"
+    Access: "Access"
     CreateMonitor: "Create monitor"
+    Folder: "Folder"
+    Monitor: "Monitor"
   Table:
     Title: "Title"
     Status: "Status"

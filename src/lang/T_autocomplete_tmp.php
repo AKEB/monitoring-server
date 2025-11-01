@@ -337,12 +337,12 @@ class T {
 	public static function Monitor_PageTitle(...$argv): string { return ''; }
 
 	/**
-	 * Monitor_Permissions_Monitor
+	 * Monitor_Permissions_Access
 	 * 
 	 * @return string "Access"
 	 * @return string "Доступ"
 	 */
-	public static function Monitor_Permissions_Monitor(...$argv): string { return ''; }
+	public static function Monitor_Permissions_Access(...$argv): string { return ''; }
 
 	/**
 	 * Monitor_Permissions_CreateMonitor
@@ -351,6 +351,22 @@ class T {
 	 * @return string "Создание монитора"
 	 */
 	public static function Monitor_Permissions_CreateMonitor(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Permissions_Folder
+	 * 
+	 * @return string "Folder"
+	 * @return string "Папка"
+	 */
+	public static function Monitor_Permissions_Folder(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Permissions_Monitor
+	 * 
+	 * @return string "Monitor"
+	 * @return string "Монитор"
+	 */
+	public static function Monitor_Permissions_Monitor(...$argv): string { return ''; }
 
 	/**
 	 * Monitor_Table_Title

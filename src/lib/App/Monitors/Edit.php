@@ -7,8 +7,8 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 	private array $breadcrumb = [];
 	private array $monitor = [];
 	private bool $can_read = false;
+	private bool $can_write = false;
 	private bool $can_create = false;
-	private array $access_hash = [];
 	private array $workers_hash = [];
 
 	public function Run(int $monitor_id=0, int $parent_id=0) {
@@ -130,7 +130,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 			$update_jobs = [];
 			if (!isset($data['workers'])) $data['workers'] = [];
 			if (isset($params['id']) && $params['id']) {
-				if (!$this->access_hash[$params['id']]['access'][WRITE]) {
+				if (!$this->can_write) {
 					$this->error = \T::Monitor_Edit_PermissionDenied();
 					break;
 				}
@@ -282,15 +282,15 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 
 	private function check_permissions() {
 		if ($this->monitor_id) {
-			$this->access_hash = \Monitors::getMonitorsAccess();
 			$this->monitor = \Monitors::get(['id' => $this->monitor_id]);
 			if (!$this->monitor) {
 				common_redirect('/monitors/'.$this->parent_id.'/');
 			}
-			$this->can_read = $this->access_hash[$this->monitor_id]['access'][READ];
+			$this->can_read = \Sessions::checkPermission(\Monitors::PERMISSION_ACCESS, $this->monitor_id, READ);
 			if (!$this->can_read) {
 				e403();
 			}
+			$this->can_write = \Sessions::checkPermission(\Monitors::PERMISSION_ACCESS, $this->monitor_id, WRITE);
 		} else {
 			$this->can_create = \Sessions::checkPermission(\Monitors::PERMISSION_CREATE, 0, WRITE);
 			if (!$this->can_create) {
@@ -416,85 +416,85 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					<?php
 					echo $this->template->html_input("title", $this->monitor['title']??'', \T::Monitor_Edit_Title(), true, [
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
-						'readonly' => !($this->access_hash[$this->monitor['id']]['access'][WRITE]??$this->can_create),
+						'readonly' => !($this->can_write || $this->can_create),
 					]);
 					echo $this->template?->html_select('type', \Monitors::type_hash(), $this->monitor['type']??0, \T::Monitor_Edit_Type(), true,[
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
-						'readonly' => !($this->access_hash[$this->monitor['id']]['access'][WRITE]??$this->can_create),
+						'readonly' => !($this->can_write || $this->can_create),
 					]);
 					echo $this->template->html_switch("status", intval($this->monitor['status']??0), \T::Monitor_Edit_Status(), false,[
-						'readonly' => !($this->access_hash[$this->monitor['id']]['access'][WRITE]??$this->can_create),
+						'readonly' => !($this->can_write || $this->can_create),
 					]);
 
 					echo $this->template->html_input("url", $this->monitor['url']??'', \T::Monitor_Edit_Url(), false, [
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
 						'global-class' => 'type-dependence type-'.\Monitors::TYPE_CURL,
-						'readonly' => !($this->access_hash[$this->monitor['id']]['access'][WRITE]??$this->can_create),
+						'readonly' => !($this->can_write || $this->can_create),
 					]);
 
 					echo $this->template->html_params("workers[]", $this->workers_hash, $this->monitor['workers']??[], \T::Monitor_Edit_Workers(),false,[
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
 						'global-class' => 'type-dependence type-'.\Monitors::TYPE_CURL,
-						'readonly' => !($this->access_hash[$this->monitor['id']]['access'][WRITE]??$this->can_create),
+						'readonly' => !($this->can_write || $this->can_create),
 					]);
 
 					echo $this->template?->html_select('method', \Monitors::HTTP_methods(), $this->monitor['method']??'', \T::Monitor_Edit_Method(), false,[
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
 						'global-class' => 'type-dependence type-'.\Monitors::TYPE_CURL,
-						'readonly' => !($this->access_hash[$this->monitor['id']]['access'][WRITE]??$this->can_create),
+						'readonly' => !($this->can_write || $this->can_create),
 					]);
 					echo $this->template->html_input("timeout", $this->monitor['timeout']??0, \T::Monitor_Edit_Timeout(), false, [
 						'type' => 'number',
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
 						'global-class' => 'type-dependence type-'.\Monitors::TYPE_CURL,
-						'readonly' => !($this->access_hash[$this->monitor['id']]['access'][WRITE]??$this->can_create),
+						'readonly' => !($this->can_write || $this->can_create),
 					]);
 					echo $this->template->html_input("repeat_seconds", $this->monitor['repeat_seconds']??0, \T::Monitor_Edit_RepeatSeconds(), false, [
 						'type' => 'number',
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
 						'global-class' => 'type-dependence type-'.\Monitors::TYPE_CURL,
-						'readonly' => !($this->access_hash[$this->monitor['id']]['access'][WRITE]??$this->can_create),
+						'readonly' => !($this->can_write || $this->can_create),
 					]);
 					echo $this->template->html_input("max_redirects", $this->monitor['max_redirects']??0, \T::Monitor_Edit_MaxRedirects(), false, [
 						'type' => 'number',
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
 						'global-class' => 'type-dependence type-'.\Monitors::TYPE_CURL,
-						'readonly' => !($this->access_hash[$this->monitor['id']]['access'][WRITE]??$this->can_create),
+						'readonly' => !($this->can_write || $this->can_create),
 					]);
 					echo $this->template?->html_select('response_code[]', \Monitors::response_code_hash(), $this->monitor['response_code']??[], \T::Monitor_Edit_ResponseCode(), false,[
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
 						'multiple' => 'multiple',
 						'global-class' => 'type-dependence type-'.\Monitors::TYPE_CURL,
-						'readonly' => !($this->access_hash[$this->monitor['id']]['access'][WRITE]??$this->can_create),
+						'readonly' => !($this->can_write || $this->can_create),
 					]);
 					echo $this->template->html_switch("ssl_verify", intval($this->monitor['ssl_verify']??0), \T::Monitor_Edit_SSLVerify(), false,[
 						'global-class' => 'type-dependence type-'.\Monitors::TYPE_CURL,
-						'readonly' => !($this->access_hash[$this->monitor['id']]['access'][WRITE]??$this->can_create),
+						'readonly' => !($this->can_write || $this->can_create),
 					]);
 					echo $this->template->html_switch("ssl_verify_host", intval($this->monitor['ssl_verify_host']??0), \T::Monitor_Edit_SSLVerifyHost(), false,[
 						'global-class' => 'type-dependence type-'.\Monitors::TYPE_CURL,
-						'readonly' => !($this->access_hash[$this->monitor['id']]['access'][WRITE]??$this->can_create),
+						'readonly' => !($this->can_write || $this->can_create),
 					]);
 					echo $this->template->html_input("proxy_host", $this->monitor['proxy_host']??'', \T::Monitor_Edit_ProxyHost(), false, [
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
 						'global-class' => 'type-dependence type-'.\Monitors::TYPE_CURL,
-						'readonly' => !($this->access_hash[$this->monitor['id']]['access'][WRITE]??$this->can_create),
+						'readonly' => !($this->can_write || $this->can_create),
 					]);
 					echo $this->template?->html_select('proxy_type', \Monitors::proxy_type_hash(), $this->monitor['proxy_type']??0, \T::Monitor_Edit_ProxyType(), false,[
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
 						'global-class' => 'type-dependence type-'.\Monitors::TYPE_CURL,
-						'readonly' => !($this->access_hash[$this->monitor['id']]['access'][WRITE]??$this->can_create),
+						'readonly' => !($this->can_write || $this->can_create),
 					]);
 					echo $this->template?->html_select('parent_id', \Monitors::get_folder_hash_options_hash(), $this->monitor['parent_id']??0, \T::Monitor_Edit_ParentFolder(), false,[
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
-						'readonly' => !($this->access_hash[$this->monitor['id']]['access'][WRITE]??$this->can_create),
+						'readonly' => !($this->can_write || $this->can_create),
 					]);
 					if ($this->monitor['id']) {
 						echo $this->template->html_input("create_date", $this->monitor['create_date']??'', \T::Monitor_Edit_CreateTime(), false, ['readonly' => true]);
 						echo $this->template->html_input("update_date", $this->monitor['update_date']??'', \T::Monitor_Edit_UpdateTime(), false, ['readonly' => true]);
 					}
 					?>
-					<?php if (($this->access_hash[$this->monitor['id']]['access'][WRITE]??$this->can_create)) {
+					<?php if ($this->can_write || $this->can_create) {
 						?>
 						<div class="d-flex flex-row-reverse">
 							<button type="submit" class="btn btn-primary" name="<?=$this->monitor['id'] ? 'editMonitor' : 'createMonitor';?>" value="true"><?=($this->monitor['id'] ? \T::Monitor_Edit_ChangeButton() : \T::Monitor_Edit_CreateButton());?></button>
