@@ -14,7 +14,7 @@ class MonitoringLogs extends \DB\MySQLObject {
 		$children_has_error = [];
 		$children_has_warning = [];
 		if (isset($data['children']) && $data['children']) {
-			error_log(sprintf("data %d %s %d", $data['id']??0, $data['title']??'', count($data['children']??[])));
+			// error_log(sprintf("data %d %s %d", $data['id']??0, $data['title']??'', count($data['children']??[])));
 			$data['states'] = [];
 			usort($data['children'], function($a, $b){
 				$titleA = $a['title'];
@@ -45,7 +45,7 @@ class MonitoringLogs extends \DB\MySQLObject {
 					unset($data['children'][$k]);
 					continue;
 				}
-				error_log(sprintf("monitor %d %s", $monitor['id']??0, $monitor['title']??''));
+				// error_log(sprintf("monitor %d %s", $monitor['id']??0, $monitor['title']??''));
 
 				$data['repeat_seconds'] = max($data['repeat_seconds']??0, $monitor['repeat_seconds']??0);
 				$data['max_time'] = max($data['max_time']??0, $monitor['max_time']??0);
