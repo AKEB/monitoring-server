@@ -13,12 +13,14 @@ class MonitoringLogs extends \DB\MySQLObject {
 	static public function getAvailabilityPercent(int $seconds=86400, ?int $monitor_id=null): array {
 		if (!$seconds) $seconds = 86400;
 		$fields = '`monitor_id`, ROUND((SUM(`status` = 1) / COUNT(*)) * 100, 2) as `availability_percent`';
-		$fields .= ', ROUND((SUM(`total_time_us`) / COUNT(*)), 1) as `avg_response_time`';
+		if ($seconds <= 86400) {
+			$fields .= ', ROUND((SUM(`total_time_us`) / COUNT(*)), 1) as `avg_response_time`';
+		}
 		$sql = sql_pholder(' AND update_time >= ?', time() - intval($seconds));
 		if ($monitor_id) {
 			$sql .= sql_pholder(' AND monitor_id = ?', $monitor_id);
 		}
-		$sql .= 'GROUP BY monitor_id ORDER BY NULL';
+		$sql .= 'GROUP BY 1 ORDER BY NULL';
 		return static::data(false, $sql, $fields);
 	}
 
@@ -355,12 +357,26 @@ class MonitoringLogs extends \DB\MySQLObject {
 	static public function getMonitorData(int $monitor_id, float $period): array {
 		$return = [];
 		if (!$monitor_id) return $return;
+		$return['start_work_time'] = microtime(true);
+
+		$start_time = microtime(true);
+		$access_hash = \Monitors::getMonitorsAccess();
+		$return['mysql_time']['Monitors::getMonitorsAccess'] = round(microtime(true) - $start_time,3);
+
+		if (!isset($access_hash[$monitor_id]) || !$access_hash[$monitor_id]) return $return;
+		if (!$access_hash[$monitor_id]['access'][READ]) return $return;
+
+		$start_time = microtime(true);
 		$monitor = \Monitors::get(['id' => $monitor_id]);
+		$return['mysql_time']['Monitors::get'] = round(microtime(true) - $start_time,3);
 		if (!$monitor) return $return;
 		if(!isset($monitor['repeat_seconds']) || !$monitor['repeat_seconds']) $monitor['repeat_seconds'] = 60;
 		$return['monitor'] = $monitor;
 
+		$start_time = microtime(true);
 		$jobs = \Jobs::data(['monitor_id' => $monitor['id']],'','`worker_id`, `create_time`');
+		$return['mysql_time']['Jobs::data'] = round(microtime(true) - $start_time,3);
+
 		$workers_hash = [];
 		$worker_data_for_charts = [];
 		foreach($jobs as $item) {
@@ -371,7 +387,9 @@ class MonitoringLogs extends \DB\MySQLObject {
 			];
 		}
 		if ($workers_hash) {
+			$start_time = microtime(true);
 			$workers = \Workers::data(['id' => array_keys($workers_hash)],'','`id`, `title`');
+			$return['mysql_time']['Workers::data'] = round(microtime(true) - $start_time,3);
 			foreach($workers as $item) {
 				$workers_hash[$item['id']]['title'] = $item['title'] ?? '';
 			}
@@ -383,14 +401,26 @@ class MonitoringLogs extends \DB\MySQLObject {
 		if ($workers_hash) {
 			$sql .= sql_pholder(' AND `worker_id` IN (?@)', array_keys($workers_hash));
 		}
-		$sql .= sql_pholder(' AND `update_time` >= ? AND `update_time` <= ? ', time() - 60*60, time());
+		$sql .= sql_pholder(' AND `update_time` >= ? AND `update_time` <= ? ', time() - 60*60 - intval($monitor['repeat_seconds']), time());
 		$sql .= ' ORDER BY `interval_time` ASC';
 		$fields = '`worker_id`, `status`, ';
 		$fields .= 'FLOOR(`update_time` / '.intval($monitor['repeat_seconds']).') * '.intval($monitor['repeat_seconds']).' as `interval_time`,';
 		$fields .= '`total_time_us`, `status_code`, `response_error`, `cert_expire` ';
+
+		$start_time = microtime(true);
 		$logs = static::data(false, $sql, $fields);
+		$return['mysql_time']['MonitoringLogs::data_logs'] = round(microtime(true) - $start_time,3);
+
 		$logs_hash = [];
 		$last_data = [];
+
+		for($i=time() - 60*60; $i<=time(); $i+=intval($monitor['repeat_seconds'])) {
+			$time = intval($i / intval($monitor['repeat_seconds'])) * intval($monitor['repeat_seconds']);
+			$logs_hash[$time] = [
+				'title' => date("H:i:s",$time),
+			];
+		}
+
 		foreach($logs as $item) {
 			$item['title'] = date("Y-m-d H:i:s",$item['interval_time']).' - '.$item['status_code'].' '.$item['response_error'];
 			$logs_hash[$item['interval_time']]['title'] = date("H:i:s",$item['interval_time']);
@@ -421,7 +451,9 @@ class MonitoringLogs extends \DB\MySQLObject {
 		$fields = '`worker_id`, ';
 		$fields .= 'FLOOR(`update_time` / '.intval($interval).') * '.intval($interval).' as `interval_time`,';
 		$fields .= '`total_time_us`, `status`';
+		$start_time = microtime(true);
 		$logs = static::data(false, $sql, $fields);
+		$return['mysql_time']['MonitoringLogs::data_logs_chart'] = round(microtime(true) - $start_time,3);
 		$logs_hash = [];
 		for($i=time() - $period*60*60; $i<=time(); $i+=intval($interval)) {
 			$time = intval($i / intval($interval)) * intval($interval);
@@ -440,8 +472,14 @@ class MonitoringLogs extends \DB\MySQLObject {
 		}
 		$return['logs_chart'] = $logs_hash;
 
+		$start_time = microtime(true);
 		$uptime_30 = static::getAvailabilityPercent(30*86400, $monitor_id);
+		$return['mysql_time']['MonitoringLogs::getAvailabilityPercent_30'] = round(microtime(true) - $start_time,3);
+
+		$start_time = microtime(true);
 		$uptime_1 = static::getAvailabilityPercent(86400, $monitor_id);
+		$return['mysql_time']['MonitoringLogs::getAvailabilityPercent_1'] = round(microtime(true) - $start_time,3);
+
 		if ($uptime_1 && isset($uptime_1[0]) && $uptime_1[0]['avg_response_time']) {
 			$return['avg_response_time_1d'] = ceil($uptime_1[0]['avg_response_time'] / 1000).' ms';
 		} else {
@@ -477,6 +515,8 @@ class MonitoringLogs extends \DB\MySQLObject {
 			$return['cert_expire_days'] = $cert_expire_days . ' '.(\T::declension($cert_expire_days, \T::Dashboard_Day(), \T::Dashboard_Days(), \T::Dashboard_Days5()));
 
 		}
+		$return['finish_work_time'] = microtime(true);
+		$return['work_time'] = round($return['finish_work_time'] - $return['start_work_time'], 3);
 		return $return;
 	}
 }

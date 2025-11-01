@@ -137,11 +137,9 @@ services:
     container_name: "monitoring-server"
     image: "akeb/monitoring:latest"
     restart: always
-    build: .
     env_file:
       - ./.env
     volumes:
-      - ./src:/app
       - ./logs/php/:/var/log/php/:rw
       - ./logs/nginx/:/var/log/nginx/:rw
     ports:

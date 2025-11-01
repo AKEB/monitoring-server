@@ -109,14 +109,12 @@ function MonitorsUpdate(count=25) {
 	clearTimeout(monitorUpdateTimeout);
 	// Отправка запроса на обновление через WebSocket
 	wss.send('monitors_update',{'count':count},(response)=>{
-		if (response.message == false) {
+		if (response.message === undefined) {
 			console.log(response);
 		} else {
-			if (response.message) {
-				const html = printMonitors(response.message, 0);
-				$('div.monitor-list-items>div.col').html(html);
-				filterAndHideMonitors();
-			}
+			const html = printMonitors(response.message, 0);
+			$('div.monitor-list-items>div.col').html(html);
+			filterAndHideMonitors();
 		}
 	});
 	// Установка таймаута для следующего обновления через 30 секунд
@@ -159,7 +157,7 @@ function filterAndHideMonitors() {
 
 	// Показать/скрыть сообщение "нет результатов"
 	const noResults = document.getElementById('noResults') || createNoResultsMessage();
-	noResults.style.display = hasResults || searchText === '' ? 'none' : 'block';
+	noResults.style.display = hasResults ? 'none' : 'block';
 }
 
 /**
