@@ -74,12 +74,19 @@ class State extends \Routing_Parent implements \Routing_Interface {
 		if (!$this->data || !isset($this->data['jobs']) || !$this->data['jobs']) return false;
 		$jobs = $this->data['jobs'];
 		foreach ($jobs as $job) {
-			$this->updateJobState($this->worker['id'], $job);
+			$result = $this->updateJobState($this->worker['id'], $job);
+			if (!$result) continue;
+			if (
+				isset($result['monitor_id']) && $result['monitor_id'] &&
+				isset($result['worker_id']) && $result['worker_id']
+			) {
+				\MonitorsEvents::updateEvent($result);
+			}
 		}
 		return true;
 	}
 
-	private function updateJobState(int $worker_id, array $job_response): bool {
+	private function updateJobState(int $worker_id, array $job_response): bool|array {
 		$job = \Jobs::get([
 			'id' => intval($job_response['job_id']),
 			'worker_id' => intval($worker_id),
@@ -125,14 +132,6 @@ class State extends \Routing_Parent implements \Routing_Interface {
 
 			'total_time_us' => $job_response['response']['total_time_us'] ?? 0,
 
-			// 'namelookup_time_us' => $job_response['response']['namelookup_time_us'] ?? 0,
-			// 'connect_time_us' => $job_response['response']['connect_time_us'] ?? 0,
-			// 'pretransfer_time_us' => $job_response['response']['pretransfer_time_us'] ?? 0,
-			// 'starttransfer_time_us' => $job_response['response']['starttransfer_time_us'] ?? 0,
-			// 'redirect_time_us' => $job_response['response']['redirect_time_us'] ?? 0,
-			// 'appconnect_time_us' => $job_response['response']['appconnect_time_us'] ?? 0,
-			// 'posttransfer_time_us' => $job_response['response']['posttransfer_time_us'] ?? 0,
-
 			'effective_method' => $job_response['response']['effective_method'] ?? '',
 			'primary_ip' => $job_response['response']['primary_ip'] ?? '',
 
@@ -144,8 +143,11 @@ class State extends \Routing_Parent implements \Routing_Interface {
 			'scheme' => $job_response['response']['scheme'] ?? '',
 			'cert_expire' => $job_response['response']['cert_expire'] ?? 0,
 		];
-		$state = \MonitoringLogs::save($params);
-		return $state;
+		$params['id'] = \MonitoringLogs::save($params);
+		if ($params['id']) {
+			return $params;
+		}
+		return false;
 	}
 
 	protected function handleBodyData(array $data) {

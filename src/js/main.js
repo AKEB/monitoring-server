@@ -292,7 +292,7 @@ function updateMonitorWorkersLogs(data) {
  * @param {Object} data - Данные монитора.
  */
 function updateMonitorLastInfo(data) {
-	const monitorWorkersLogs = $('#monitor-last-info');
+	const container = $('#monitor-last-info');
 	HTML = '';
 	HTML += '<div class="card monitor-info mb-3">';
 	HTML += '<div class="card-body row">';
@@ -326,7 +326,48 @@ function updateMonitorLastInfo(data) {
 		}
 	HTML += '</div>';
 	HTML += '</div>';
-	monitorWorkersLogs.html(HTML);
+	container.html(HTML);
+}
+
+function updateMonitorEvents(data) {
+	if (!data.events || data.events.length < 1) return;
+	const container = $('#monitor-events');
+	HTML = '';
+	HTML += '<div class="card monitor-events-card mb-3">';
+	HTML += '<div class="card-body">';
+	HTML += '<table class="table table-transparent table-responsive" id="Table">';
+
+	HTML += '<thead class=""><tr>';
+	HTML += '<th scope="col" class="align-middle" data-priority="1">'+Dashboard_Events_Status+'</th>';
+	HTML += '<th scope="col" class="align-middle" data-priority="2">'+Dashboard_Events_Worker+'</th>';
+	HTML += '<th scope="col" class="align-middle" data-priority="3">'+Dashboard_Events_Time+'</th>';
+	HTML += '<th scope="col" class="align-middle" data-priority="4">'+Dashboard_Events_StatusCode+'</th>';
+	HTML += '<th scope="col" class="align-middle" data-priority="5">'+Dashboard_Events_ResponseError+'</th>';
+	HTML += '</tr></thead>';
+
+	for (let i in data.events) {
+		const event = data.events[i];
+		const icon = event.status == 1 ? '<i class="bi bi-check-square text-success"></i>' : '<i class="bi bi-exclamation-square text-danger"></i>';
+		const worker = data.workers[event.worker_id] && data.workers[event.worker_id]['title'] ? data.workers[event.worker_id]['title'] : 'Unknown worker';
+
+		HTML += '<tr>';
+			HTML += '<td>'+icon+'</td>';
+			HTML += '<td>'+worker+'</td>';
+			HTML += '<td>'+event.event_time+'</td>';
+			HTML += '<td>'+event.status_code+'</td>';
+			HTML += '<td>'+(event.response_error ? event.response_error : '')+'</td>';
+		HTML += '</tr>';
+	}
+	HTML += '</table>';
+	HTML += '</div>';
+	HTML += '</div>';
+	container.html(HTML);
+	new DataTable('#Table', {
+		paging: true,
+		searching: false,
+		ordering:  false,
+		info: false,
+	});
 }
 
 /**
@@ -364,6 +405,7 @@ function printMonitorData(data, period) {
 				HTML += '</div>';
 			HTML += '</div>';
 		HTML += '</div>';
+		HTML += '<div id="monitor-events"></div>';
 		HTML += '</div>';
 		HTML += '</div>';
 		$('div.monitor-dashboard').html(HTML);
@@ -373,6 +415,7 @@ function printMonitorData(data, period) {
 	updateMonitorWorkersLogs(data);
 	updateMonitorLastInfo(data);
 	updateECharts(data);
+	updateMonitorEvents(data);
 }
 
 /**

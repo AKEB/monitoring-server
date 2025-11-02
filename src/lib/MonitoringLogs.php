@@ -207,7 +207,6 @@ class MonitoringLogs extends \DB\MySQLObject {
 		foreach($data as $item) {
 			$monitors[$item['id']] = $item;
 		}
-		if (!$max_time) $max_time= time();
 		$monitor_workers_hash = [];
 
 		$monitor_workers_data = \Jobs::data(false, ' ORDER BY `monitor_id` ASC, `worker_id` ASC', '`monitor_id`, `worker_id`, `create_time`');
@@ -340,9 +339,21 @@ class MonitoringLogs extends \DB\MySQLObject {
 	}
 
 	static public function getMonitorData(int $monitor_id, float $period): array {
+		$cache = new \Cache('monitor_data_'.md5($monitor_id.'__'.$period));
+		if ($cache->isValid()) {
+			$from_cache = json_decode($cache->get(), true);
+			if (
+				$from_cache && is_array($from_cache)
+			) {
+				return $from_cache;
+			}
+		}
+
 		$return = [];
 		if (!$monitor_id) return $return;
 		$return['start_work_time'] = microtime(true);
+
+		$max_time = time();
 
 		if (!\Sessions::checkPermission(\Monitors::PERMISSION_ACCESS, $monitor_id, READ)) return $return;
 
@@ -352,6 +363,8 @@ class MonitoringLogs extends \DB\MySQLObject {
 		if (!$monitor) return $return;
 		if(!isset($monitor['repeat_seconds']) || !$monitor['repeat_seconds']) $monitor['repeat_seconds'] = 60;
 		$return['monitor'] = $monitor;
+
+		$current_time = intval(time() / intval($monitor['repeat_seconds'])) * intval($monitor['repeat_seconds']);
 
 		$start_time = microtime(true);
 		$jobs = \Jobs::data(['monitor_id' => $monitor['id']],'','`worker_id`, `create_time`');
@@ -381,7 +394,7 @@ class MonitoringLogs extends \DB\MySQLObject {
 		if ($workers_hash) {
 			$sql .= sql_pholder(' AND `worker_id` IN (?@)', array_keys($workers_hash));
 		}
-		$sql .= sql_pholder(' AND `update_time` >= ? AND `update_time` <= ? ', time() - 60*60 - intval($monitor['repeat_seconds']), time());
+		$sql .= sql_pholder(' AND `update_time` >= ? AND `update_time` <= ? ', $max_time - 60*60 - intval($monitor['repeat_seconds']), $max_time);
 		$sql .= ' ORDER BY `interval_time` ASC';
 		$fields = '`worker_id`, `status`, ';
 		$fields .= 'FLOOR(`update_time` / '.intval($monitor['repeat_seconds']).') * '.intval($monitor['repeat_seconds']).' as `interval_time`,';
@@ -394,14 +407,16 @@ class MonitoringLogs extends \DB\MySQLObject {
 		$logs_hash = [];
 		$last_data = [];
 
-		for($i=time() - 60*60; $i<=time(); $i+=intval($monitor['repeat_seconds'])) {
+		for($i=$max_time - 60*60; $i <= $max_time; $i+=intval($monitor['repeat_seconds'])) {
 			$time = intval($i / intval($monitor['repeat_seconds'])) * intval($monitor['repeat_seconds']);
+			if ($time == $current_time) continue;
 			$logs_hash[$time] = [
 				'title' => date("H:i:s",$time),
 			];
 		}
 
 		foreach($logs as $item) {
+			if ($item['interval_time'] == $current_time) continue;
 			$item['title'] = date("Y-m-d H:i:s",$item['interval_time']).' - '.$item['status_code'].' '.$item['response_error'];
 			$logs_hash[$item['interval_time']]['title'] = date("H:i:s",$item['interval_time']);
 			$logs_hash[$item['interval_time']][$item['worker_id']] = $item;
@@ -409,23 +424,13 @@ class MonitoringLogs extends \DB\MySQLObject {
 		}
 		$return['logs'] = $logs_hash;
 
-
 		$interval = intval($monitor['repeat_seconds']);
-		// if ($period >= 24) {
-		// 	$interval = max($interval, 30*60);
-		// } elseif ($period >= 6) {
-		// 	$interval = max($interval, 10*60);
-		// } elseif ($period >= 4) {
-		// 	$interval = max($interval, 5*60);
-		// } elseif ($period >= 1) {
-		// 	$interval = max($interval, 1*60);
-		// }
 		$sql = '';
 		$sql .= sql_pholder(' AND `monitor_id` = ?', $monitor_id);
 		if ($workers_hash) {
 			$sql .= sql_pholder(' AND `worker_id` IN (?@)', array_keys($workers_hash));
 		}
-		$sql .= sql_pholder(' AND `update_time` >= ? AND `update_time` <= ? ', time() - $period*60*60 - $interval, time());
+		$sql .= sql_pholder(' AND `update_time` >= ? AND `update_time` <= ? ', $max_time - $period*60*60 - $interval, $max_time);
 		// $sql .= ' AND `status_code` <> 0';
 		$sql .= ' ORDER BY 2 ASC';
 		$fields = '`worker_id`, ';
@@ -435,11 +440,13 @@ class MonitoringLogs extends \DB\MySQLObject {
 		$logs = static::data(false, $sql, $fields);
 		$return['mysql_time']['MonitoringLogs::data_logs_chart'] = round(microtime(true) - $start_time,3);
 		$logs_hash = [];
-		for($i=time() - $period*60*60; $i<=time(); $i+=intval($interval)) {
+		for($i=$max_time - $period*60*60; $i<$max_time; $i+=intval($interval)) {
 			$time = intval($i / intval($interval)) * intval($interval);
+			if ($time == $current_time) continue;
 			$logs_hash[$time] = $worker_data_for_charts;
 		}
 		foreach($logs as $item) {
+			if ($item['interval_time'] == $current_time) continue;
 			if (isset($logs_hash[$item['interval_time']][$item['worker_id']])) {
 				$logs_hash[$item['interval_time']][$item['worker_id']]['status'] = min($logs_hash[$item['interval_time']][$item['worker_id']]['status']??\MonitoringLogs::STATUS_GOOD, intval($item['status']));
 				$logs_hash[$item['interval_time']][$item['worker_id']]['time'] = max($logs_hash[$item['interval_time']][$item['worker_id']]['time'], ceil($item['total_time_us']/1000));
@@ -500,10 +507,13 @@ class MonitoringLogs extends \DB\MySQLObject {
 			$cert_expire_days = intval( ( $cert_expire_time - time() ) / 86400 );
 			$return['cert_expire'] = date("Y-m-d",$cert_expire_time);
 			$return['cert_expire_days'] = $cert_expire_days . ' '.(\T::declension($cert_expire_days, \T::Dashboard_Day(), \T::Dashboard_Days(), \T::Dashboard_Days5()));
-
 		}
 		$return['finish_work_time'] = microtime(true);
 		$return['work_time'] = round($return['finish_work_time'] - $return['start_work_time'], 3);
+
+		$return['events'] = \MonitorsEvents::getEventsForMonitor($monitor_id);
+
+		$cache->update(json_encode($return), 30);
 		return $return;
 	}
 }
