@@ -73,6 +73,7 @@ class State extends \Routing_Parent implements \Routing_Interface {
 		if (!$this->worker || !$this->worker['id']) return false;
 		if (!$this->data || !isset($this->data['jobs']) || !$this->data['jobs']) return false;
 		$jobs = $this->data['jobs'];
+		$notification_check_monitors = [];
 		foreach ($jobs as $job) {
 			$result = $this->updateJobState($this->worker['id'], $job);
 			if (!$result) continue;
@@ -80,8 +81,12 @@ class State extends \Routing_Parent implements \Routing_Interface {
 				isset($result['monitor_id']) && $result['monitor_id'] &&
 				isset($result['worker_id']) && $result['worker_id']
 			) {
+				$notification_check_monitors[$result['monitor_id']] = true;
 				\MonitorsEvents::updateEvent($result);
 			}
+		}
+		if ($notification_check_monitors && count($notification_check_monitors) > 0) {
+			\MonitorsEvents::checkMonitors($notification_check_monitors);
 		}
 		return true;
 	}

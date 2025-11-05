@@ -107,4 +107,89 @@ class MonitorsEvents extends \DB\MySQLObject {
 
 	}
 
+	static public function checkMonitors(array $monitors): void {
+		if (!isset($monitors) || !count($monitors)) return;
+		$monitor_ids = array_keys($monitors);
+		if (!count($monitor_ids)) return;
+		$monitors = \Monitors::data(false, sql_pholder(' AND `id` IN (?@) AND `status` = ?', $monitor_ids, \Monitors::STATUS_ENABLED), '`id`, `title`, `last_send_status`, `last_send_time`, `send_repeat_minute`');
+		$monitors_hash = [];
+		foreach($monitors as $monitor) {
+			$monitors_hash[$monitor['id']] = $monitor;
+		}
+		if (!$monitors_hash) return;
+		$jobs = \MonitoringJobs::data(false, sql_pholder(' AND `monitor_id` IN (?@)', array_keys($monitors_hash)), '`monitor_id`, `worker_id`');
+		$jobs_hash = [];
+		foreach($jobs as $job) {
+			if (!$job['worker_id']) continue;
+			$job['worker_id'] = intval($job['worker_id']);
+			$jobs_hash[$job['monitor_id']][$job['worker_id']] = $job['worker_id'];
+		}
+		$fields = '`monitor_id`, `worker_id`, `status`, `update_time`, `status_code`, `response_error_num`, `response_error`';
+		$sub_sql = sql_pholder(' AND `monitor_id` IN (?@) ', array_keys($monitors_hash));
+		$sub_sql .= sql_pholder(' AND `update_time` >= ? ', time() - 10 * 60);
+		$sub_query_sql = "SELECT ".$fields.", ROW_NUMBER() OVER (PARTITION BY `monitor_id`, `worker_id` ORDER BY `update_time` DESC) as rn FROM ".\MonitoringLogs::$table." WHERE 1 $sub_sql";
+		$sql_query = "SELECT ".$fields." FROM ($sub_query_sql) as sub WHERE sub.rn = 1 ";
+		$logs = [];
+		\MonitoringLogs::$database->db_GetQueryArray($sql_query, $logs);
+		$logs_hash = [];
+		foreach($logs as $log) {
+			$logs_hash[$log['monitor_id']][$log['worker_id']] = $log;
+		}
+		foreach($monitors_hash as $monitor_id=>$monitor) {
+			if (!isset($jobs_hash[$monitor_id])) continue;
+			$global_good = 0;
+			$global_failed = 0;
+			$descriptions = [];
+			foreach($jobs_hash[$monitor_id] as $worker_id=>$worker_id) {
+				if (!isset($logs_hash[$monitor_id])) continue;
+				if (!isset($logs_hash[$monitor_id][$worker_id])) continue;
+				$log = $logs_hash[$monitor_id][$worker_id];
+				if ($log['status'] == \MonitoringLogs::STATUS_GOOD) {
+					$global_good++;
+				} else {
+					$descriptions[$log['response_error_num']] = $log['response_error'];
+					$global_failed++;
+				}
+			}
+			$text = '';
+			if ($global_good == count($jobs_hash[$monitor_id])) {
+				// Все воркеры вернули успех
+				if ($monitor['last_send_status'] != \MonitoringLogs::STATUS_GOOD) {
+					$text = "✅ Alert Resolved: ".$monitor['title']." is up";
+					\Monitors::save([
+						'id' => $monitor_id,
+						'last_send_status' => \MonitoringLogs::STATUS_GOOD,
+						'last_send_time' => time(),
+						'update_time' => time(),
+					]);
+				}
+			} elseif ($global_failed == count($jobs_hash[$monitor_id])) {
+				// Все воркеры вернули ошибки
+				if ($monitor['last_send_status'] != \MonitoringLogs::STATUS_FAIL) {
+					$text = "🚫 Alert Firing: ".$monitor['title']." is down";
+					if ($descriptions) $text .= "\n\n". implode("\n", $descriptions);
+					\Monitors::save([
+						'id' => $monitor_id,
+						'last_send_status' => \MonitoringLogs::STATUS_FAIL,
+						'last_send_time' => time(),
+						'update_time' => time(),
+					]);
+				} elseif ($monitor['send_repeat_minute'] > 0) {
+					if ($monitor['last_send_time'] + $monitor['send_repeat_minute'] * 60 < time()) {
+						$text = "🚫 Alert Firing: ".$monitor['title']." is down";
+						if ($descriptions) $text .= "\n\n". implode("\n", $descriptions);
+						\Monitors::save([
+							'id' => $monitor_id,
+							'last_send_status' => \MonitoringLogs::STATUS_FAIL,
+							'last_send_time' => time(),
+							'update_time' => time(),
+						]);
+					}
+				}
+			}
+			if ($text) {
+				\MonitoringNotify::sendNotification($monitor_id, $text);
+			}
+		}
+	}
 }

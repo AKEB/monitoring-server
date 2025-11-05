@@ -96,6 +96,7 @@ Monitor:
     CreateButton: "Создать"
     ParentFolder: "Родительская папка"
     Notify: "Уведомления"
+    SendRepeatMinute: "Повторная отправка уведомлений об ошибках в минутах"
     NameLengthError: "Название должно быть от 2 до 255 символов"
     MonitorNotFound: "Монитор не найден"
     PermissionDenied: "У вас нет прав на редактирование этого монитора"

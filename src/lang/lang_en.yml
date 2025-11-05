@@ -96,6 +96,7 @@ Monitor:
     CreateButton: "Create"
     ParentFolder: "Parent folder"
     Notify: "Notifications"
+    SendRepeatMinute: "Resending error notifications in minutes"
     NameLengthError: "Name length must be between 2 and 255 characters"
     MonitorNotFound: "Monitor not found"
     PermissionDenied: "You don't have permission to edit this monitor"

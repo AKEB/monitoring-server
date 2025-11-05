@@ -665,6 +665,14 @@ class T {
 	public static function Monitor_Edit_Notify(...$argv): string { return ''; }
 
 	/**
+	 * Monitor_Edit_SendRepeatMinute
+	 * 
+	 * @return string "Resending error notifications in minutes"
+	 * @return string "Повторная отправка уведомлений об ошибках в минутах"
+	 */
+	public static function Monitor_Edit_SendRepeatMinute(...$argv): string { return ''; }
+
+	/**
 	 * Monitor_Edit_NameLengthError
 	 * 
 	 * @return string "Name length must be between 2 and 255 characters"
