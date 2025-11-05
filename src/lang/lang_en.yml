@@ -151,7 +151,7 @@ Notify:
     Type: "Type"
     Receiver: "Receiver"
     TelegramBotToken: "Telegram bot token"
-    MattermostURL: "Mattermost URL"
+    MattermostDomain: "Domain of mattermost server"
     MattermostToken: "Mattermost token"
     CreateTime: "Create time"
     UpdateTime: "Update time"

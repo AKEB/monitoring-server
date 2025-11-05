@@ -390,7 +390,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 							'global-class' => 'type-dependence type-'.\Notify::TYPE_TELEGRAM,
 							'readonly' => !($this->can_write || $this->can_create),
 						]);
-						echo $this->template->html_input("json_data[mattermost_url]", $this->notify['json_data']['mattermost_url']??'', \T::Notify_Edit_MattermostURL(), false, [
+						echo $this->template->html_input("json_data[mattermost_url]", $this->notify['json_data']['mattermost_url']??'', \T::Notify_Edit_MattermostDomain(), false, [
 							'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
 							'global-class' => 'type-dependence type-'.\Notify::TYPE_MATTERMOST,
 							'readonly' => !($this->can_write || $this->can_create),

@@ -1009,12 +1009,12 @@ class T {
 	public static function Notify_Edit_TelegramBotToken(...$argv): string { return ''; }
 
 	/**
-	 * Notify_Edit_MattermostURL
+	 * Notify_Edit_MattermostDomain
 	 * 
-	 * @return string "Mattermost URL"
-	 * @return string "Mattermost URL"
+	 * @return string "Domain of mattermost server"
+	 * @return string "Домен Mattermost сервера"
 	 */
-	public static function Notify_Edit_MattermostURL(...$argv): string { return ''; }
+	public static function Notify_Edit_MattermostDomain(...$argv): string { return ''; }
 
 	/**
 	 * Notify_Edit_MattermostToken
