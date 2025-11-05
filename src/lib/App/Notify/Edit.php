@@ -129,11 +129,11 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				}
 
 				if (!$this->can_write) {
-					$data['status'] = $old_notify['status'];
-					$data['type'] = $old_notify['type'];
+					$data['status'] = $old_notify['status']??0;
+					$data['type'] = $old_notify['type']??0;
 
-					$params['status'] = $old_notify['status'];
-					$params['type'] = $old_notify['type'];
+					$params['status'] = $data['status'];
+					$params['type'] = $data['type'];
 				}
 
 				if ($params['type'] == \Notify::TYPE_TELEGRAM) {

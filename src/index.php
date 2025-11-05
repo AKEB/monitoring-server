@@ -42,9 +42,18 @@ require_once("./autoload.php");
 \Template::addJSFile('/js/main.js');
 
 \Template::addMenuItem(new \MenuItem('', \T::Menu_Home(), '/', null, null));
-\Template::addMenuAdminItem(new \MenuItem('bi bi-hdd-network', \T::Worker_Menu(), '/workers/', null, new \MenuPermissionItem(\Workers::PERMISSION_ACCESS, -1, READ)));
-\Template::addMenuAdminItem(new \MenuItem('bi bi-question-octagon', \T::Monitor_Menu(), '/monitors/', null, new \MenuPermissionItem(\Monitors::PERMISSION_ACCESS, -1, READ)));
-\Template::addMenuAdminItem(new \MenuItem('bi bi-bell', \T::Notify_Menu(), '/notify/', null, new \MenuPermissionItem(\Notify::PERMISSION_ACCESS, -1, READ)));
+\Template::addMenuAdminItem(new \MenuItem('bi bi-hdd-network', \T::Worker_Menu(), '/workers/', null, [
+	new \MenuPermissionItem(\Workers::PERMISSION_ACCESS, -1, READ),
+	new \MenuPermissionItem(\Workers::PERMISSION_CREATE, 0, WRITE),
+]));
+\Template::addMenuAdminItem(new \MenuItem('bi bi-question-octagon', \T::Monitor_Menu(), '/monitors/', null, [
+	new \MenuPermissionItem(\Monitors::PERMISSION_ACCESS, -1, READ),
+	new \MenuPermissionItem(\Monitors::PERMISSION_CREATE, 0, WRITE),
+]));
+\Template::addMenuAdminItem(new \MenuItem('bi bi-bell', \T::Notify_Menu(), '/notify/', null, [
+	new \MenuPermissionItem(\Notify::PERMISSION_ACCESS, -1, READ),
+	new \MenuPermissionItem(\Notify::PERMISSION_CREATE, 0, WRITE),
+]));
 
 // Add another Websocket item
 \Websocket::addAction('monitors_update', '\\MonitorsWebsocket');
