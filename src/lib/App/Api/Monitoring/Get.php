@@ -81,7 +81,7 @@ class Get extends \Routing_Parent implements \Routing_Interface {
 	private function getJobsData(): array {
 		$jobs = [];
 		if ($this->worker && $this->worker['id']) {
-			$jobs = \Jobs::data(['worker_id' => $this->worker['id']], sql_pholder(' AND M.`status` = ? ',\Monitors::STATUS_ENABLED), 't.`id` as `job_id`, t.`update_time`, M.*', false, false, [
+			$jobs = \MonitoringJobs::data(['worker_id' => $this->worker['id']], sql_pholder(' AND M.`status` = ? ',\Monitors::STATUS_ENABLED), 't.`id` as `job_id`, t.`update_time`, M.*', false, false, [
 				'_join' => ' JOIN `'.\Monitors::getTable().'` M ON t.`monitor_id` = M.`id`'
 			]);
 		}

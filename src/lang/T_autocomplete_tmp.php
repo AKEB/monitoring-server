@@ -649,6 +649,22 @@ class T {
 	public static function Monitor_Edit_CreateButton(...$argv): string { return ''; }
 
 	/**
+	 * Monitor_Edit_ParentFolder
+	 * 
+	 * @return string "Parent folder"
+	 * @return string "Родительская папка"
+	 */
+	public static function Monitor_Edit_ParentFolder(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_Notify
+	 * 
+	 * @return string "Notifications"
+	 * @return string "Уведомления"
+	 */
+	public static function Monitor_Edit_Notify(...$argv): string { return ''; }
+
+	/**
 	 * Monitor_Edit_NameLengthError
 	 * 
 	 * @return string "Name length must be between 2 and 255 characters"

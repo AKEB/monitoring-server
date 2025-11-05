@@ -10,6 +10,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 	private bool $can_write = false;
 	private bool $can_create = false;
 	private array $workers_hash = [];
+	private array $notify_hash = [];
 
 	public function Run(int $monitor_id=0, int $parent_id=0) {
 		$this->monitor_id = intval($monitor_id ?? 0);
@@ -126,9 +127,19 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					$workers_hash[$v['id']] = \Sessions::checkPermission(\Workers::PERMISSION_ACCESS, $v['id'], READ);
 				}
 			}
+			$notify_hash = [];
+			$all_notify = \Notify::data(false, ' ORDER BY `title` ASC', '`id`, `title`');
+			if ($all_notify) {
+				foreach($all_notify as $v) {
+					$notify_hash[$v['id']] = \Sessions::checkPermission(\Notify::PERMISSION_ACCESS, $v['id'], READ);
+				}
+			}
+
 			$old_monitor = [];
 			$update_jobs = [];
+			$update_notify = [];
 			if (!isset($data['workers'])) $data['workers'] = [];
+			if (!isset($data['notify'])) $data['notify'] = [];
 			if (isset($params['id']) && $params['id']) {
 				if (!$this->can_write) {
 					$this->error = \T::Monitor_Edit_PermissionDenied();
@@ -139,7 +150,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					$this->error = \T::Monitor_Edit_MonitorNotFound();
 					break;
 				}
-				$old_jobs = get_hash(\Jobs::data(['monitor_id' => $params['id']]), 'worker_id', 'monitor_id');
+				$old_jobs = get_hash(\MonitoringJobs::data(['monitor_id' => $params['id']]), 'worker_id', 'monitor_id');
 				foreach($old_jobs as $worker_id=>$monitor_id) {
 					if (!isset($workers_hash[$worker_id]) || !$workers_hash[$worker_id]) continue;
 					if (!in_array($worker_id, $data['workers'])) {
@@ -153,12 +164,28 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 						$update_jobs[$worker_id] = 1;
 					}
 				}
+
+				$old_notify = get_hash(\MonitoringNotify::data(['monitor_id' => $params['id']]), 'notify_id', 'monitor_id');
+				foreach($old_notify as $notify_id=>$monitor_id) {
+					if (!isset($notify_hash[$notify_id]) || !$notify_hash[$notify_id]) continue;
+					if (!in_array($notify_id, $data['notify'])) {
+						$update_notify[$notify_id] = -1;
+					}
+				}
+				if ($data['notify']) {
+					foreach($data['notify'] as $notify_id) {
+						if (isset($update_notify[$notify_id])) continue;
+						if (isset($old_notify[$notify_id]) && $old_notify[$notify_id]) continue;
+						$update_notify[$notify_id] = 1;
+					}
+				}
+
 				foreach($params as $k=>$v) {
 					if ($old_monitor[$k] == $v) {
 						unset($params[$k]);
 					}
 				}
-				if (!$params && !$update_jobs) {
+				if (!$params && !$update_jobs && !$update_notify) {
 					$this->success = \T::Monitor_Edit_NotingChanged();
 					break;
 				}
@@ -172,6 +199,12 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					foreach($data['workers'] as $worker_id) {
 						if (isset($update_jobs[$worker_id])) continue;
 						$update_jobs[$worker_id] = 1;
+					}
+				}
+				if ($data['notify']) {
+					foreach($data['notify'] as $notify_id) {
+						if (isset($update_notify[$notify_id])) continue;
+						$update_notify[$notify_id] = 1;
 					}
 				}
 				$params['create_time'] = time();
@@ -194,13 +227,13 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				}
 				foreach ($update_jobs as $worker_id=>$status) {
 					if ($status < 0) {
-						$old_job = \Jobs::get([
+						$old_job = \MonitoringJobs::get([
 							'monitor_id' => $params['id'],
 							'worker_id' => $worker_id,
 						]);
 						if (isset($old_job['id']) && $old_job['id']) {
-							\Jobs::delete($old_job['id']);
-							$log_id = \Logs::delete_log(\Jobs::LOGS_OBJECT, $old_job['id'], $old_job);
+							\MonitoringJobs::delete($old_job['id']);
+							$log_id = \Logs::delete_log(\MonitoringJobs::LOGS_OBJECT, $old_job['id'], $old_job);
 							\Logs::add_tag($log_id, \Monitors::LOGS_OBJECT, $params['id']);
 							\Logs::add_tag($log_id, \Workers::LOGS_OBJECT, $worker_id);
 						}
@@ -211,10 +244,36 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 							'create_time' => time(),
 							'update_time' => time(),
 						];
-						$job['id'] = \Jobs::save($job);
-						$log_id = \Logs::create_log(\Jobs::LOGS_OBJECT, $job['id'],$job);
+						$job['id'] = \MonitoringJobs::save($job);
+						$log_id = \Logs::create_log(\MonitoringJobs::LOGS_OBJECT, $job['id'],$job);
 						\Logs::add_tag($log_id, \Monitors::LOGS_OBJECT, $params['id']);
 						\Logs::add_tag($log_id, \Workers::LOGS_OBJECT, $worker_id);
+					}
+				}
+
+				foreach ($update_notify as $notify_id=>$status) {
+					if ($status < 0) {
+						$old_notify = \MonitoringNotify::get([
+							'monitor_id' => $params['id'],
+							'notify_id' => $notify_id,
+						]);
+						if (isset($old_notify['id']) && $old_notify['id']) {
+							\MonitoringNotify::delete($old_notify['id']);
+							$log_id = \Logs::delete_log(\MonitoringNotify::LOGS_OBJECT, $old_notify['id'], $old_notify);
+							\Logs::add_tag($log_id, \Monitors::LOGS_OBJECT, $params['id']);
+							\Logs::add_tag($log_id, \Notify::LOGS_OBJECT, $notify_id);
+						}
+					} else {
+						$notify = [
+							'monitor_id' => $params['id'],
+							'notify_id' => $notify_id,
+							'create_time' => time(),
+							'update_time' => time(),
+						];
+						$notify['id'] = \MonitoringNotify::save($notify);
+						$log_id = \Logs::create_log(\MonitoringNotify::LOGS_OBJECT, $notify['id'], $notify);
+						\Logs::add_tag($log_id, \Monitors::LOGS_OBJECT, $params['id']);
+						\Logs::add_tag($log_id, \Notify::LOGS_OBJECT, $notify_id);
 					}
 				}
 			} else {
@@ -234,11 +293,25 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 						'create_time' => time(),
 						'update_time' => time(),
 					];
-					$job['id'] = \Jobs::save($job);
-					$log_id = \Logs::create_log(\Jobs::LOGS_OBJECT, $job['id'],$job);
+					$job['id'] = \MonitoringJobs::save($job);
+					$log_id = \Logs::create_log(\MonitoringJobs::LOGS_OBJECT, $job['id'], $job);
 					\Logs::add_tag($log_id, \Monitors::LOGS_OBJECT, $monitor_id);
 					\Logs::add_tag($log_id, \Workers::LOGS_OBJECT, $worker_id);
 				}
+
+				foreach ($update_notify as $notify_id=>$status) {
+					$notify = [
+						'monitor_id' => $monitor_id,
+						'notify_id' => $notify_id,
+						'create_time' => time(),
+						'update_time' => time(),
+					];
+					$notify['id'] = \MonitoringNotify::save($notify);
+					$log_id = \Logs::create_log(\MonitoringNotify::LOGS_OBJECT, $notify['id'], $notify);
+					\Logs::add_tag($log_id, \Monitors::LOGS_OBJECT, $monitor_id);
+					\Logs::add_tag($log_id, \Notify::LOGS_OBJECT, $notify_id);
+				}
+
 				if (!\Sessions::in_group(\GROUPS::ADMIN_GROUP_ID, intval(\Sessions::currentUser()['id']))) {
 					$permissions = \Monitors::permissions_hash();
 					foreach($permissions as $permission => $_) {
@@ -312,10 +385,17 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				date('Y-m-d H:i:s', $this->monitor['update_time']) : ''
 			);
 			$this->monitor['workers'] = [];
-			$jobs = \Jobs::data(['monitor_id' => $this->monitor['id']], false, '`worker_id`');
+			$jobs = \MonitoringJobs::data(['monitor_id' => $this->monitor['id']], false, '`worker_id`');
 			if ($jobs) {
 				foreach($jobs as $v) {
 					$this->monitor['workers'][$v['worker_id']] = true;
+				}
+			}
+			$this->monitor['notify'] = [];
+			$notify = \MonitoringNotify::data(['monitor_id' => $this->monitor['id']], false, '`notify_id`');
+			if ($notify) {
+				foreach($notify as $v) {
+					$this->monitor['notify'][$v['notify_id']] = true;
 				}
 			}
 			if (isset($this->monitor['response_code']) && !is_array($this->monitor['response_code'])) {
@@ -333,6 +413,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 			$this->monitor['ssl_verify_host'] = 1;
 			$this->monitor['proxy_type'] = 0;
 			$this->monitor['workers'] = [];
+			$this->monitor['notify'] = [];
 			$this->monitor['response_code'] = [2];
 			$this->monitor['parent_id'] = $this->parent_id;
 		}
@@ -344,6 +425,17 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				$this->workers_hash[$v['id']] = [
 					'title' => htmlspecialchars($v['title']),
 					'enable' => \Sessions::checkPermission(\Workers::PERMISSION_ACCESS, $v['id'], READ),
+				];
+			}
+		}
+
+		$this->notify_hash = [];
+		$data = \Notify::data(false, ' ORDER BY `title` ASC', '`id`, `title`');
+		if ($data) {
+			foreach($data as $v) {
+				$this->notify_hash[$v['id']] = [
+					'title' => htmlspecialchars($v['title']),
+					'enable' => \Sessions::checkPermission(\Notify::PERMISSION_ACCESS, $v['id'], READ),
 				];
 			}
 		}
@@ -435,6 +527,11 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					echo $this->template->html_params("workers[]", $this->workers_hash, $this->monitor['workers']??[], \T::Monitor_Edit_Workers(),false,[
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
 						'global-class' => 'type-dependence type-'.\Monitors::TYPE_CURL,
+						'readonly' => !($this->can_write || $this->can_create),
+					]);
+
+					echo $this->template->html_params("notify[]", $this->notify_hash, $this->monitor['notify']??[], \T::Monitor_Edit_Notify(),false,[
+						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 

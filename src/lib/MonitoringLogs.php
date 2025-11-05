@@ -209,7 +209,7 @@ class MonitoringLogs extends \DB\MySQLObject {
 		}
 		$monitor_workers_hash = [];
 
-		$monitor_workers_data = \Jobs::data(false, ' ORDER BY `monitor_id` ASC, `worker_id` ASC', '`monitor_id`, `worker_id`, `create_time`');
+		$monitor_workers_data = \MonitoringJobs::data(false, ' ORDER BY `monitor_id` ASC, `worker_id` ASC', '`monitor_id`, `worker_id`, `create_time`');
 
 		if ($monitor_workers_data) {
 			foreach($monitor_workers_data as $item) {
@@ -365,10 +365,10 @@ class MonitoringLogs extends \DB\MySQLObject {
 			$return['monitor'] = $monitor;
 			$current_time = intval(time() / intval($monitor['repeat_seconds'])) * intval($monitor['repeat_seconds']);
 
-			// Get Jobs
+			// Get MonitoringJobs
 			$start_time = microtime(true);
-			$jobs = \Jobs::data(['monitor_id' => $monitor['id']],'','`worker_id`, `create_time`');
-			$return['mysql_time']['Jobs::data'] = round(microtime(true) - $start_time,3);
+			$jobs = \MonitoringJobs::data(['monitor_id' => $monitor['id']],'','`worker_id`, `create_time`');
+			$return['mysql_time']['MonitoringJobs::data'] = round(microtime(true) - $start_time,3);
 
 			$workers_hash = [];
 			$worker_data_for_charts = [];

@@ -87,7 +87,7 @@ class State extends \Routing_Parent implements \Routing_Interface {
 	}
 
 	private function updateJobState(int $worker_id, array $job_response): bool|array {
-		$job = \Jobs::get([
+		$job = \MonitoringJobs::get([
 			'id' => intval($job_response['job_id']),
 			'worker_id' => intval($worker_id),
 			'monitor_id' => intval($job_response['monitor_id']),
@@ -98,7 +98,7 @@ class State extends \Routing_Parent implements \Routing_Interface {
 		if ($monitor['status'] == \Monitors::STATUS_DISABLED) return false;
 
 		if ($job['update_time'] + 30 < time()) {
-			\Jobs::save([
+			\MonitoringJobs::save([
 				'id' => $job['id'],
 				'update_time' => $job_response['update_time'] ?? 0,
 			]);

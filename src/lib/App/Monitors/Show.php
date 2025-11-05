@@ -104,14 +104,14 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 				}
 			}
 
-			$jobs = \Jobs::data(['monitor_id'=>$monitorId]);
+			$jobs = \MonitoringJobs::data(['monitor_id'=>$monitorId]);
 			foreach($jobs as $job) {
 				unset($job['id']);
 				$job['monitor_id'] = $newMonitor['id'];
 				$job['create_time'] = time();
 				$job['update_time'] = time();
-				$job['id'] = \Jobs::save($job);
-				$log_id = \Logs::create_log(\Jobs::LOGS_OBJECT, $job['id'], $job);
+				$job['id'] = \MonitoringJobs::save($job);
+				$log_id = \Logs::create_log(\MonitoringJobs::LOGS_OBJECT, $job['id'], $job);
 				\Logs::add_tag($log_id, \Monitors::LOGS_OBJECT, $newMonitor['id']);
 			}
 			common_redirect('/monitors/'.($this->parent_id ? $this->parent_id.'/':'0/').'edit/'.$newMonitor['id'].'/');
