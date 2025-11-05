@@ -15,12 +15,14 @@ require_once("./autoload.php");
 // Print Content Security Policy Header
 \ContentSecurityPolicy::print_header();
 
-\Permissions::add_permission(\Workers::PERMISSION_CREATE, \T::Worker_Permissions_CreateWorker());
-\Permissions::add_permission(\Monitors::PERMISSION_CREATE, \T::Monitor_Permissions_CreateMonitor());
+\Permissions::add_permission(\Workers::PERMISSION_CREATE, \T::Worker_Permissions_Create());
+\Permissions::add_permission(\Monitors::PERMISSION_CREATE, \T::Monitor_Permissions_Create());
+\Permissions::add_permission(\Notify::PERMISSION_CREATE, \T::Notify_Permissions_Create());
 
 // Add another permissions subject types
 \Permissions::set_subject_type('worker', '\\Workers', 'Workers');
 \Permissions::set_subject_type('monitor', '\\Monitors', 'Monitors');
+\Permissions::set_subject_type('notify', '\\Notify', 'Notify');
 
 \Sessions::session_init(true); // This need to check Permissions and user language
 
@@ -42,6 +44,7 @@ require_once("./autoload.php");
 \Template::addMenuItem(new \MenuItem('', \T::Menu_Home(), '/', null, null));
 \Template::addMenuAdminItem(new \MenuItem('bi bi-hdd-network', \T::Worker_Menu(), '/workers/', null, new \MenuPermissionItem(\Workers::PERMISSION_ACCESS, -1, READ)));
 \Template::addMenuAdminItem(new \MenuItem('bi bi-question-octagon', \T::Monitor_Menu(), '/monitors/', null, new \MenuPermissionItem(\Monitors::PERMISSION_ACCESS, -1, READ)));
+\Template::addMenuAdminItem(new \MenuItem('bi bi-bell', \T::Notify_Menu(), '/notify/', null, new \MenuPermissionItem(\Notify::PERMISSION_ACCESS, -1, READ)));
 
 // Add another Websocket item
 \Websocket::addAction('monitors_update', '\\MonitorsWebsocket');
@@ -60,6 +63,11 @@ require_once("./autoload.php");
 \Routes::addRoute('/monitors/', '\\App\\Monitors\\Show');
 
 \Routes::addRoute('/monitor/(?P<monitor_id>\d+)/', '\\App\\Main');
+
+\Routes::addRoute('/notify/edit/(?P<notify_id>\d+)/', '\\App\\Notify\\Edit');
+\Routes::addRoute('/notify/edit/', '\\App\\Notify\\Edit');
+\Routes::addRoute('/notify/(?P<action>[^/]+)/(?P<notify_id>\d+)/', '\\App\\Notify\\Show');
+\Routes::addRoute('/notify/', '\\App\\Notify\\Show');
 
 new \Routing();
 

@@ -7,9 +7,9 @@ Worker:
   Menu: "Обработчики"
   PageTitle: "Обработчики"
   Permissions:
-    Worker: "Доступ"
-    WorkerKeyHash: "Ключ обработчика"
-    CreateWorker: "Создание обработчика"
+    Access: "Доступ"
+    Secret: "Ключ обработчика"
+    Create: "Создание обработчика"
   Table:
     Title: "Название"
     LastActiveTime: "Время последнего обращения"
@@ -53,7 +53,7 @@ Monitor:
   PageTitle: "Мониторы"
   Permissions:
     Access: "Доступ"
-    CreateMonitor: "Создание монитора"
+    Create: "Создание монитора"
     Folder: "Папка"
     Monitor: "Монитор"
   Table:
@@ -117,3 +117,50 @@ Dashboard:
   Day: "День"
   Days: "Дня"
   Days5: "Дней"
+
+Notify:
+  Menu: "Уведомления"
+  PageTitle: "Уведомления"
+  Permissions:
+    Access: "Доступ"
+    Secrets: "Ключи"
+    Create: "Создание уведомления"
+  Delete:
+    Title: "Удаление уведомления"
+    Confirmation: "Вы уверены, что хотите удалить уведомление {title}?"
+    PermissionDenied: "У вас нет прав на удаление этого уведомления"
+    NotFound: "Уведомление не найден"
+  Type:
+    Telegram: "Telegram"
+    Mattermost: "Mattermost"
+  Table:
+    Title: "Название"
+    Status: "Статус"
+    Type: "Тип"
+    Receiver: "Получатель"
+    CreateTime: "Время создания"
+    UpdateTime: "Время обновления"
+    Actions: "Действия"
+    Delete: "Удалить"
+    Edit: "Редактировать"
+  Edit:
+    CreateTitle: "Создание уведомления"
+    EditTitle: "Редактирование уведомления &quot;%s&quot; [ID=%d]"
+    Title: "Название"
+    Status: "Статус"
+    Type: "Тип"
+    Receiver: "Получатель"
+    TelegramBotToken: "Токен бота Telegram"
+    MattermostURL: "Mattermost URL"
+    MattermostToken: "Токен Mattermost"
+    CreateTime: "Время создания"
+    UpdateTime: "Время обновления"
+    ChangeButton: "Обновить"
+    CreateButton: "Создать"
+    TestButton: "Тест"
+    TestSuccess: "Тест успешно пройден"
+    TestError: "Тест не пройден"
+    NameLengthError: "Название должно быть от 2 до 255 символов"
+    NotFound: "Уведомление не найдено"
+    PermissionDenied: "У вас нет прав на редактирование этого уведомления"
+    NotingChanged: "Ничего не изменилось"

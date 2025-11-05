@@ -7,9 +7,9 @@ Worker:
   Menu: "Workers"
   PageTitle: "Workers"
   Permissions:
-    Worker: "Access"
-    WorkerKeyHash: "Worker key hash"
-    CreateWorker: "Create worker"
+    Access: "Access"
+    Secret: "Worker key hash"
+    Create: "Create worker"
   Table:
     Title: "Title"
     LastActiveTime: "Last active time"
@@ -53,7 +53,7 @@ Monitor:
   PageTitle: "Monitors"
   Permissions:
     Access: "Access"
-    CreateMonitor: "Create monitor"
+    Create: "Create monitor"
     Folder: "Folder"
     Monitor: "Monitor"
   Table:
@@ -117,3 +117,50 @@ Dashboard:
   Day: "Day"
   Days: "Days"
   Days5: "Days"
+
+Notify:
+  Menu: "Notifications"
+  PageTitle: "Notifications"
+  Permissions:
+    Access: "Access"
+    Secrets: "Secrets"
+    Create: "Create notification"
+  Delete:
+    Title: "Removing the notification"
+    Confirmation: "Are you sure you want to delete the notification {title}?"
+    NotFound: "Notification not found"
+    PermissionDenied: "You don't have permission to delete this notification"
+  Type:
+    Telegram: "Telegram"
+    Mattermost: "Mattermost"
+  Table:
+    Title: "Title"
+    Status: "Status"
+    Type: "Type"
+    Receiver: "Receiver"
+    CreateTime: "Create time"
+    UpdateTime: "Update time"
+    Actions: "Actions"
+    Delete: "Delete"
+    Edit: "Edit"
+  Edit:
+    CreateTitle: "Create notify"
+    EditTitle: "Edit notify &quot;%s&quot; [ID=%d]"
+    Title: "Title"
+    Status: "Status"
+    Type: "Type"
+    Receiver: "Receiver"
+    TelegramBotToken: "Telegram bot token"
+    MattermostURL: "Mattermost URL"
+    MattermostToken: "Mattermost token"
+    CreateTime: "Create time"
+    UpdateTime: "Update time"
+    ChangeButton: "Update"
+    CreateButton: "Create"
+    TestButton: "Test"
+    TestSuccess: "Test successfully passed"
+    TestError: "Test failed"
+    NameLengthError: "Name length must be between 2 and 255 characters"
+    NotFound: "Notify not found"
+    PermissionDenied: "You don't have permission to edit this notify"
+    NotingChanged: "Nothing changed"

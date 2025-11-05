@@ -33,28 +33,28 @@ class T {
 	public static function Worker_PageTitle(...$argv): string { return ''; }
 
 	/**
-	 * Worker_Permissions_Worker
+	 * Worker_Permissions_Access
 	 * 
 	 * @return string "Access"
 	 * @return string "Доступ"
 	 */
-	public static function Worker_Permissions_Worker(...$argv): string { return ''; }
+	public static function Worker_Permissions_Access(...$argv): string { return ''; }
 
 	/**
-	 * Worker_Permissions_WorkerKeyHash
+	 * Worker_Permissions_Secret
 	 * 
 	 * @return string "Worker key hash"
 	 * @return string "Ключ обработчика"
 	 */
-	public static function Worker_Permissions_WorkerKeyHash(...$argv): string { return ''; }
+	public static function Worker_Permissions_Secret(...$argv): string { return ''; }
 
 	/**
-	 * Worker_Permissions_CreateWorker
+	 * Worker_Permissions_Create
 	 * 
 	 * @return string "Create worker"
 	 * @return string "Создание обработчика"
 	 */
-	public static function Worker_Permissions_CreateWorker(...$argv): string { return ''; }
+	public static function Worker_Permissions_Create(...$argv): string { return ''; }
 
 	/**
 	 * Worker_Table_Title
@@ -345,12 +345,12 @@ class T {
 	public static function Monitor_Permissions_Access(...$argv): string { return ''; }
 
 	/**
-	 * Monitor_Permissions_CreateMonitor
+	 * Monitor_Permissions_Create
 	 * 
 	 * @return string "Create monitor"
 	 * @return string "Создание монитора"
 	 */
-	public static function Monitor_Permissions_CreateMonitor(...$argv): string { return ''; }
+	public static function Monitor_Permissions_Create(...$argv): string { return ''; }
 
 	/**
 	 * Monitor_Permissions_Folder
@@ -791,6 +791,326 @@ class T {
 	 * @return string "Дней"
 	 */
 	public static function Dashboard_Days5(...$argv): string { return ''; }
+
+	/**
+	 * Notify_Menu
+	 * 
+	 * @return string "Notifications"
+	 * @return string "Уведомления"
+	 */
+	public static function Notify_Menu(...$argv): string { return ''; }
+
+	/**
+	 * Notify_PageTitle
+	 * 
+	 * @return string "Notifications"
+	 * @return string "Уведомления"
+	 */
+	public static function Notify_PageTitle(...$argv): string { return ''; }
+
+	/**
+	 * Notify_Permissions_Access
+	 * 
+	 * @return string "Access"
+	 * @return string "Доступ"
+	 */
+	public static function Notify_Permissions_Access(...$argv): string { return ''; }
+
+	/**
+	 * Notify_Permissions_Secrets
+	 * 
+	 * @return string "Secrets"
+	 * @return string "Ключи"
+	 */
+	public static function Notify_Permissions_Secrets(...$argv): string { return ''; }
+
+	/**
+	 * Notify_Permissions_Create
+	 * 
+	 * @return string "Create notification"
+	 * @return string "Создание уведомления"
+	 */
+	public static function Notify_Permissions_Create(...$argv): string { return ''; }
+
+	/**
+	 * Notify_Delete_Title
+	 * 
+	 * @return string "Removing the notification"
+	 * @return string "Удаление уведомления"
+	 */
+	public static function Notify_Delete_Title(...$argv): string { return ''; }
+
+	/**
+	 * Notify_Delete_Confirmation
+	 * 
+	 * @return string "Are you sure you want to delete the notification {title}?"
+	 * @return string "Вы уверены, что хотите удалить уведомление {title}?"
+	 */
+	public static function Notify_Delete_Confirmation(...$argv): string { return ''; }
+
+	/**
+	 * Notify_Delete_NotFound
+	 * 
+	 * @return string "Notification not found"
+	 * @return string "Уведомление не найден"
+	 */
+	public static function Notify_Delete_NotFound(...$argv): string { return ''; }
+
+	/**
+	 * Notify_Delete_PermissionDenied
+	 * 
+	 * @return string "You don\'t have permission to delete this notification"
+	 * @return string "У вас нет прав на удаление этого уведомления"
+	 */
+	public static function Notify_Delete_PermissionDenied(...$argv): string { return ''; }
+
+	/**
+	 * Notify_Type_Telegram
+	 * 
+	 * @return string "Telegram"
+	 * @return string "Telegram"
+	 */
+	public static function Notify_Type_Telegram(...$argv): string { return ''; }
+
+	/**
+	 * Notify_Type_Mattermost
+	 * 
+	 * @return string "Mattermost"
+	 * @return string "Mattermost"
+	 */
+	public static function Notify_Type_Mattermost(...$argv): string { return ''; }
+
+	/**
+	 * Notify_Table_Title
+	 * 
+	 * @return string "Title"
+	 * @return string "Название"
+	 */
+	public static function Notify_Table_Title(...$argv): string { return ''; }
+
+	/**
+	 * Notify_Table_Status
+	 * 
+	 * @return string "Status"
+	 * @return string "Статус"
+	 */
+	public static function Notify_Table_Status(...$argv): string { return ''; }
+
+	/**
+	 * Notify_Table_Type
+	 * 
+	 * @return string "Type"
+	 * @return string "Тип"
+	 */
+	public static function Notify_Table_Type(...$argv): string { return ''; }
+
+	/**
+	 * Notify_Table_Receiver
+	 * 
+	 * @return string "Receiver"
+	 * @return string "Получатель"
+	 */
+	public static function Notify_Table_Receiver(...$argv): string { return ''; }
+
+	/**
+	 * Notify_Table_CreateTime
+	 * 
+	 * @return string "Create time"
+	 * @return string "Время создания"
+	 */
+	public static function Notify_Table_CreateTime(...$argv): string { return ''; }
+
+	/**
+	 * Notify_Table_UpdateTime
+	 * 
+	 * @return string "Update time"
+	 * @return string "Время обновления"
+	 */
+	public static function Notify_Table_UpdateTime(...$argv): string { return ''; }
+
+	/**
+	 * Notify_Table_Actions
+	 * 
+	 * @return string "Actions"
+	 * @return string "Действия"
+	 */
+	public static function Notify_Table_Actions(...$argv): string { return ''; }
+
+	/**
+	 * Notify_Table_Delete
+	 * 
+	 * @return string "Delete"
+	 * @return string "Удалить"
+	 */
+	public static function Notify_Table_Delete(...$argv): string { return ''; }
+
+	/**
+	 * Notify_Table_Edit
+	 * 
+	 * @return string "Edit"
+	 * @return string "Редактировать"
+	 */
+	public static function Notify_Table_Edit(...$argv): string { return ''; }
+
+	/**
+	 * Notify_Edit_CreateTitle
+	 * 
+	 * @return string "Create notify"
+	 * @return string "Создание уведомления"
+	 */
+	public static function Notify_Edit_CreateTitle(...$argv): string { return ''; }
+
+	/**
+	 * Notify_Edit_EditTitle
+	 * 
+	 * @return string "Edit notify &quot;%s&quot; [ID=%d]"
+	 * @return string "Редактирование уведомления &quot;%s&quot; [ID=%d]"
+	 */
+	public static function Notify_Edit_EditTitle(...$argv): string { return ''; }
+
+	/**
+	 * Notify_Edit_Title
+	 * 
+	 * @return string "Title"
+	 * @return string "Название"
+	 */
+	public static function Notify_Edit_Title(...$argv): string { return ''; }
+
+	/**
+	 * Notify_Edit_Status
+	 * 
+	 * @return string "Status"
+	 * @return string "Статус"
+	 */
+	public static function Notify_Edit_Status(...$argv): string { return ''; }
+
+	/**
+	 * Notify_Edit_Type
+	 * 
+	 * @return string "Type"
+	 * @return string "Тип"
+	 */
+	public static function Notify_Edit_Type(...$argv): string { return ''; }
+
+	/**
+	 * Notify_Edit_Receiver
+	 * 
+	 * @return string "Receiver"
+	 * @return string "Получатель"
+	 */
+	public static function Notify_Edit_Receiver(...$argv): string { return ''; }
+
+	/**
+	 * Notify_Edit_TelegramBotToken
+	 * 
+	 * @return string "Telegram bot token"
+	 * @return string "Токен бота Telegram"
+	 */
+	public static function Notify_Edit_TelegramBotToken(...$argv): string { return ''; }
+
+	/**
+	 * Notify_Edit_MattermostURL
+	 * 
+	 * @return string "Mattermost URL"
+	 * @return string "Mattermost URL"
+	 */
+	public static function Notify_Edit_MattermostURL(...$argv): string { return ''; }
+
+	/**
+	 * Notify_Edit_MattermostToken
+	 * 
+	 * @return string "Mattermost token"
+	 * @return string "Токен Mattermost"
+	 */
+	public static function Notify_Edit_MattermostToken(...$argv): string { return ''; }
+
+	/**
+	 * Notify_Edit_CreateTime
+	 * 
+	 * @return string "Create time"
+	 * @return string "Время создания"
+	 */
+	public static function Notify_Edit_CreateTime(...$argv): string { return ''; }
+
+	/**
+	 * Notify_Edit_UpdateTime
+	 * 
+	 * @return string "Update time"
+	 * @return string "Время обновления"
+	 */
+	public static function Notify_Edit_UpdateTime(...$argv): string { return ''; }
+
+	/**
+	 * Notify_Edit_ChangeButton
+	 * 
+	 * @return string "Update"
+	 * @return string "Обновить"
+	 */
+	public static function Notify_Edit_ChangeButton(...$argv): string { return ''; }
+
+	/**
+	 * Notify_Edit_CreateButton
+	 * 
+	 * @return string "Create"
+	 * @return string "Создать"
+	 */
+	public static function Notify_Edit_CreateButton(...$argv): string { return ''; }
+
+	/**
+	 * Notify_Edit_TestButton
+	 * 
+	 * @return string "Test"
+	 * @return string "Тест"
+	 */
+	public static function Notify_Edit_TestButton(...$argv): string { return ''; }
+
+	/**
+	 * Notify_Edit_TestSuccess
+	 * 
+	 * @return string "Test successfully passed"
+	 * @return string "Тест успешно пройден"
+	 */
+	public static function Notify_Edit_TestSuccess(...$argv): string { return ''; }
+
+	/**
+	 * Notify_Edit_TestError
+	 * 
+	 * @return string "Test failed"
+	 * @return string "Тест не пройден"
+	 */
+	public static function Notify_Edit_TestError(...$argv): string { return ''; }
+
+	/**
+	 * Notify_Edit_NameLengthError
+	 * 
+	 * @return string "Name length must be between 2 and 255 characters"
+	 * @return string "Название должно быть от 2 до 255 символов"
+	 */
+	public static function Notify_Edit_NameLengthError(...$argv): string { return ''; }
+
+	/**
+	 * Notify_Edit_NotFound
+	 * 
+	 * @return string "Notify not found"
+	 * @return string "Уведомление не найдено"
+	 */
+	public static function Notify_Edit_NotFound(...$argv): string { return ''; }
+
+	/**
+	 * Notify_Edit_PermissionDenied
+	 * 
+	 * @return string "You don\'t have permission to edit this notify"
+	 * @return string "У вас нет прав на редактирование этого уведомления"
+	 */
+	public static function Notify_Edit_PermissionDenied(...$argv): string { return ''; }
+
+	/**
+	 * Notify_Edit_NotingChanged
+	 * 
+	 * @return string "Nothing changed"
+	 * @return string "Ничего не изменилось"
+	 */
+	public static function Notify_Edit_NotingChanged(...$argv): string { return ''; }
 
 	/**
 	 * Framework_ServerVersion

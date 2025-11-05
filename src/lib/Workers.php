@@ -7,10 +7,8 @@ class Workers extends \DB\MySQLObject implements \PermissionSubject_Interface {
 	const LOGS_OBJECT = 'Workers';
 
 	const PERMISSION_ACCESS = 'worker';
-	const PERMISSION_WORKER_KEY_HASH = 'worker_key_hash';
+	const PERMISSION_SECRETS = 'worker_key_hash';
 	const PERMISSION_CREATE = 'create_worker';
-
-
 
 	static public function subject_hash(): array {
 		$data_hash = [];
@@ -33,8 +31,8 @@ class Workers extends \DB\MySQLObject implements \PermissionSubject_Interface {
 	}
 	static public function permissions_hash(): array {
 		return [
-			static::PERMISSION_ACCESS => \T::Worker_Permissions_Worker(),
-			static::PERMISSION_WORKER_KEY_HASH => \T::Worker_Permissions_WorkerKeyHash(),
+			static::PERMISSION_ACCESS => \T::Worker_Permissions_Access(),
+			static::PERMISSION_SECRETS => \T::Worker_Permissions_Secret(),
 		];
 	}
 

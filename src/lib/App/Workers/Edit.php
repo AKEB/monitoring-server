@@ -253,7 +253,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 							'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6 '.$status_class,
 						]);
 
-						if (\Sessions::checkPermission(\Workers::PERMISSION_WORKER_KEY_HASH, $this->worker['id'], READ)) {
+						if (\Sessions::checkPermission(\Workers::PERMISSION_SECRETS, $this->worker['id'], READ)) {
 							echo $this->template->html_input("worker_key_hash", $this->worker['worker_key_hash']??'', \T::Worker_Edit_WorkerKeyHash(), false, [
 								'readonly' => true,
 								'type' => 'textarea',

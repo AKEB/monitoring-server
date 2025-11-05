@@ -7,7 +7,7 @@ class Migration_0009 {
 	static function install() {
 		global $db;
 		$db->execSQL("
-			CREATE TABLE `monitoring_events` (
+			CREATE TABLE IF NOT EXISTS `monitoring_events` (
 				`id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT ,
 				`monitor_id` INT NOT NULL DEFAULT '0' ,
 				`worker_id` INT NOT NULL DEFAULT '0' ,
