@@ -350,168 +350,172 @@ class MonitoringLogs extends \DB\MySQLObject {
 		}
 
 		$return = [];
-		if (!$monitor_id) return $return;
 		$return['start_work_time'] = microtime(true);
-
 		$max_time = time();
 
-		if (!\Sessions::checkPermission(\Monitors::PERMISSION_ACCESS, $monitor_id, READ)) return $return;
-
-		$start_time = microtime(true);
-		$monitor = \Monitors::get(['id' => $monitor_id]);
-		$return['mysql_time']['Monitors::get'] = round(microtime(true) - $start_time,3);
-		if (!$monitor) return $return;
-		if(!isset($monitor['repeat_seconds']) || !$monitor['repeat_seconds']) $monitor['repeat_seconds'] = 60;
-		$return['monitor'] = $monitor;
-
-		$current_time = intval(time() / intval($monitor['repeat_seconds'])) * intval($monitor['repeat_seconds']);
-
-		$start_time = microtime(true);
-		$jobs = \Jobs::data(['monitor_id' => $monitor['id']],'','`worker_id`, `create_time`');
-		$return['mysql_time']['Jobs::data'] = round(microtime(true) - $start_time,3);
-
-		$workers_hash = [];
-		$worker_data_for_charts = [];
-		foreach($jobs as $item) {
-			$workers_hash[$item['worker_id']] = $item;
-			$worker_data_for_charts[$item['worker_id']] = [
-				'status' => null,
-				'time' => null
-			];
-		}
-		if ($workers_hash) {
+		if ($monitor_id) {
+			if (!\Sessions::checkPermission(\Monitors::PERMISSION_ACCESS, $monitor_id, READ)) return $return;
+			// Get Monitor
 			$start_time = microtime(true);
-			$workers = \Workers::data(['id' => array_keys($workers_hash)],'','`id`, `title`');
-			$return['mysql_time']['Workers::data'] = round(microtime(true) - $start_time,3);
-			foreach($workers as $item) {
-				$workers_hash[$item['id']]['title'] = $item['title'] ?? '';
-			}
-		}
-		$return['workers'] = $workers_hash;
+			$monitor = \Monitors::get(['id' => $monitor_id]);
+			$return['mysql_time']['Monitors::get'] = round(microtime(true) - $start_time,3);
 
-		$sql = '';
-		$sql .= sql_pholder(' AND `monitor_id` = ?', $monitor_id);
-		if ($workers_hash) {
-			$sql .= sql_pholder(' AND `worker_id` IN (?@)', array_keys($workers_hash));
-		}
-		$sql .= sql_pholder(' AND `update_time` >= ? AND `update_time` <= ? ', $max_time - 60*60 - intval($monitor['repeat_seconds']), $max_time);
-		$sql .= ' ORDER BY `interval_time` ASC';
-		$fields = '`worker_id`, `status`, ';
-		$fields .= 'FLOOR(`update_time` / '.intval($monitor['repeat_seconds']).') * '.intval($monitor['repeat_seconds']).' as `interval_time`,';
-		$fields .= '`total_time_us`, `status_code`, `response_error`, `cert_expire` ';
+			if (!$monitor) return $return;
+			if(!isset($monitor['repeat_seconds']) || !$monitor['repeat_seconds']) $monitor['repeat_seconds'] = 60;
+			$return['monitor'] = $monitor;
+			$current_time = intval(time() / intval($monitor['repeat_seconds'])) * intval($monitor['repeat_seconds']);
 
-		$start_time = microtime(true);
-		$logs = static::data(false, $sql, $fields);
-		$return['mysql_time']['MonitoringLogs::data_logs'] = round(microtime(true) - $start_time,3);
+			// Get Jobs
+			$start_time = microtime(true);
+			$jobs = \Jobs::data(['monitor_id' => $monitor['id']],'','`worker_id`, `create_time`');
+			$return['mysql_time']['Jobs::data'] = round(microtime(true) - $start_time,3);
 
-		$logs_hash = [];
-		$last_data = [];
-
-		for($i=$max_time - 60*60; $i <= $max_time; $i+=intval($monitor['repeat_seconds'])) {
-			$time = intval($i / intval($monitor['repeat_seconds'])) * intval($monitor['repeat_seconds']);
-			if ($time == $current_time) continue;
-			$logs_hash[$time] = [
-				'title' => date("H:i:s",$time),
-			];
-		}
-
-		foreach($logs as $item) {
-			if ($item['interval_time'] == $current_time) continue;
-			$item['title'] = date("Y-m-d H:i:s",$item['interval_time']).' - '.$item['status_code'].' '.$item['response_error'];
-			$logs_hash[$item['interval_time']]['title'] = date("H:i:s",$item['interval_time']);
-			$logs_hash[$item['interval_time']][$item['worker_id']] = $item;
-			$last_data[$item['worker_id']] = $item;
-		}
-		$return['logs'] = $logs_hash;
-
-		$interval = intval($monitor['repeat_seconds']);
-		$sql = '';
-		$sql .= sql_pholder(' AND `monitor_id` = ?', $monitor_id);
-		if ($workers_hash) {
-			$sql .= sql_pholder(' AND `worker_id` IN (?@)', array_keys($workers_hash));
-		}
-		$sql .= sql_pholder(' AND `update_time` >= ? AND `update_time` <= ? ', $max_time - $period*60*60 - $interval, $max_time);
-		// $sql .= ' AND `status_code` <> 0';
-		$sql .= ' ORDER BY 2 ASC';
-		$fields = '`worker_id`, ';
-		$fields .= 'FLOOR(`update_time` / '.intval($interval).') * '.intval($interval).' as `interval_time`,';
-		$fields .= '`total_time_us`, `status`';
-		$start_time = microtime(true);
-		$logs = static::data(false, $sql, $fields);
-		$return['mysql_time']['MonitoringLogs::data_logs_chart'] = round(microtime(true) - $start_time,3);
-		$logs_hash = [];
-		for($i=$max_time - $period*60*60; $i<$max_time; $i+=intval($interval)) {
-			$time = intval($i / intval($interval)) * intval($interval);
-			if ($time == $current_time) continue;
-			$logs_hash[$time] = $worker_data_for_charts;
-		}
-		foreach($logs as $item) {
-			if ($item['interval_time'] == $current_time) continue;
-			if (isset($logs_hash[$item['interval_time']][$item['worker_id']])) {
-				$logs_hash[$item['interval_time']][$item['worker_id']]['status'] = min($logs_hash[$item['interval_time']][$item['worker_id']]['status']??\MonitoringLogs::STATUS_GOOD, intval($item['status']));
-				$logs_hash[$item['interval_time']][$item['worker_id']]['time'] = max($logs_hash[$item['interval_time']][$item['worker_id']]['time'], ceil($item['total_time_us']/1000));
-			} else {
-				$logs_hash[$item['interval_time']][$item['worker_id']] = [
-					'status' => intval($item['status']),
-					'time' => ceil($item['total_time_us']/1000)
+			$workers_hash = [];
+			$worker_data_for_charts = [];
+			foreach($jobs as $item) {
+				$workers_hash[$item['worker_id']] = $item;
+				$worker_data_for_charts[$item['worker_id']] = [
+					'status' => null,
+					'time' => null
 				];
 			}
-		}
-		$return['logs_chart'] = $logs_hash;
+			if ($workers_hash) {
+				$start_time = microtime(true);
+				$workers = \Workers::data(['id' => array_keys($workers_hash)],'','`id`, `title`');
+				$return['mysql_time']['Workers::data'] = round(microtime(true) - $start_time,3);
+				foreach($workers as $item) {
+					$workers_hash[$item['id']]['title'] = $item['title'] ?? '';
+				}
+			}
+			$return['workers'] = $workers_hash;
 
-		$start_time = microtime(true);
-		$uptime_30 = \MonitoringAvailabilityPercent::getAvailabilityPercent(30*86400, $monitor_id);
-		$return['mysql_time']['MonitoringAvailabilityPercent::getAvailabilityPercent_30'] = round(microtime(true) - $start_time,3);
+			$sql = '';
+			$sql .= sql_pholder(' AND `monitor_id` = ?', $monitor_id);
+			if ($workers_hash) {
+				$sql .= sql_pholder(' AND `worker_id` IN (?@)', array_keys($workers_hash));
+			}
+			$sql .= sql_pholder(' AND `update_time` >= ? AND `update_time` <= ? ', $max_time - 60*60 - intval($monitor['repeat_seconds']), $max_time);
+			$sql .= ' ORDER BY `interval_time` ASC';
+			$fields = '`worker_id`, `status`, ';
+			$fields .= 'FLOOR(`update_time` / '.intval($monitor['repeat_seconds']).') * '.intval($monitor['repeat_seconds']).' as `interval_time`,';
+			$fields .= '`total_time_us`, `status_code`, `response_error`, `cert_expire` ';
 
-		$start_time = microtime(true);
-		$uptime_1 = \MonitoringAvailabilityPercent::getAvailabilityPercent(86400, $monitor_id);
-		$return['mysql_time']['MonitoringAvailabilityPercent::getAvailabilityPercent_1'] = round(microtime(true) - $start_time,3);
+			$start_time = microtime(true);
+			$logs = static::data(false, $sql, $fields);
+			$return['mysql_time']['MonitoringLogs::data_logs'] = round(microtime(true) - $start_time,3);
 
-		if ($uptime_1 && isset($uptime_1[0]) && $uptime_1[0]['avg_response_time']) {
-			$return['avg_response_time_1d'] = ceil($uptime_1[0]['avg_response_time']).' ms';
+			$logs_hash = [];
+			$last_data = [];
+
+			for($i=$max_time - 60*60; $i <= $max_time; $i+=intval($monitor['repeat_seconds'])) {
+				$time = intval($i / intval($monitor['repeat_seconds'])) * intval($monitor['repeat_seconds']);
+				if ($time == $current_time) continue;
+				$logs_hash[$time] = [
+					'title' => date("H:i:s",$time),
+				];
+			}
+			foreach($logs as $item) {
+				if ($item['interval_time'] == $current_time) continue;
+				$item['title'] = date("Y-m-d H:i:s",$item['interval_time']).' - '.$item['status_code'].' '.$item['response_error'];
+				$logs_hash[$item['interval_time']]['title'] = date("H:i:s",$item['interval_time']);
+				$logs_hash[$item['interval_time']][$item['worker_id']] = $item;
+				$last_data[$item['worker_id']] = $item;
+			}
+			$return['logs'] = $logs_hash;
+
+			$interval = intval($monitor['repeat_seconds']);
+			$sql = '';
+			$sql .= sql_pholder(' AND `monitor_id` = ?', $monitor_id);
+			if ($workers_hash) {
+				$sql .= sql_pholder(' AND `worker_id` IN (?@)', array_keys($workers_hash));
+			}
+			$sql .= sql_pholder(' AND `update_time` >= ? AND `update_time` <= ? ', $max_time - $period*60*60 - $interval, $max_time);
+			// $sql .= ' AND `status_code` <> 0';
+			$sql .= ' ORDER BY 2 ASC';
+			$fields = '`worker_id`, ';
+			$fields .= 'FLOOR(`update_time` / '.intval($interval).') * '.intval($interval).' as `interval_time`,';
+			$fields .= '`total_time_us`, `status`';
+			$start_time = microtime(true);
+			$logs = static::data(false, $sql, $fields);
+			$return['mysql_time']['MonitoringLogs::data_logs_chart'] = round(microtime(true) - $start_time,3);
+			$logs_hash = [];
+			for($i=$max_time - $period*60*60; $i<$max_time; $i+=intval($interval)) {
+				$time = intval($i / intval($interval)) * intval($interval);
+				if ($time == $current_time) continue;
+				$logs_hash[$time] = $worker_data_for_charts;
+			}
+			foreach($logs as $item) {
+				if ($item['interval_time'] == $current_time) continue;
+				if (isset($logs_hash[$item['interval_time']][$item['worker_id']])) {
+					$logs_hash[$item['interval_time']][$item['worker_id']]['status'] = min($logs_hash[$item['interval_time']][$item['worker_id']]['status']??\MonitoringLogs::STATUS_GOOD, intval($item['status']));
+					$logs_hash[$item['interval_time']][$item['worker_id']]['time'] = max($logs_hash[$item['interval_time']][$item['worker_id']]['time'], ceil($item['total_time_us']/1000));
+				} else {
+					$logs_hash[$item['interval_time']][$item['worker_id']] = [
+						'status' => intval($item['status']),
+						'time' => ceil($item['total_time_us']/1000)
+					];
+				}
+			}
+			$return['logs_chart'] = $logs_hash;
+
+			$start_time = microtime(true);
+			$uptime_30 = \MonitoringAvailabilityPercent::getAvailabilityPercent(30*86400, $monitor_id);
+			$return['mysql_time']['MonitoringAvailabilityPercent::getAvailabilityPercent_30'] = round(microtime(true) - $start_time,3);
+
+			$start_time = microtime(true);
+			$uptime_1 = \MonitoringAvailabilityPercent::getAvailabilityPercent(86400, $monitor_id);
+			$return['mysql_time']['MonitoringAvailabilityPercent::getAvailabilityPercent_1'] = round(microtime(true) - $start_time,3);
+
+			if ($uptime_1 && isset($uptime_1[0]) && $uptime_1[0]['avg_response_time']) {
+				$return['avg_response_time_1d'] = ceil($uptime_1[0]['avg_response_time']).' ms';
+			} else {
+				$return['avg_response_time_1d'] = '';
+			}
+
+			if ($uptime_30 && isset($uptime_30[0]) && $uptime_30[0]['avg_response_time']) {
+				$return['avg_response_time_30d'] = ceil($uptime_30[0]['avg_response_time']).' ms';
+			} else {
+				$return['avg_response_time_30d'] = '';
+			}
+
+			$uptime_30 = $uptime_30 && $uptime_30[0] ? $uptime_30[0]['availability_percent']??'' : '';
+			$uptime_1 = $uptime_1 && $uptime_1[0] ? $uptime_1[0]['availability_percent']??'' : '';
+			if ($uptime_30 >=100) $uptime_30 = 100;
+			if ($uptime_1 >=100) $uptime_1 = 100;
+			$return['uptime_30'] = $uptime_30;
+			$return['uptime_1'] = $uptime_1;
+
+			$avg_response_time = 0;
+			$cert_expire_time = 0;
+			foreach($last_data as $item) {
+				$avg_response_time += $item['total_time_us'];
+				if (!$cert_expire_time) $cert_expire_time = $item['cert_expire'];
+				else $cert_expire_time = min($cert_expire_time, $item['cert_expire']);
+			}
+			$count = 1;
+			if ($last_data) {
+				$count = count($last_data);
+			}
+			$avg_response_time = ceil(($avg_response_time / $count) / 1000);
+			$return['avg_response_time'] = $avg_response_time.' ms';
+
+			if (!$cert_expire_time || $cert_expire_time < time()) {
+				$return['cert_expire'] = '';
+				$return['cert_expire_days'] = '';
+			} else {
+				$cert_expire_days = intval( ( $cert_expire_time - time() ) / 86400 );
+				$return['cert_expire'] = date("Y-m-d",$cert_expire_time);
+				$return['cert_expire_days'] = $cert_expire_days . ' '.(\T::declension($cert_expire_days, \T::Dashboard_Day(), \T::Dashboard_Days(), \T::Dashboard_Days5()));
+			}
+			$return['events'] = \MonitorsEvents::getEventsForMonitor($monitor_id);
 		} else {
-			$return['avg_response_time_1d'] = '';
+			$return['workers'] = make_hash(\Workers::data(false, '', '`id`, `title`'));
+			$return['monitors'] = make_hash(\Monitors::data(false, '', '`id`, `title`'));
+			$return['events'] = \MonitorsEvents::getEventsForMonitor(0);
 		}
 
-		if ($uptime_30 && isset($uptime_30[0]) && $uptime_30[0]['avg_response_time']) {
-			$return['avg_response_time_30d'] = ceil($uptime_30[0]['avg_response_time']).' ms';
-		} else {
-			$return['avg_response_time_30d'] = '';
-		}
-
-		$uptime_30 = $uptime_30 && $uptime_30[0] ? $uptime_30[0]['availability_percent']??'' : '';
-		$uptime_1 = $uptime_1 && $uptime_1[0] ? $uptime_1[0]['availability_percent']??'' : '';
-		if ($uptime_30 >=100) $uptime_30 = 100;
-		if ($uptime_1 >=100) $uptime_1 = 100;
-		$return['uptime_30'] = $uptime_30;
-		$return['uptime_1'] = $uptime_1;
-
-		$avg_response_time = 0;
-		$cert_expire_time = 0;
-		foreach($last_data as $item) {
-			$avg_response_time += $item['total_time_us'];
-			if (!$cert_expire_time) $cert_expire_time = $item['cert_expire'];
-			else $cert_expire_time = min($cert_expire_time, $item['cert_expire']);
-		}
-		$count = 1;
-		if ($last_data) {
-			$count = count($last_data);
-		}
-		$avg_response_time = ceil(($avg_response_time / $count) / 1000);
-		$return['avg_response_time'] = $avg_response_time.' ms';
-
-		if (!$cert_expire_time || $cert_expire_time < time()) {
-			$return['cert_expire'] = '';
-			$return['cert_expire_days'] = '';
-		} else {
-			$cert_expire_days = intval( ( $cert_expire_time - time() ) / 86400 );
-			$return['cert_expire'] = date("Y-m-d",$cert_expire_time);
-			$return['cert_expire_days'] = $cert_expire_days . ' '.(\T::declension($cert_expire_days, \T::Dashboard_Day(), \T::Dashboard_Days(), \T::Dashboard_Days5()));
-		}
 		$return['finish_work_time'] = microtime(true);
 		$return['work_time'] = round($return['finish_work_time'] - $return['start_work_time'], 3);
-
-		$return['events'] = \MonitorsEvents::getEventsForMonitor($monitor_id);
 
 		$cache->update(json_encode($return), 30);
 		return $return;

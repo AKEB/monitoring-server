@@ -18,6 +18,7 @@ var Dashboard_Charts_6Hours="6 hours"
 var Dashboard_Charts_24Hours="24 hours"
 
 var Dashboard_Events_Status="Status"
+var Dashboard_Events_Monitor="Monitor"
 var Dashboard_Events_Worker="Worker"
 var Dashboard_Events_Time="Time"
 var Dashboard_Events_StatusCode="Status code"

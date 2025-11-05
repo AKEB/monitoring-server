@@ -79,9 +79,11 @@ class MonitorsEvents extends \DB\MySQLObject {
 	}
 
 	static public function getEventsForMonitor(int $monitor_id): array {
-		if (!isset($monitor_id) || !$monitor_id) return [];
+		// if (!isset($monitor_id) || !$monitor_id) return [];
 		$sql = '';
-		$sql .= sql_pholder(' AND `monitor_id` = ?', $monitor_id);
+		if ($monitor_id > 0) {
+			$sql .= sql_pholder(' AND `monitor_id` = ?', $monitor_id);
+		}
 		$sql .= sql_pholder(' AND `event_time` >= ?', time() - 2 * 24*60*60);
 		$sql .= ' ORDER BY event_time DESC';
 		$data = static::data(false, $sql);
@@ -95,6 +97,10 @@ class MonitorsEvents extends \DB\MySQLObject {
 				'response_error_num' => intval($item['response_error_num']),
 				'response_error' => strval($item['response_error']),
 			];
+			if ($monitor_id < 1) {
+				$event['monitor_id'] = intval($item['monitor_id']);
+				if (!\Sessions::checkPermission(\Monitors::PERMISSION_ACCESS, $event['monitor_id'], READ)) continue;
+			}
 			$data_hash[] = $event;
 		}
 		return $data_hash;

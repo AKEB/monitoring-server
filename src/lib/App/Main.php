@@ -64,6 +64,8 @@ class Main extends \Routing_Parent implements \Routing_Interface {
 				MonitorsCollapse();
 				<?php if ($this->monitor_id) { ?>
 					MonitorShowData(<?=$this->monitor_id;?>);
+				<?php } else { ?>
+					MonitorShowData(0);
 				<?php } ?>
 			});
 		</script>

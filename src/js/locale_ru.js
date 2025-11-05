@@ -18,6 +18,7 @@ var Dashboard_Charts_6Hours="6 часов"
 var Dashboard_Charts_24Hours="24 часа"
 
 var Dashboard_Events_Status="Статус"
+var Dashboard_Events_Monitor="Монитор"
 var Dashboard_Events_Worker="Обработчик"
 var Dashboard_Events_Time="Время"
 var Dashboard_Events_StatusCode="Код ответа"

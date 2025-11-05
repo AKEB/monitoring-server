@@ -339,19 +339,31 @@ function updateMonitorEvents(data) {
 
 	HTML += '<thead class=""><tr>';
 	HTML += '<th scope="col" class="align-middle" data-priority="1">'+Dashboard_Events_Status+'</th>';
-	HTML += '<th scope="col" class="align-middle" data-priority="2">'+Dashboard_Events_Worker+'</th>';
-	HTML += '<th scope="col" class="align-middle" data-priority="3">'+Dashboard_Events_Time+'</th>';
-	HTML += '<th scope="col" class="align-middle" data-priority="4">'+Dashboard_Events_StatusCode+'</th>';
-	HTML += '<th scope="col" class="align-middle" data-priority="5">'+Dashboard_Events_ResponseError+'</th>';
+	if (!data.monitor.id) {
+		HTML += '<th scope="col" class="align-middle" data-priority="2">'+Dashboard_Events_Monitor+'</th>';
+	}
+	HTML += '<th scope="col" class="align-middle" data-priority="3">'+Dashboard_Events_Worker+'</th>';
+	HTML += '<th scope="col" class="align-middle" data-priority="4">'+Dashboard_Events_Time+'</th>';
+	HTML += '<th scope="col" class="align-middle" data-priority="5">'+Dashboard_Events_StatusCode+'</th>';
+	HTML += '<th scope="col" class="align-middle" data-priority="6">'+Dashboard_Events_ResponseError+'</th>';
 	HTML += '</tr></thead>';
 
 	for (let i in data.events) {
 		const event = data.events[i];
 		const icon = event.status == 1 ? '<i class="bi bi-check-square text-success"></i>' : '<i class="bi bi-exclamation-square text-danger"></i>';
 		const worker = data.workers[event.worker_id] && data.workers[event.worker_id]['title'] ? data.workers[event.worker_id]['title'] : 'Unknown worker';
+		let monitor = '';
+		if (event.monitor_id && data.monitors && data.monitors[event.monitor_id] && data.monitors[event.monitor_id]['title']) {
+			monitor = data.monitors[event.monitor_id]['title'];
+		} else {
+			monitor = '';
+		}
 
 		HTML += '<tr>';
 			HTML += '<td>'+icon+'</td>';
+			if (!data.monitor.id) {
+				HTML += '<td>'+monitor+'</td>';
+			}
 			HTML += '<td>'+worker+'</td>';
 			HTML += '<td>'+event.event_time+'</td>';
 			HTML += '<td>'+event.status_code+'</td>';
@@ -386,35 +398,46 @@ function printMonitorData(data, period) {
 	// Если карточка для этого монитора еще не создана, генерируем HTML
 	if (!cardObj || cardObj.length < 1) {
 		HTML += '<div class="card" id="monitor-data-'+data.monitor.id+'">';
-		HTML += '<div class="card-header bg-transparent"><h5>'+data.monitor.title+'</h5></div>';
+		if (data.monitor.id) {
+			HTML += '<div class="card-header bg-transparent"><h5>'+data.monitor.title+'</h5></div>';
+		}
+		
 		HTML += '<div class="card-body">';
-		HTML += '<div id="monitor-workers-logs"></div>';
-		HTML += '<div id="monitor-last-info"></div>';
-		HTML += '<div id="monitor-charts">';
-			HTML += '<div class="card chart mb-3">';
-				HTML += '<div class="card-body">';
-					HTML += '<div class="float-end"><select data-width="fit" data-container="body" data-style-base="btn btn-sm" name="period" class="selectpicker" id="chart-period">';
-					HTML += '<option value="0.5" '+(period == "0.5" ? 'selected':'')+'>'+Dashboard_Charts_30Minutes+'</option>';
-					HTML += '<option value="1" '+(period == "1" ? 'selected':'')+'>'+Dashboard_Charts_1Hour+'</option>';
-					HTML += '<option value="4" '+(period == "4" ? 'selected':'')+'>'+Dashboard_Charts_4Hours+'</option>';
-					HTML += '<option value="6" '+(period == "6" ? 'selected':'')+'>'+Dashboard_Charts_6Hours+'</option>';
-					HTML += '<option value="24" '+(period == "24" ? 'selected':'')+'>'+Dashboard_Charts_24Hours+'</option>';
-					HTML += '</select></div>';
-					HTML += '<div class="clearfix"></div>';
-					HTML += '<div id="MonitorEChart" class="MonitorEChart"></div>';
+		if (data.monitor.id) {
+			HTML += '<div id="monitor-workers-logs"></div>';
+			HTML += '<div id="monitor-last-info"></div>';
+			HTML += '<div id="monitor-charts">';
+				HTML += '<div class="card chart mb-3">';
+					HTML += '<div class="card-body">';
+						HTML += '<div class="float-end"><select data-width="fit" data-container="body" data-style-base="btn btn-sm" name="period" class="selectpicker" id="chart-period">';
+						HTML += '<option value="0.5" '+(period == "0.5" ? 'selected':'')+'>'+Dashboard_Charts_30Minutes+'</option>';
+						HTML += '<option value="1" '+(period == "1" ? 'selected':'')+'>'+Dashboard_Charts_1Hour+'</option>';
+						HTML += '<option value="4" '+(period == "4" ? 'selected':'')+'>'+Dashboard_Charts_4Hours+'</option>';
+						HTML += '<option value="6" '+(period == "6" ? 'selected':'')+'>'+Dashboard_Charts_6Hours+'</option>';
+						HTML += '<option value="24" '+(period == "24" ? 'selected':'')+'>'+Dashboard_Charts_24Hours+'</option>';
+						HTML += '</select></div>';
+						HTML += '<div class="clearfix"></div>';
+						HTML += '<div id="MonitorEChart" class="MonitorEChart"></div>';
+					HTML += '</div>';
 				HTML += '</div>';
 			HTML += '</div>';
-		HTML += '</div>';
+		}
 		HTML += '<div id="monitor-events"></div>';
 		HTML += '</div>';
 		HTML += '</div>';
 		$('div.monitor-dashboard').html(HTML);
-		$('#chart-period').selectpicker('render');
-		initECharts();
+		
+		if (data.monitor.id) {
+			$('#chart-period').selectpicker('render');
+			initECharts();
+		}
+
 	}
-	updateMonitorWorkersLogs(data);
-	updateMonitorLastInfo(data);
-	updateECharts(data);
+	if (data.monitor.id) {
+		updateMonitorWorkersLogs(data);
+		updateMonitorLastInfo(data);
+		updateECharts(data);
+	}
 	updateMonitorEvents(data);
 }
 
