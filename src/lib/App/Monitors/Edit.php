@@ -66,8 +66,21 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				$params['status'] = 0;
 			}
 
+			if (isset($data['send_repeat_minute'])) {
+				$data['send_repeat_minute'] = trim($data['send_repeat_minute']);
+				$params['send_repeat_minute'] = intval($data['send_repeat_minute']);
+			}
+			if (isset($data['repeat_seconds'])) {
+				$data['repeat_seconds'] = trim($data['repeat_seconds']);
+				$params['repeat_seconds'] = intval($data['repeat_seconds']);
+				if ($params['repeat_seconds'] < 60) $params['repeat_seconds'] = 60;
+			}
+			if (isset($data['timeout'])) {
+				$data['timeout'] = trim($data['timeout']);
+				$params['timeout'] = intval($data['timeout']);
+			}
 
-			if ($data['type'] == \Monitors::TYPE_CURL) {
+			if ($data['type'] == \Monitors::TYPE_HTTPS) {
 				if (isset($data['url'])) {
 					$data['url'] = trim($data['url']);
 					$params['url'] = $data['url'];
@@ -76,24 +89,9 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					$data['method'] = trim($data['method']);
 					$params['method'] = $data['method'];
 				}
-				if (isset($data['timeout'])) {
-					$data['timeout'] = trim($data['timeout']);
-					$params['timeout'] = intval($data['timeout']);
-				}
 				if (isset($data['max_redirects'])) {
 					$data['max_redirects'] = trim($data['max_redirects']);
 					$params['max_redirects'] = intval($data['max_redirects']);
-				}
-
-				if (isset($data['send_repeat_minute'])) {
-					$data['send_repeat_minute'] = trim($data['send_repeat_minute']);
-					$params['send_repeat_minute'] = intval($data['send_repeat_minute']);
-				}
-
-				if (isset($data['repeat_seconds'])) {
-					$data['repeat_seconds'] = trim($data['repeat_seconds']);
-					$params['repeat_seconds'] = intval($data['repeat_seconds']);
-					if ($params['repeat_seconds'] < 60) $params['repeat_seconds'] = 60;
 				}
 				if (isset($data['ssl_verify']) && $data['ssl_verify'] == 'true') {
 					$params['ssl_verify'] = 1;
@@ -105,12 +103,10 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				} else {
 					$params['ssl_verify_host'] = 0;
 				}
-
 				if (isset($data['response_code'])) {
 					$data['response_code'] = array_map('intval',array_map('trim',$data['response_code']));
 					$params['response_code'] = implode(',', $data['response_code']);
 				}
-
 				if (isset($data['proxy_host'])) {
 					$data['proxy_host'] = trim($data['proxy_host']);
 					$params['proxy_host'] = $data['proxy_host'];
@@ -119,7 +115,22 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					$data['proxy_type'] = trim($data['proxy_type']);
 					$params['proxy_type'] = intval($data['proxy_type']);
 				}
+			} elseif ($data['type'] == \Monitors::TYPE_TCP) {
+				if (isset($data['host'])) {
+					$data['host'] = trim($data['host']);
+					$params['host'] = $data['host'];
+				}
+				if (isset($data['port'])) {
+					$data['port'] = trim($data['port']);
+					$params['port'] = intval($data['port']);
+				}
+			} elseif ($data['type'] == \Monitors::TYPE_PING) {
+				if (isset($data['host'])) {
+					$data['host'] = trim($data['host']);
+					$params['host'] = $data['host'];
+				}
 			}
+
 			if (isset($data['parent_id'])) {
 				$data['parent_id'] = trim($data['parent_id']);
 				$params['parent_id'] = intval($data['parent_id']);
@@ -410,20 +421,21 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 			}
 
 		} else {
-			$this->monitor['status'] = \Monitors::STATUS_ENABLED;
-			$this->monitor['type'] = 0;
-			$this->monitor['method'] = 'GET';
-			$this->monitor['timeout'] = 48;
-			$this->monitor['max_redirects'] = 10;
-			$this->monitor['send_repeat_minute'] = 15;
-			$this->monitor['repeat_seconds'] = 60;
-			$this->monitor['ssl_verify'] = 1;
-			$this->monitor['ssl_verify_host'] = 1;
-			$this->monitor['proxy_type'] = 0;
-			$this->monitor['workers'] = [];
-			$this->monitor['notify'] = [];
-			$this->monitor['response_code'] = [2];
-			$this->monitor['parent_id'] = $this->parent_id;
+			$this->monitor['status'] ??= \Monitors::STATUS_ENABLED;
+			$this->monitor['type'] ??= \Monitors::TYPE_FOLDER;
+			$this->monitor['method'] ??= 'GET';
+			$this->monitor['url'] ??= 'https://';
+			$this->monitor['timeout'] ??= 15;
+			$this->monitor['max_redirects'] ??= 10;
+			$this->monitor['send_repeat_minute'] ??= 15;
+			$this->monitor['repeat_seconds'] ??= 60;
+			$this->monitor['ssl_verify'] ??= 1;
+			$this->monitor['ssl_verify_host'] ??= 1;
+			$this->monitor['proxy_type'] ??= 0;
+			$this->monitor['workers'] ??= [];
+			$this->monitor['notify'] ??= [];
+			$this->monitor['response_code'] ??= [2];
+			$this->monitor['parent_id'] ??= $this->parent_id;
 		}
 
 		$this->workers_hash = [];
@@ -526,15 +538,27 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 
-					echo $this->template->html_input("url", $this->monitor['url']??'', \T::Monitor_Edit_Url(), false, [
+					echo $this->template->html_input("url", $this->monitor['url']??'https://', \T::Monitor_Edit_Url(), false, [
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
-						'global-class' => 'type-dependence type-'.\Monitors::TYPE_CURL,
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS,
+						'readonly' => !($this->can_write || $this->can_create),
+					]);
+
+					echo $this->template->html_input("host", $this->monitor['host']??'', \T::Monitor_Edit_Host(), false, [
+						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_PING,
+						'readonly' => !($this->can_write || $this->can_create),
+					]);
+
+					echo $this->template->html_input("port", $this->monitor['port']??'', \T::Monitor_Edit_Port(), false, [
+						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_TCP,
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 
 					echo $this->template->html_params("workers[]", $this->workers_hash, $this->monitor['workers']??[], \T::Monitor_Edit_Workers(),false,[
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
-						'global-class' => 'type-dependence type-'.\Monitors::TYPE_CURL,
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_PING,
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 
@@ -545,55 +569,55 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 
 					echo $this->template?->html_select('method', \Monitors::HTTP_methods(), $this->monitor['method']??'', \T::Monitor_Edit_Method(), false,[
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
-						'global-class' => 'type-dependence type-'.\Monitors::TYPE_CURL,
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS,
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 					echo $this->template->html_input("timeout", $this->monitor['timeout']??0, \T::Monitor_Edit_Timeout(), false, [
 						'type' => 'number',
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
-						'global-class' => 'type-dependence type-'.\Monitors::TYPE_CURL,
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_PING,
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 					echo $this->template->html_input("repeat_seconds", $this->monitor['repeat_seconds']??0, \T::Monitor_Edit_RepeatSeconds(), false, [
 						'type' => 'number',
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
-						'global-class' => 'type-dependence type-'.\Monitors::TYPE_CURL,
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_PING,
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 					echo $this->template->html_input("max_redirects", $this->monitor['max_redirects']??0, \T::Monitor_Edit_MaxRedirects(), false, [
 						'type' => 'number',
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
-						'global-class' => 'type-dependence type-'.\Monitors::TYPE_CURL,
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS,
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 					echo $this->template->html_input("send_repeat_minute", $this->monitor['send_repeat_minute']??0, \T::Monitor_Edit_SendRepeatMinute(), false, [
 						'type' => 'number',
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
-						'global-class' => 'type-dependence type-'.\Monitors::TYPE_CURL,
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_PING,
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 					echo $this->template?->html_select('response_code[]', \Monitors::response_code_hash(), $this->monitor['response_code']??[], \T::Monitor_Edit_ResponseCode(), false,[
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
 						'multiple' => 'multiple',
-						'global-class' => 'type-dependence type-'.\Monitors::TYPE_CURL,
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS,
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 					echo $this->template->html_switch("ssl_verify", intval($this->monitor['ssl_verify']??0), \T::Monitor_Edit_SSLVerify(), false,[
-						'global-class' => 'type-dependence type-'.\Monitors::TYPE_CURL,
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS,
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 					echo $this->template->html_switch("ssl_verify_host", intval($this->monitor['ssl_verify_host']??0), \T::Monitor_Edit_SSLVerifyHost(), false,[
-						'global-class' => 'type-dependence type-'.\Monitors::TYPE_CURL,
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS,
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 					echo $this->template->html_input("proxy_host", $this->monitor['proxy_host']??'', \T::Monitor_Edit_ProxyHost(), false, [
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
-						'global-class' => 'type-dependence type-'.\Monitors::TYPE_CURL,
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS,
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 					echo $this->template?->html_select('proxy_type', \Monitors::proxy_type_hash(), $this->monitor['proxy_type']??0, \T::Monitor_Edit_ProxyType(), false,[
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
-						'global-class' => 'type-dependence type-'.\Monitors::TYPE_CURL,
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS,
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 					echo $this->template?->html_select('parent_id', \Monitors::get_folder_hash_options_hash(), $this->monitor['parent_id']??0, \T::Monitor_Edit_ParentFolder(), false,[

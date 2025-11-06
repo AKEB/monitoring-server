@@ -49,7 +49,7 @@ class MonitorsEvents extends \DB\MySQLObject {
 			'status' => $param['status'],
 			'event_time' => $param['update_time'],
 			'status_code' => $param['status_code'] ?? 0,
-			'response_error_num' => $param['response_error_num'] ?? '',
+			'response_error_num' => intval($param['response_error_num'] ?? 0),
 			'response_error' => $param['response_error'] ?? '',
 			'create_time' => time(),
 		];
@@ -58,7 +58,7 @@ class MonitorsEvents extends \DB\MySQLObject {
 			'worker_id' => $event['worker_id'],
 			'status' => $event['status'],
 			'status_code' => $event['status_code'],
-			'response_error_num' => $event['response_error_num'],
+			'response_error_num' => intval($event['response_error_num']),
 		]));
 		if ($lastEvent) {
 			// Есть какое-то событие, нужно проверить такого же оно состояния или нет

@@ -246,7 +246,7 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 						<th scope="col" class="align-middle" data-priority="1">ID</th>
 						<th scope="col" class="align-middle" data-priority="2"><?=\T::Monitor_Table_Title();?></th>
 						<th scope="col" class="align-middle" data-priority="4"><?=\T::Monitor_Table_Status();?></th>
-						<th scope="col" class="align-middle" data-priority="5"><?=\T::Monitor_Table_Url();?></th>
+						<th scope="col" class="align-middle" data-priority="5"><?=\T::Monitor_Table_Type();?></th>
 						<th scope="col" class="align-middle text-center" data-priority="7"><?=\T::Monitor_Table_CreateTime();?></th>
 						<th scope="col" class="align-middle text-center" data-priority="6"><?=\T::Monitor_Table_UpdateTime();?></th>
 						<th scope="col" class="align-middle text-center" data-priority="3"><?=\T::Monitor_Table_Actions();?></th>
@@ -260,7 +260,6 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 							'title' => htmlspecialchars(trim($item['title'] ?? '')),
 							'type' => intval($item['type']),
 							'status' => intval($item['status'] ?? 0) == 1 ? '<i class="bi bi-check-lg fs-4 text-success"></i>':'<i class="bi bi-x-lg fs-4 text-danger"></i>',
-							'url' => strval($item['url']),
 							'create_time' => isset($item['create_time']) && $item['create_time'] > 0 ? date("Y-m-d H:i:s", $item['create_time']) : '',
 							'update_time' => isset($item['update_time']) && $item['update_time'] > 0 ? date("Y-m-d H:i:s", $item['update_time']) : '',
 						];
@@ -295,7 +294,7 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 								?>
 							</td>
 							<td class="align-middle text-center"><?=$params['status'];?></td>
-							<td class="align-middle"><?=$params['url'];?></td>
+							<td class="align-middle"><?=\Monitors::type_hash()[$params['type']]??$params['type'];?></td>
 							<td class="align-middle text-center"><?=$params['create_time'];?></td>
 							<td class="align-middle text-center"><?=$params['update_time'];?></td>
 							<td class="align-middle text-center">

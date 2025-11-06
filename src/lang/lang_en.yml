@@ -59,7 +59,7 @@ Monitor:
   Table:
     Title: "Title"
     Status: "Status"
-    Url: "URL"
+    Type: "Type"
     CreateTime: "Create time"
     UpdateTime: "Update time"
     Actions: "Actions"
@@ -82,6 +82,8 @@ Monitor:
     CreateTime: "Create time"
     UpdateTime: "Update time"
     Url: "URL"
+    Host: "Host"
+    Port: "Port"
     Method: "Method"
     Timeout: "Request timeout"
     MaxRedirects: "Max redirects"
@@ -104,8 +106,11 @@ Monitor:
   Create:
     PermissionDenied: "You don't have permission to create a monitor"
   Type:
-    Curl: "Curl"
+    HTTPs: "HTTP(s)"
     Folder: "Folder"
+    TCP: "TCP Port"
+    Ping: "Ping"
+
 
 Dashboard:
   Response: "Response"

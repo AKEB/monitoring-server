@@ -11,6 +11,9 @@ Create a `docker-compose.yml` file
         container_name: "monitoring-worker"
         image: "akeb/monitoring-worker:latest"
         restart: always
+        cap_add:
+          - NET_RAW
+          - NET_ADMIN
         environment:
           - TZ=${TZ:-UTC} # UTC
           - SERVER_HOST=${SERVER_HOST} # Server host https://monitoring.example.com/

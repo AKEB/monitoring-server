@@ -11,8 +11,11 @@ class Monitors extends \DB\MySQLObject implements \PermissionSubject_Interface {
 	const STATUS_DISABLED = 0;
 	const STATUS_ENABLED = 1;
 
-	const TYPE_CURL = 0;
+	const TYPE_HTTPS  = 0;
 	const TYPE_FOLDER = 1;
+	const TYPE_TCP    = 2;
+	const TYPE_PING   = 3;
+
 
 	static private array $monitorsForAccess = [];
 
@@ -29,8 +32,10 @@ class Monitors extends \DB\MySQLObject implements \PermissionSubject_Interface {
 
 	static public function type_hash(): array {
 		return [
-			static::TYPE_CURL => \T::Monitor_Type_Curl(),
+			static::TYPE_HTTPS => \T::Monitor_Type_HTTPs(),
 			static::TYPE_FOLDER => \T::Monitor_Type_Folder(),
+			static::TYPE_TCP => \T::Monitor_Type_TCP(),
+			static::TYPE_PING => \T::Monitor_Type_Ping(),
 		];
 	}
 

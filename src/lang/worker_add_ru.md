@@ -11,6 +11,9 @@
         container_name: "monitoring-worker"
         image: "akeb/monitoring-worker:latest"
         restart: always
+        cap_add:
+          - NET_RAW
+          - NET_ADMIN
         environment:
           - TZ=${TZ:-UTC} # UTC
           - SERVER_HOST=${SERVER_HOST} # Адрес сервера https://monitoring.example.com/

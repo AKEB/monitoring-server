@@ -59,7 +59,7 @@ Monitor:
   Table:
     Title: "Название"
     Status: "Статус"
-    Url: "Ссылка"
+    Type: "Тип"
     CreateTime: "Время создания"
     UpdateTime: "Время обновления"
     Actions: "Действия"
@@ -82,6 +82,8 @@ Monitor:
     CreateTime: "Время создания"
     UpdateTime: "Время обновления"
     Url: "Ссылка"
+    Host: "Хост"
+    Port: "Порт"
     Method: "Метод запроса"
     Timeout: "Таймаут запроса в секундах"
     MaxRedirects: "Максимум редиректов"
@@ -104,8 +106,10 @@ Monitor:
   Create:
     PermissionDenied: "У вас нет прав на создание монитора"
   Type:
-    Curl: "Curl"
+    HTTPs: "HTTP(s)"
     Folder: "Папка"
+    TCP: "TCP Port"
+    Ping: "Ping"
 
 Dashboard:
   Response: "Ответ"

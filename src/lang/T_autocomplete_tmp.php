@@ -385,12 +385,12 @@ class T {
 	public static function Monitor_Table_Status(...$argv): string { return ''; }
 
 	/**
-	 * Monitor_Table_Url
+	 * Monitor_Table_Type
 	 * 
-	 * @return string "URL"
-	 * @return string "Ссылка"
+	 * @return string "Type"
+	 * @return string "Тип"
 	 */
-	public static function Monitor_Table_Url(...$argv): string { return ''; }
+	public static function Monitor_Table_Type(...$argv): string { return ''; }
 
 	/**
 	 * Monitor_Table_CreateTime
@@ -553,6 +553,22 @@ class T {
 	public static function Monitor_Edit_Url(...$argv): string { return ''; }
 
 	/**
+	 * Monitor_Edit_Host
+	 * 
+	 * @return string "Host"
+	 * @return string "Хост"
+	 */
+	public static function Monitor_Edit_Host(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_Port
+	 * 
+	 * @return string "Port"
+	 * @return string "Порт"
+	 */
+	public static function Monitor_Edit_Port(...$argv): string { return ''; }
+
+	/**
 	 * Monitor_Edit_Method
 	 * 
 	 * @return string "Method"
@@ -713,12 +729,12 @@ class T {
 	public static function Monitor_Create_PermissionDenied(...$argv): string { return ''; }
 
 	/**
-	 * Monitor_Type_Curl
+	 * Monitor_Type_HTTPs
 	 * 
-	 * @return string "Curl"
-	 * @return string "Curl"
+	 * @return string "HTTP(s)"
+	 * @return string "HTTP(s)"
 	 */
-	public static function Monitor_Type_Curl(...$argv): string { return ''; }
+	public static function Monitor_Type_HTTPs(...$argv): string { return ''; }
 
 	/**
 	 * Monitor_Type_Folder
@@ -727,6 +743,22 @@ class T {
 	 * @return string "Папка"
 	 */
 	public static function Monitor_Type_Folder(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Type_TCP
+	 * 
+	 * @return string "TCP Port"
+	 * @return string "TCP Port"
+	 */
+	public static function Monitor_Type_TCP(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Type_Ping
+	 * 
+	 * @return string "Ping"
+	 * @return string "Ping"
+	 */
+	public static function Monitor_Type_Ping(...$argv): string { return ''; }
 
 	/**
 	 * Dashboard_Response
