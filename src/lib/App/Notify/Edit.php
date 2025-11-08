@@ -336,7 +336,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					)
 			);
 		} else {
-			$this->notify['status'] = 1;
+			$this->notify['status'] ??= 1;
 		}
 	}
 

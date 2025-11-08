@@ -34,6 +34,7 @@ Default User Email: `admin@admin.com` and Password `Admin@123`
 - [ ] Новый тип монитора MySQL
 - [ ] Новый тип монитора PostgreSQL
 - [ ] Новый тип монитора Docker API
+- [ ] Уведомление о протухающем SSL сертификате
 
 ## Environments
 

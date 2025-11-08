@@ -18,11 +18,13 @@ require_once("./autoload.php");
 \Permissions::add_permission(\Workers::PERMISSION_CREATE, \T::Worker_Permissions_Create());
 \Permissions::add_permission(\Monitors::PERMISSION_CREATE, \T::Monitor_Permissions_Create());
 \Permissions::add_permission(\Notify::PERMISSION_CREATE, \T::Notify_Permissions_Create());
+\Permissions::add_permission(\Dockers::PERMISSION_CREATE, \T::Docker_Permissions_Create());
 
 // Add another permissions subject types
 \Permissions::set_subject_type('worker', '\\Workers', 'Workers');
 \Permissions::set_subject_type('monitor', '\\Monitors', 'Monitors');
 \Permissions::set_subject_type('notify', '\\Notify', 'Notify');
+\Permissions::set_subject_type('docker', '\\Dockers', 'Docker');
 
 \Sessions::session_init(true); // This need to check Permissions and user language
 
@@ -54,6 +56,10 @@ require_once("./autoload.php");
 	new \MenuPermissionItem(\Notify::PERMISSION_ACCESS, -1, READ),
 	new \MenuPermissionItem(\Notify::PERMISSION_CREATE, 0, WRITE),
 ]));
+\Template::addMenuAdminItem(new \MenuItem('bi bi-box', \T::Docker_Menu(), '/dockers/', null, [
+	new \MenuPermissionItem(\Dockers::PERMISSION_ACCESS, -1, READ),
+	new \MenuPermissionItem(\Dockers::PERMISSION_CREATE, 0, WRITE),
+]));
 
 // Add another Websocket item
 \Websocket::addAction('monitors_update', '\\MonitorsWebsocket');
@@ -77,6 +83,11 @@ require_once("./autoload.php");
 \Routes::addRoute('/notify/edit/', '\\App\\Notify\\Edit');
 \Routes::addRoute('/notify/(?P<action>[^/]+)/(?P<notify_id>\d+)/', '\\App\\Notify\\Show');
 \Routes::addRoute('/notify/', '\\App\\Notify\\Show');
+
+\Routes::addRoute('/dockers/edit/(?P<docker_id>\d+)/', '\\App\\Dockers\\Edit');
+\Routes::addRoute('/dockers/edit/', '\\App\\Dockers\\Edit');
+\Routes::addRoute('/dockers/(?P<action>[^/]+)/(?P<docker_id>\d+)/', '\\App\\Dockers\\Show');
+\Routes::addRoute('/dockers/', '\\App\\Dockers\\Show');
 
 new \Routing();
 

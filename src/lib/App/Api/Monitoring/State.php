@@ -18,7 +18,7 @@ class State extends \Routing_Parent implements \Routing_Interface {
 			return;
 		}
 		$this->updateWorker();
-		if ($this->updateJobsState()) {
+		if ($this->updateStates()) {
 			$this->responseSuccess();
 		} else {
 			$this->responseError([
@@ -67,6 +67,111 @@ class State extends \Routing_Parent implements \Routing_Interface {
 			$save_data['_mode'] = \DB\Common::CSMODE_UPDATE;
 			\Workers::save($save_data);
 		}
+	}
+
+	private function updateStates(): bool {
+		if (!$this->worker || !$this->worker['id']) return false;
+		if (!$this->data) return false;
+		if (
+			(!isset($this->data['jobs']) || !$this->data['jobs']) &&
+			(!isset($this->data['dockers']) || !$this->data['dockers'])
+		) return false;
+		$status1 = $this->updateJobsState();
+		$status2 = $this->updateDockersState();
+		return $status1 || $status2;
+	}
+
+	private function updateDockersState(): bool {
+		if (!$this->worker || !$this->worker['id']) return false;
+		if (!$this->data || !isset($this->data['dockers']) || !$this->data['dockers']) return false;
+		$dockers = $this->data['dockers'];
+		foreach ($dockers as $docker) {
+			$this->updateDockerState($this->worker['id'], $docker);
+		}
+
+		return true;
+	}
+
+	private function updateDockerState(int $worker_id, array $docker_response): bool|array {
+		$dockerJob = \MonitoringDockers::get([
+			'id' => intval($docker_response['job_id']),
+			'worker_id' => intval($worker_id),
+		]);
+		if (!$dockerJob) return false;
+		$docker = \Dockers::get($dockerJob['docker_id']);
+		if (!$docker) return false;
+		if ($docker['status'] == \Dockers::STATUS_DISABLED) return false;
+		if ($dockerJob['update_time'] + 30 < time()) {
+			\MonitoringDockers::save([
+				'id' => $dockerJob['id'],
+				'update_time' => $docker_response['update_time'] ??	0,
+			]);
+		}
+		if (!isset($docker_response['response']) || !$docker_response['response'] || !is_array($docker_response['response'])) return false;
+		$response = $docker_response['response'] ?? [];
+		if (!is_array($response)) return false;
+		if (!$response) return false;
+		$response['status'] ??= 0;
+		$response['status_code'] ??= 0;
+		$response['response_error_num'] ??= 0;
+		$response['response_error'] ??= '';
+		$response['body'] ??= [];
+		if (!$response['status']) return false;
+		if (!($response['status_code'] >= 200 && $response['status_code'] < 299)) return false;
+
+		if (!$response['body']) return false;
+		$container_states = [];
+		foreach ($response['body'] as $docker_container) {
+			if (!$docker_container) continue;
+			$name = $docker_container['Names'][0] ?? '';
+			$name = substr($name, 1, strlen($name));
+			$state = $docker_container['State']??'';
+			$created = $docker_container['Created']??0;
+			$id = $docker_container['Id']??'';
+			$image = $docker_container['Image']??'';
+			$image_id = $docker_container['ImageID']??'';
+			$ports = [];
+			foreach($docker_container['Ports'] as $port) {
+				if (!$port) continue;
+				if (!isset($port['IP']) || !$port['IP']) continue;
+				if (!isset($port['PublicPort']) || !$port['PublicPort']) continue;
+				$port_with_host = '';
+				if ($port['IP'] == '::' || $port['IP'] == '0.0.0.0') {
+					$port_with_host = $port['PublicPort'];
+				} else {
+					$port_with_host = $port['IP'] . ':' . $port['PublicPort'];
+				}
+				if (isset($port['Type']) && $port['Type']) {
+					$port_with_host = $port_with_host . '/' . $port['Type'];
+
+				}
+				$ports[$port_with_host] = $port_with_host;
+			}
+			$ports = implode(', ', $ports);
+			$container_states[] = [
+				'id' => $id,
+				'image' => $image,
+				'image_id' => $image_id,
+				'name' => $name,
+				'state' => $state,
+				'created' => $created,
+				'ports' => $ports,
+			];
+		}
+		$container_states = json_encode($container_states);
+
+		$params = [
+			'id' => $docker['id'],
+			'container_states' => $container_states,
+			'update_time' => $docker_response['update_time'] ?? time(),
+			'_mode' => \DB\Common::CSMODE_UPDATE,
+		];
+		$params['id'] = \Dockers::save($params);
+		if ($params['id']) {
+			return true;
+		}
+
+		return false;
 	}
 
 	private function updateJobsState(): bool {

@@ -168,7 +168,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					break;
 				}
 				$old_jobs = get_hash(\MonitoringJobs::data(['monitor_id' => $params['id']]), 'worker_id', 'monitor_id');
-				foreach($old_jobs as $worker_id=>$monitor_id) {
+				foreach($old_jobs as $worker_id=>$_) {
 					if (!isset($workers_hash[$worker_id]) || !$workers_hash[$worker_id]) continue;
 					if (!in_array($worker_id, $data['workers'])) {
 						$update_jobs[$worker_id] = -1;

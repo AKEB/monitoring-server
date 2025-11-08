@@ -1169,6 +1169,366 @@ class T {
 	public static function Notify_Edit_NotingChanged(...$argv): string { return ''; }
 
 	/**
+	 * Docker_Menu
+	 * 
+	 * @return string "Dockers"
+	 * @return string "Docker"
+	 */
+	public static function Docker_Menu(...$argv): string { return ''; }
+
+	/**
+	 * Docker_PageTitle
+	 * 
+	 * @return string "Dockers"
+	 * @return string "Docker"
+	 */
+	public static function Docker_PageTitle(...$argv): string { return ''; }
+
+	/**
+	 * Docker_Permissions_Access
+	 * 
+	 * @return string "Access"
+	 * @return string "Доступ"
+	 */
+	public static function Docker_Permissions_Access(...$argv): string { return ''; }
+
+	/**
+	 * Docker_Permissions_Create
+	 * 
+	 * @return string "Create docker"
+	 * @return string "Создание Docker"
+	 */
+	public static function Docker_Permissions_Create(...$argv): string { return ''; }
+
+	/**
+	 * Docker_Delete_Title
+	 * 
+	 * @return string "Removing the docker"
+	 * @return string "Удаление Docker"
+	 */
+	public static function Docker_Delete_Title(...$argv): string { return ''; }
+
+	/**
+	 * Docker_Delete_Confirmation
+	 * 
+	 * @return string "Are you sure you want to delete the docker {title}?"
+	 * @return string "Вы уверены, что хотите удалить Docker {title}?"
+	 */
+	public static function Docker_Delete_Confirmation(...$argv): string { return ''; }
+
+	/**
+	 * Docker_Delete_NotFound
+	 * 
+	 * @return string "Docker not found"
+	 * @return string "Docker не найден"
+	 */
+	public static function Docker_Delete_NotFound(...$argv): string { return ''; }
+
+	/**
+	 * Docker_Delete_PermissionDenied
+	 * 
+	 * @return string "You don\'t have permission to delete this docker"
+	 * @return string "У вас нет прав на удаление этого Docker"
+	 */
+	public static function Docker_Delete_PermissionDenied(...$argv): string { return ''; }
+
+	/**
+	 * Docker_Table_Title
+	 * 
+	 * @return string "Title"
+	 * @return string "Название"
+	 */
+	public static function Docker_Table_Title(...$argv): string { return ''; }
+
+	/**
+	 * Docker_Table_Status
+	 * 
+	 * @return string "Status"
+	 * @return string "Статус"
+	 */
+	public static function Docker_Table_Status(...$argv): string { return ''; }
+
+	/**
+	 * Docker_Table_CreateTime
+	 * 
+	 * @return string "Create time"
+	 * @return string "Время создания"
+	 */
+	public static function Docker_Table_CreateTime(...$argv): string { return ''; }
+
+	/**
+	 * Docker_Table_UpdateTime
+	 * 
+	 * @return string "Update time"
+	 * @return string "Время обновления"
+	 */
+	public static function Docker_Table_UpdateTime(...$argv): string { return ''; }
+
+	/**
+	 * Docker_Table_Actions
+	 * 
+	 * @return string "Actions"
+	 * @return string "Действия"
+	 */
+	public static function Docker_Table_Actions(...$argv): string { return ''; }
+
+	/**
+	 * Docker_Table_Delete
+	 * 
+	 * @return string "Delete"
+	 * @return string "Удалить"
+	 */
+	public static function Docker_Table_Delete(...$argv): string { return ''; }
+
+	/**
+	 * Docker_Table_Edit
+	 * 
+	 * @return string "Edit"
+	 * @return string "Редактировать"
+	 */
+	public static function Docker_Table_Edit(...$argv): string { return ''; }
+
+	/**
+	 * Docker_Table_Host
+	 * 
+	 * @return string "Host"
+	 * @return string "Хост"
+	 */
+	public static function Docker_Table_Host(...$argv): string { return ''; }
+
+	/**
+	 * Docker_Table_Port
+	 * 
+	 * @return string "Port"
+	 * @return string "Порт"
+	 */
+	public static function Docker_Table_Port(...$argv): string { return ''; }
+
+	/**
+	 * Docker_Table_Tls
+	 * 
+	 * @return string "TLS"
+	 * @return string "TLS"
+	 */
+	public static function Docker_Table_Tls(...$argv): string { return ''; }
+
+	/**
+	 * Docker_Edit_CreateTitle
+	 * 
+	 * @return string "Create docker"
+	 * @return string "Создание Docker"
+	 */
+	public static function Docker_Edit_CreateTitle(...$argv): string { return ''; }
+
+	/**
+	 * Docker_Edit_EditTitle
+	 * 
+	 * @return string "Edit docker &quot;%s&quot; [ID=%d]"
+	 * @return string "Редактирование Docker &quot;%s&quot; [ID=%d]"
+	 */
+	public static function Docker_Edit_EditTitle(...$argv): string { return ''; }
+
+	/**
+	 * Docker_Edit_Title
+	 * 
+	 * @return string "Title"
+	 * @return string "Название"
+	 */
+	public static function Docker_Edit_Title(...$argv): string { return ''; }
+
+	/**
+	 * Docker_Edit_Status
+	 * 
+	 * @return string "Status"
+	 * @return string "Статус"
+	 */
+	public static function Docker_Edit_Status(...$argv): string { return ''; }
+
+	/**
+	 * Docker_Edit_CreateTime
+	 * 
+	 * @return string "Create time"
+	 * @return string "Время создания"
+	 */
+	public static function Docker_Edit_CreateTime(...$argv): string { return ''; }
+
+	/**
+	 * Docker_Edit_UpdateTime
+	 * 
+	 * @return string "Update time"
+	 * @return string "Время обновления"
+	 */
+	public static function Docker_Edit_UpdateTime(...$argv): string { return ''; }
+
+	/**
+	 * Docker_Edit_ChangeButton
+	 * 
+	 * @return string "Update"
+	 * @return string "Обновить"
+	 */
+	public static function Docker_Edit_ChangeButton(...$argv): string { return ''; }
+
+	/**
+	 * Docker_Edit_CreateButton
+	 * 
+	 * @return string "Create"
+	 * @return string "Создать"
+	 */
+	public static function Docker_Edit_CreateButton(...$argv): string { return ''; }
+
+	/**
+	 * Docker_Edit_Workers
+	 * 
+	 * @return string "Workers"
+	 * @return string "Обработчики"
+	 */
+	public static function Docker_Edit_Workers(...$argv): string { return ''; }
+
+	/**
+	 * Docker_Edit_NameLengthError
+	 * 
+	 * @return string "Name length must be between 2 and 255 characters"
+	 * @return string "Название должно быть от 2 до 255 символов"
+	 */
+	public static function Docker_Edit_NameLengthError(...$argv): string { return ''; }
+
+	/**
+	 * Docker_Edit_NotFound
+	 * 
+	 * @return string "Docker not found"
+	 * @return string "Docker не найдено"
+	 */
+	public static function Docker_Edit_NotFound(...$argv): string { return ''; }
+
+	/**
+	 * Docker_Edit_PermissionDenied
+	 * 
+	 * @return string "You don\'t have permission to edit this docker"
+	 * @return string "У вас нет прав на редактирование этого Docker"
+	 */
+	public static function Docker_Edit_PermissionDenied(...$argv): string { return ''; }
+
+	/**
+	 * Docker_Edit_NotingChanged
+	 * 
+	 * @return string "Nothing changed"
+	 * @return string "Ничего не изменилось"
+	 */
+	public static function Docker_Edit_NotingChanged(...$argv): string { return ''; }
+
+	/**
+	 * Docker_Edit_TlsError
+	 * 
+	 * @return string "TLS error"
+	 * @return string "TLS error"
+	 */
+	public static function Docker_Edit_TlsError(...$argv): string { return ''; }
+
+	/**
+	 * Docker_Edit_Host
+	 * 
+	 * @return string "Host"
+	 * @return string "Хост"
+	 */
+	public static function Docker_Edit_Host(...$argv): string { return ''; }
+
+	/**
+	 * Docker_Edit_Port
+	 * 
+	 * @return string "Port"
+	 * @return string "Порт"
+	 */
+	public static function Docker_Edit_Port(...$argv): string { return ''; }
+
+	/**
+	 * Docker_Edit_Tls
+	 * 
+	 * @return string "TLS"
+	 * @return string "TLS"
+	 */
+	public static function Docker_Edit_Tls(...$argv): string { return ''; }
+
+	/**
+	 * Docker_Edit_TlsCaFile
+	 * 
+	 * @return string "TLS CA certificate (ca.pem)"
+	 * @return string "TLS CA сертификат (ca.pem)"
+	 */
+	public static function Docker_Edit_TlsCaFile(...$argv): string { return ''; }
+
+	/**
+	 * Docker_Edit_TlsCertificate
+	 * 
+	 * @return string "TLS certificate (cert.pem)"
+	 * @return string "TLS сертификат (cert.pem)"
+	 */
+	public static function Docker_Edit_TlsCertificate(...$argv): string { return ''; }
+
+	/**
+	 * Docker_Edit_TlsKey
+	 * 
+	 * @return string "TLS key (key.pem)"
+	 * @return string "TLS ключ (key.pem)"
+	 */
+	public static function Docker_Edit_TlsKey(...$argv): string { return ''; }
+
+	/**
+	 * Docker_Container_Table_Name
+	 * 
+	 * @return string "Name"
+	 * @return string "Название"
+	 */
+	public static function Docker_Container_Table_Name(...$argv): string { return ''; }
+
+	/**
+	 * Docker_Container_Table_State
+	 * 
+	 * @return string "State"
+	 * @return string "Статус"
+	 */
+	public static function Docker_Container_Table_State(...$argv): string { return ''; }
+
+	/**
+	 * Docker_Container_Table_Created
+	 * 
+	 * @return string "Created"
+	 * @return string "Дата создания"
+	 */
+	public static function Docker_Container_Table_Created(...$argv): string { return ''; }
+
+	/**
+	 * Docker_Container_Table_Ports
+	 * 
+	 * @return string "Ports"
+	 * @return string "Порты"
+	 */
+	public static function Docker_Container_Table_Ports(...$argv): string { return ''; }
+
+	/**
+	 * Docker_Container_Table_Image
+	 * 
+	 * @return string "Image"
+	 * @return string "Image"
+	 */
+	public static function Docker_Container_Table_Image(...$argv): string { return ''; }
+
+	/**
+	 * Docker_Container_Table_ImageId
+	 * 
+	 * @return string "Image ID"
+	 * @return string "Image ID"
+	 */
+	public static function Docker_Container_Table_ImageId(...$argv): string { return ''; }
+
+	/**
+	 * Docker_Container_Table_Id
+	 * 
+	 * @return string "Container ID"
+	 * @return string "Container ID"
+	 */
+	public static function Docker_Container_Table_Id(...$argv): string { return ''; }
+
+	/**
 	 * Framework_ServerVersion
 	 * 
 	 * @return string "Server Version"
