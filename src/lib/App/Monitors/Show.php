@@ -80,7 +80,7 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 		if ($newMonitor['id']) {
 			\Logs::create_log(\Monitors::LOGS_OBJECT, $newMonitor['id'], $newMonitor);
 
-			if (!\Sessions::in_group(\GROUPS::ADMIN_GROUP_ID, intval(\Sessions::currentUser()['id']))) {
+			if (!\Sessions::in_group(\Groups::ADMIN_GROUP_ID, intval(\Sessions::currentUser()['id']))) {
 				$permissions = \Monitors::permissions_hash();
 				foreach($permissions as $permission => $_) {
 					$ObjectPermissions = [

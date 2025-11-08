@@ -280,7 +280,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					\Logs::add_tag($log_id, \Workers::LOGS_OBJECT, $worker_id);
 				}
 
-				if (!\Sessions::in_group(\GROUPS::ADMIN_GROUP_ID, intval(\Sessions::currentUser()['id']))) {
+				if (!\Sessions::in_group(\Groups::ADMIN_GROUP_ID, intval(\Sessions::currentUser()['id']))) {
 					$permissions = \Dockers::permissions_hash();
 					foreach($permissions as $permission => $_) {
 						$ObjectPermissions = [
