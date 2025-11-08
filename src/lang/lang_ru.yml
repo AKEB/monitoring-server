@@ -193,6 +193,7 @@ Docker:
     Host: "Хост"
     Port: "Порт"
     Tls: "TLS"
+    Containers: "Контейнеров"
   Edit:
     CreateTitle: "Создание Docker"
     EditTitle: "Редактирование Docker &quot;%s&quot; [ID=%d]"

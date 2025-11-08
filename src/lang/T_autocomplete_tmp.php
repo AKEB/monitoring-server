@@ -1313,6 +1313,14 @@ class T {
 	public static function Docker_Table_Tls(...$argv): string { return ''; }
 
 	/**
+	 * Docker_Table_Containers
+	 * 
+	 * @return string "Containers"
+	 * @return string "Контейнеров"
+	 */
+	public static function Docker_Table_Containers(...$argv): string { return ''; }
+
+	/**
 	 * Docker_Edit_CreateTitle
 	 * 
 	 * @return string "Create docker"

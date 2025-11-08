@@ -194,6 +194,7 @@ Docker:
     Host: "Host"
     Port: "Port"
     Tls: "TLS"
+    Containers: "Containers"
   Edit:
     CreateTitle: "Create docker"
     EditTitle: "Edit docker &quot;%s&quot; [ID=%d]"

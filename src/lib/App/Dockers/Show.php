@@ -97,11 +97,12 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 						<th scope="col" class="align-middle" data-priority="1">ID</th>
 						<th scope="col" class="align-middle" data-priority="2"><?=\T::Docker_Table_Title();?></th>
 						<th scope="col" class="align-middle" data-priority="4"><?=\T::Docker_Table_Status();?></th>
-						<th scope="col" class="align-middle" data-priority="5"><?=\T::Docker_Table_Host();?></th>
-						<th scope="col" class="align-middle" data-priority="6"><?=\T::Docker_Table_Port();?></th>
-						<th scope="col" class="align-middle" data-priority="7"><?=\T::Docker_Table_Tls();?></th>
-						<th scope="col" class="align-middle text-center" data-priority="9"><?=\T::Docker_Table_CreateTime();?></th>
-						<th scope="col" class="align-middle text-center" data-priority="8"><?=\T::Docker_Table_UpdateTime();?></th>
+						<th scope="col" class="align-middle" data-priority="5"><?=\T::Docker_Table_Containers();?></th>
+						<th scope="col" class="align-middle" data-priority="7"><?=\T::Docker_Table_Host();?></th>
+						<th scope="col" class="align-middle" data-priority="8"><?=\T::Docker_Table_Port();?></th>
+						<th scope="col" class="align-middle" data-priority="9"><?=\T::Docker_Table_Tls();?></th>
+						<th scope="col" class="align-middle text-center" data-priority="10"><?=\T::Docker_Table_CreateTime();?></th>
+						<th scope="col" class="align-middle text-center" data-priority="6"><?=\T::Docker_Table_UpdateTime();?></th>
 						<th scope="col" class="align-middle text-center" data-priority="3"><?=\T::Docker_Table_Actions();?></th>
 					</tr>
 				</thead>
@@ -117,7 +118,21 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 							'port' => intval($item['port'] ?? 0),
 							'create_time' => isset($item['create_time']) && $item['create_time'] > 0 ? date("Y-m-d H:i:s", $item['create_time']) : '',
 							'update_time' => isset($item['update_time']) && $item['update_time'] > 0 ? date("Y-m-d H:i:s", $item['update_time']) : '',
+							'containers' => '',
 						];
+						if (isset($item['container_states']) && $item['container_states']) {
+							$item['container_states'] = @json_decode($item['container_states']??'[]', true);
+							$item['container_states'] ??= [];
+							$all_count = 0;
+							$running_count = 0;
+							foreach($item['container_states'] as $v) {
+								$all_count++;
+								if ($v['state'] == 'running') {
+									$running_count++;
+								}
+							}
+							$params['containers'] = $running_count.'/'.$all_count;
+						}
 
 						$can_read = \Sessions::checkPermission(\Dockers::PERMISSION_ACCESS, $params['id'], READ);
 						if (!$can_read) continue;
@@ -128,6 +143,7 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 							<th scope="row" class="align-middle"><?=$params['id'];?></th>
 							<td class="align-middle"><span class="d-inline"><?=$params['title'];?></span></td>
 							<td class="align-middle text-center"><?=$params['status'];?></td>
+							<td class="align-middle text-center"><?=$params['containers'];?></td>
 							<td class="align-middle text-center"><?=$params['host'];?></td>
 							<td class="align-middle text-center"><?=$params['port'];?></td>
 							<td class="align-middle text-center"><?=$params['tls'];?></td>
