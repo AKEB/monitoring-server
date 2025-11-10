@@ -210,6 +210,8 @@ Docker:
     PermissionDenied: "You don't have permission to edit this docker"
     NotingChanged: "Nothing changed"
     TlsError: "TLS error"
+    Timeout: "Request timeout"
+    RepeatSeconds: "Repeat seconds"
     Host: "Host"
     Port: "Port"
     Tls: "TLS"

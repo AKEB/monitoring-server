@@ -1433,6 +1433,22 @@ class T {
 	public static function Docker_Edit_TlsError(...$argv): string { return ''; }
 
 	/**
+	 * Docker_Edit_Timeout
+	 * 
+	 * @return string "Request timeout"
+	 * @return string "Таймаут запроса в секундах"
+	 */
+	public static function Docker_Edit_Timeout(...$argv): string { return ''; }
+
+	/**
+	 * Docker_Edit_RepeatSeconds
+	 * 
+	 * @return string "Repeat seconds"
+	 * @return string "Частота опроса в секундах"
+	 */
+	public static function Docker_Edit_RepeatSeconds(...$argv): string { return ''; }
+
+	/**
 	 * Docker_Edit_Host
 	 * 
 	 * @return string "Host"

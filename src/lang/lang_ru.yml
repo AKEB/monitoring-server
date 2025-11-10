@@ -209,6 +209,8 @@ Docker:
     PermissionDenied: "У вас нет прав на редактирование этого Docker"
     NotingChanged: "Ничего не изменилось"
     TlsError: "TLS error"
+    Timeout: "Таймаут запроса в секундах"
+    RepeatSeconds: "Частота опроса в секундах"
     Host: "Хост"
     Port: "Порт"
     Tls: "TLS"

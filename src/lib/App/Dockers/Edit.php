@@ -83,6 +83,16 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				$params['port'] = intval(trim($data['port']));
 			}
 
+			if (isset($data['repeat_seconds'])) {
+				$data['repeat_seconds'] = trim($data['repeat_seconds']);
+				$params['repeat_seconds'] = intval($data['repeat_seconds']);
+				if ($params['repeat_seconds'] < 60) $params['repeat_seconds'] = 60;
+			}
+			if (isset($data['timeout'])) {
+				$data['timeout'] = trim($data['timeout']);
+				$params['timeout'] = intval($data['timeout']);
+			}
+
 			if (isset($data['tls']) && trim($data['tls']) != '') {
 				$data['tls'] = trim($data['tls']);
 				if ($data['tls'] == 'true') {
@@ -209,7 +219,6 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 						$update_jobs[$worker_id] = 1;
 					}
 				}
-
 				$params['tls_ca_file'] ??= '';
 				$params['tls_certificate'] ??= '';
 				$params['tls_key'] ??= '';
@@ -359,6 +368,8 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 			$this->docker['tls'] ??= 1;
 			$this->docker['port'] ??= 2376;
 			$this->docker['workers'] ??= [];
+			$this->docker['timeout'] ??= 15;
+			$this->docker['repeat_seconds'] ??= 60;
 		}
 
 		$this->workers_hash = [];
@@ -414,6 +425,17 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					]);
 
 					echo $this->template->html_params("workers[]", $this->workers_hash, $this->docker['workers']??[], \T::Docker_Edit_Workers(),false,[
+						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+						'readonly' => !($this->can_write || $this->can_create),
+					]);
+
+					echo $this->template->html_input("timeout", $this->docker['timeout']??0, \T::Docker_Edit_Timeout(), false, [
+						'type' => 'number',
+						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+						'readonly' => !($this->can_write || $this->can_create),
+					]);
+					echo $this->template->html_input("repeat_seconds", $this->docker['repeat_seconds']??0, \T::Docker_Edit_RepeatSeconds(), false, [
+						'type' => 'number',
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
