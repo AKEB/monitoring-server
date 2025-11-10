@@ -681,6 +681,22 @@ class T {
 	public static function Monitor_Edit_Notify(...$argv): string { return ''; }
 
 	/**
+	 * Monitor_Edit_Docker
+	 * 
+	 * @return string "Docker"
+	 * @return string "Docker"
+	 */
+	public static function Monitor_Edit_Docker(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_Container
+	 * 
+	 * @return string "Container"
+	 * @return string "Контейнер"
+	 */
+	public static function Monitor_Edit_Container(...$argv): string { return ''; }
+
+	/**
 	 * Monitor_Edit_SendRepeatMinute
 	 * 
 	 * @return string "Resending error notifications in minutes"
@@ -759,6 +775,14 @@ class T {
 	 * @return string "Ping"
 	 */
 	public static function Monitor_Type_Ping(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Type_Docker
+	 * 
+	 * @return string "Docker"
+	 * @return string "Docker"
+	 */
+	public static function Monitor_Type_Docker(...$argv): string { return ''; }
 
 	/**
 	 * Dashboard_Response

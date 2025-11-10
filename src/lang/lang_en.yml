@@ -98,6 +98,8 @@ Monitor:
     CreateButton: "Create"
     ParentFolder: "Parent folder"
     Notify: "Notifications"
+    Docker: "Docker"
+    Container: "Container"
     SendRepeatMinute: "Resending error notifications in minutes"
     NameLengthError: "Name length must be between 2 and 255 characters"
     MonitorNotFound: "Monitor not found"
@@ -110,6 +112,8 @@ Monitor:
     Folder: "Folder"
     TCP: "TCP Port"
     Ping: "Ping"
+    Docker: "Docker"
+
 
 
 Dashboard:

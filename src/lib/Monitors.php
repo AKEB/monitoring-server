@@ -15,6 +15,7 @@ class Monitors extends \DB\MySQLObject implements \PermissionSubject_Interface {
 	const TYPE_FOLDER = 1;
 	const TYPE_TCP    = 2;
 	const TYPE_PING   = 3;
+	const TYPE_DOCKER = 4;
 
 
 	static private array $monitorsForAccess = [];
@@ -36,6 +37,7 @@ class Monitors extends \DB\MySQLObject implements \PermissionSubject_Interface {
 			static::TYPE_FOLDER => \T::Monitor_Type_Folder(),
 			static::TYPE_TCP => \T::Monitor_Type_TCP(),
 			static::TYPE_PING => \T::Monitor_Type_Ping(),
+			static::TYPE_DOCKER => \T::Monitor_Type_Docker(),
 		];
 	}
 

@@ -86,7 +86,9 @@ class State extends \Routing_Parent implements \Routing_Interface {
 		if (!$this->data || !isset($this->data['dockers']) || !$this->data['dockers']) return false;
 		$dockers = $this->data['dockers'];
 		foreach ($dockers as $docker) {
-			$this->updateDockerState($this->worker['id'], $docker);
+			$result = $this->updateDockerState($this->worker['id'], $docker);
+			if (!$result) continue;
+
 		}
 
 		return true;
@@ -168,7 +170,7 @@ class State extends \Routing_Parent implements \Routing_Interface {
 		];
 		$params['id'] = \Dockers::save($params);
 		if ($params['id']) {
-			return true;
+			return $params;
 		}
 
 		return false;

@@ -18,6 +18,14 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 		$this->check_auth();
 		$this->check_permissions();
 
+		if (isset($_POST) && $_POST) {
+			if (isset($_POST['method']) && $_POST['method'] == 'ajaxDockerContainers') {
+				$this->ajaxDockerContainers(intval($_POST['selectedDocker']), trim($_POST['selectedContainer']));
+				return
+				exit;
+			}
+		}
+
 		$this->processRequest();
 		$this->get_data();
 		$this->get_breadcrumb();
@@ -26,6 +34,38 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 		$this->print_breadcrumb();
 		$this->print_forms();
 		$this->print_javascript();
+	}
+
+	private function ajaxDockerContainers(?int $docker_id, ?string $container) {
+		$container ??= '';
+		echo '<option value="" '.($container == '' ? 'selected' : '').'>-- None --</option>';
+		if (!isset($docker_id)) {
+			return;
+		}
+		if (!$docker_id) {
+			return;
+		}
+		if (!\Sessions::checkPermission(\Dockers::PERMISSION_ACCESS, $docker_id, READ)) {
+			return;
+		}
+		$docker = \Dockers::get(['id' => $docker_id]);
+		if (!$docker) {
+			return;
+		}
+		if (!$docker['container_states']) {
+			return;
+		}
+		$docker['container_states'] = @json_decode($docker['container_states'], true);
+		if (!is_array($docker['container_states']) || !$docker['container_states']) {
+			return;
+		}
+
+		foreach($docker['container_states'] as $v) {
+			$name = htmlspecialchars($v['name']);
+			echo '<option value="'.$name.'" '.($container == $name ? 'selected' : '').'>'.$name.'</option>';
+		}
+
+		return;
 	}
 
 	protected function handlePostData(array $data) {
@@ -129,6 +169,20 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					$data['host'] = trim($data['host']);
 					$params['host'] = $data['host'];
 				}
+			} elseif ($data['type'] == \Monitors::TYPE_DOCKER) {
+				if (isset($data['docker'])) {
+					$data['docker'] = trim($data['docker']);
+					$params['docker'] = intval($data['docker']);
+					if (!\Sessions::checkPermission(\Dockers::PERMISSION_ACCESS, $params['docker'], READ)) {
+						$this->error = \T::Monitor_Edit_PermissionDenied();
+						break;
+					}
+				}
+				if (isset($data['container'])) {
+					$data['container'] = trim($data['container']);
+					$params['container'] = $data['container'];
+				}
+
 			}
 
 			if (isset($data['parent_id'])) {
@@ -434,6 +488,8 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 			$this->monitor['proxy_type'] ??= 0;
 			$this->monitor['workers'] ??= [];
 			$this->monitor['notify'] ??= [];
+			$this->monitor['docker'] ??= 0;
+			$this->monitor['container'] ??= '';
 			$this->monitor['response_code'] ??= [2];
 			$this->monitor['parent_id'] ??= $this->parent_id;
 		}
@@ -544,6 +600,20 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 
+					echo $this->template?->html_select('docker', \Dockers::subject_hash(), $this->monitor['docker']??0, \T::Monitor_Edit_Docker(), false,[
+						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_DOCKER,
+						'readonly' => !($this->can_write || $this->can_create),
+					]);
+
+					echo $this->template?->html_select('container', [], $this->monitor['container']??'', \T::Monitor_Edit_Container(), false,[
+						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_DOCKER,
+						'readonly' => !($this->can_write || $this->can_create),
+						'with-undefined' => true,
+						'global-id' => 'container-div',
+					]);
+
 					echo $this->template->html_input("host", $this->monitor['host']??'', \T::Monitor_Edit_Host(), false, [
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
 						'global-class' => 'type-dependence type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_PING,
@@ -593,7 +663,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					echo $this->template->html_input("send_repeat_minute", $this->monitor['send_repeat_minute']??0, \T::Monitor_Edit_SendRepeatMinute(), false, [
 						'type' => 'number',
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
-						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_PING,
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_PING.' type-'.\Monitors::TYPE_DOCKER,
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 					echo $this->template?->html_select('response_code[]', \Monitors::response_code_hash(), $this->monitor['response_code']??[], \T::Monitor_Edit_ResponseCode(), false,[
@@ -649,7 +719,6 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 
 			function monitor_type_select() {
 				const selected_type = $('#type').val();
-				// console.log(selected_type);
 				$('.type-dependence').each(function(){
 					$(this).hide();
 				});
@@ -658,11 +727,35 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				});
 			}
 
+			function monitor_docker_select() {
+				const selected_docker = $('#docker').val();
+				const selected_container = '<?=($this->monitor['container']??'');?>';
+				$('#container').load(
+					'?',
+					{
+						selectedDocker: selected_docker,
+						selectedContainer: selected_container,
+						ajax: '1',
+						method: 'ajaxDockerContainers'
+					},
+					function(response, status, xhr) {
+						// $('#container').val('').change();
+						$('#container').selectpicker('destroy').selectpicker();
+					}
+				);
+			}
+
 			$(document).ready(function(){
 				monitor_type_select();
 				$('#type').change(function(){
 					monitor_type_select();
 				});
+
+				monitor_docker_select();
+				$('#docker').change(function(){
+					monitor_docker_select();
+				});
+
 				$('form').on('submit', function(event) {
 					$('form').addClass("was-validated");
 				});

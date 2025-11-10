@@ -26,6 +26,7 @@ Default User Email: `admin@admin.com` and Password `Admin@123`
 - [x] Нотификации о событиях
 - [x] Новый тип монитора TCP
 - [x] Новый тип монитора PING
+- [x] Новый тип монитора Docker API
 - [ ] Фильтрация мониторов по статусу
 - [ ] Технические работы
 - [ ] Проверить еще раз все страницы на мобильном устройстве
@@ -33,7 +34,6 @@ Default User Email: `admin@admin.com` and Password `Admin@123`
 - [ ] Новый тип монитора node-exporter
 - [ ] Новый тип монитора MySQL
 - [ ] Новый тип монитора PostgreSQL
-- [ ] Новый тип монитора Docker API
 - [ ] Уведомление о протухающем SSL сертификате
 
 ## Environments

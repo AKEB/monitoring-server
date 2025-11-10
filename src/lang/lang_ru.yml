@@ -98,6 +98,8 @@ Monitor:
     CreateButton: "Создать"
     ParentFolder: "Родительская папка"
     Notify: "Уведомления"
+    Docker: "Docker"
+    Container: "Контейнер"
     SendRepeatMinute: "Повторная отправка уведомлений об ошибках в минутах"
     NameLengthError: "Название должно быть от 2 до 255 символов"
     MonitorNotFound: "Монитор не найден"
@@ -110,6 +112,7 @@ Monitor:
     Folder: "Папка"
     TCP: "TCP Port"
     Ping: "Ping"
+    Docker: "Docker"
 
 Dashboard:
   Response: "Ответ"

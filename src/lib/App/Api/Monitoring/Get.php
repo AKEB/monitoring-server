@@ -82,9 +82,20 @@ class Get extends \Routing_Parent implements \Routing_Interface {
 	private function getJobsData(): array {
 		$jobs = [];
 		if ($this->worker && $this->worker['id']) {
-			$jobs = \MonitoringJobs::data(['worker_id' => $this->worker['id']], sql_pholder(' AND M.`status` = ? ',\Monitors::STATUS_ENABLED), 't.`id` as `job_id`, t.`update_time`, M.*', false, false, [
-				'_join' => ' JOIN `'.\Monitors::getTable().'` M ON t.`monitor_id` = M.`id`'
-			]);
+			$sql = sql_pholder(' AND M.`status` = ? ',\Monitors::STATUS_ENABLED);
+			$sql .= sql_pholder(' AND `type` NOT IN (?@)', [\Monitors::TYPE_FOLDER, \Monitors::TYPE_DOCKER]);
+			$jobs = \MonitoringJobs::data(
+				[
+					'worker_id' => $this->worker['id']
+				],
+				$sql,
+				't.`id` as `job_id`, t.`update_time`, M.*',
+				false,
+				false,
+				[
+					'_join' => ' JOIN `'.\Monitors::getTable().'` M ON t.`monitor_id` = M.`id`'
+				]
+			);
 		}
 		return $jobs;
 	}
@@ -92,9 +103,19 @@ class Get extends \Routing_Parent implements \Routing_Interface {
 	private function getDockersData(): array {
 		$jobs = [];
 		if ($this->worker && $this->worker['id']) {
-			$jobs = \MonitoringDockers::data(['worker_id' => $this->worker['id']], sql_pholder(' AND D.`status` = ? ',\Dockers::STATUS_ENABLED), 't.`id` as `job_id`, t.`update_time`, D.*', false, false, [
-				'_join' => ' JOIN `'.\Dockers::getTable().'` D ON t.`docker_id` = D.`id`'
-			]);
+			$sql = sql_pholder(' AND D.`status` = ? ',\Dockers::STATUS_ENABLED);
+			$jobs = \MonitoringDockers::data(
+				[
+					'worker_id' => $this->worker['id']
+				],
+				$sql,
+				't.`id` as `job_id`, t.`update_time`, D.*',
+				false,
+				false,
+				[
+					'_join' => ' JOIN `'.\Dockers::getTable().'` D ON t.`docker_id` = D.`id`'
+				]
+			);
 		}
 		return $jobs;
 	}
