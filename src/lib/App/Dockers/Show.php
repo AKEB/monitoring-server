@@ -120,6 +120,7 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 							'update_time' => isset($item['update_time']) && $item['update_time'] > 0 ? date("Y-m-d H:i:s", $item['update_time']) : '',
 							'containers' => '',
 						];
+						$container_class = 'text-secondary';
 						if (isset($item['container_states']) && $item['container_states']) {
 							$item['container_states'] = @json_decode($item['container_states']??'[]', true);
 							$item['container_states'] ??= [];
@@ -132,6 +133,14 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 								}
 							}
 							$params['containers'] = $running_count.'/'.$all_count;
+
+							if ($all_count > 0 && $running_count == $all_count) {
+								$container_class = 'text-success';
+							} elseif ($all_count > 0 && $running_count > 0) {
+								$container_class = 'text-warning';
+							} elseif ($all_count > 0) {
+								$container_class = 'text-danger';
+							}
 						}
 
 						$can_read = \Sessions::checkPermission(\Dockers::PERMISSION_ACCESS, $params['id'], READ);
@@ -143,7 +152,7 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 							<th scope="row" class="align-middle"><?=$params['id'];?></th>
 							<td class="align-middle"><span class="d-inline"><?=$params['title'];?></span></td>
 							<td class="align-middle text-center"><?=$params['status'];?></td>
-							<td class="align-middle text-center"><?=$params['containers'];?></td>
+							<td class="align-middle text-center <?=$container_class;?>"><?=$params['containers'];?></td>
 							<td class="align-middle text-center"><?=$params['host'];?></td>
 							<td class="align-middle text-center"><?=$params['port'];?></td>
 							<td class="align-middle text-center"><?=$params['tls'];?></td>
