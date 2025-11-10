@@ -23,7 +23,7 @@ class Monitors extends \DB\MySQLObject implements \PermissionSubject_Interface {
 	static public function subject_hash(): array {
 		$data_hash = [];
 		foreach(static::permissions_subject_hash() as $subject_id=>$permissionTitle) {
-			if (!\Sessions::checkPermission(\Monitors::PERMISSION_ACCESS, $subject_id, ACCESS_WRITE)) {
+			if (!\Sessions::checkPermission(static::PERMISSION_ACCESS, $subject_id, ACCESS_WRITE)) {
 				continue;
 			}
 			$data_hash[$subject_id] = $permissionTitle;
@@ -102,7 +102,7 @@ class Monitors extends \DB\MySQLObject implements \PermissionSubject_Interface {
 		}
 
 		if (!isset(static::$monitorsForAccess[$user['id']]) || !static::$monitorsForAccess[$user['id']]) {
-			$data = \Monitors::data(false,' ORDER BY NULL ', '`id`, `parent_id`, `type`, `title`');
+			$data = static::data(false,' ORDER BY NULL ', '`id`, `parent_id`, `type`, `title`');
 			foreach($data as $item) {
 				if (!isset(static::$monitorsForAccess[$user['id']][$item['id']])) {
 					static::$monitorsForAccess[$user['id']][$item['id']] = [];
@@ -113,12 +113,12 @@ class Monitors extends \DB\MySQLObject implements \PermissionSubject_Interface {
 				static::$monitorsForAccess[$user['id']][$item['id']]['type'] = $item['type'];
 				static::$monitorsForAccess[$user['id']][$item['id']]['title'] = $item['title'];
 				static::$monitorsForAccess[$user['id']][$item['id']]['access'] = [
-					READ => \Sessions::checkPermission(\Monitors::PERMISSION_ACCESS, $item['id'], READ, $user),
-					WRITE => \Sessions::checkPermission(\Monitors::PERMISSION_ACCESS, $item['id'], WRITE, $user),
-					DELETE => \Sessions::checkPermission(\Monitors::PERMISSION_ACCESS, $item['id'], DELETE, $user),
-					ACCESS_READ => \Sessions::checkPermission(\Monitors::PERMISSION_ACCESS, $item['id'], ACCESS_READ, $user),
-					ACCESS_WRITE => \Sessions::checkPermission(\Monitors::PERMISSION_ACCESS, $item['id'], ACCESS_WRITE, $user),
-					ACCESS_CHANGE => \Sessions::checkPermission(\Monitors::PERMISSION_ACCESS, $item['id'], ACCESS_CHANGE, $user),
+					READ => \Sessions::checkPermission(static::PERMISSION_ACCESS, $item['id'], READ, $user),
+					WRITE => \Sessions::checkPermission(static::PERMISSION_ACCESS, $item['id'], WRITE, $user),
+					DELETE => \Sessions::checkPermission(static::PERMISSION_ACCESS, $item['id'], DELETE, $user),
+					ACCESS_READ => \Sessions::checkPermission(static::PERMISSION_ACCESS, $item['id'], ACCESS_READ, $user),
+					ACCESS_WRITE => \Sessions::checkPermission(static::PERMISSION_ACCESS, $item['id'], ACCESS_WRITE, $user),
+					ACCESS_CHANGE => \Sessions::checkPermission(static::PERMISSION_ACCESS, $item['id'], ACCESS_CHANGE, $user),
 				];
 				if (!isset(static::$monitorsForAccess[$user['id']][$item['parent_id']]['children'])) {
 					static::$monitorsForAccess[$user['id']][$item['parent_id']]['children'] = [];
@@ -133,9 +133,9 @@ class Monitors extends \DB\MySQLObject implements \PermissionSubject_Interface {
 
 	static public function getUserPermissions(array $user): array {
 		$permissions = [];
-		$access_hash = \Monitors::getMonitorsAccess($user);
+		$access_hash = static::getMonitorsAccess($user);
 		foreach(static::permissions_subject_hash() as $subject_id=>$_) {
-			$permissions[\Monitors::PERMISSION_ACCESS][$subject_id] = [
+			$permissions[static::PERMISSION_ACCESS][$subject_id] = [
 				READ => isset($access_hash[$subject_id]['access'][READ]) && $access_hash[$subject_id]['access'][READ] ? 1 : 0,
 				WRITE => isset($access_hash[$subject_id]['access'][WRITE]) && $access_hash[$subject_id]['access'][WRITE] ? 1 : 0,
 				DELETE => isset($access_hash[$subject_id]['access'][DELETE]) && $access_hash[$subject_id]['access'][DELETE] ? 1 : 0,
@@ -143,8 +143,8 @@ class Monitors extends \DB\MySQLObject implements \PermissionSubject_Interface {
 				ACCESS_WRITE => isset($access_hash[$subject_id]['access'][ACCESS_WRITE]) && $access_hash[$subject_id]['access'][ACCESS_WRITE] ? 1 : 0,
 				ACCESS_CHANGE => isset($access_hash[$subject_id]['access'][ACCESS_CHANGE]) && $access_hash[$subject_id]['access'][ACCESS_CHANGE] ? 1 : 0,
 			];
-			if (array_sum($permissions[\Monitors::PERMISSION_ACCESS][$subject_id]) == 0) {
-				unset($permissions[\Monitors::PERMISSION_ACCESS][$subject_id]);
+			if (array_sum($permissions[static::PERMISSION_ACCESS][$subject_id]) == 0) {
+				unset($permissions[static::PERMISSION_ACCESS][$subject_id]);
 			}
 		}
 		return $permissions;
@@ -180,7 +180,7 @@ class Monitors extends \DB\MySQLObject implements \PermissionSubject_Interface {
 	}
 
 	static public function folders_hash(): array {
-		$data = \Monitors::data(['type' => \Monitors::TYPE_FOLDER], '', '`id`, `parent_id`, `title`');
+		$data = static::data(['type' => static::TYPE_FOLDER], '', '`id`, `parent_id`, `title`');
 		$folders_hash = [];
 		foreach($data as $item) {
 			if (!isset($folders_hash[$item['id']])) {
@@ -197,7 +197,7 @@ class Monitors extends \DB\MySQLObject implements \PermissionSubject_Interface {
 		}
 		foreach($folders_hash as $k=>$v) {
 			if ($k == 0) continue;
-			if (!\Sessions::checkPermission(\Monitors::PERMISSION_ACCESS, $k, READ)) {
+			if (!\Sessions::checkPermission(static::PERMISSION_ACCESS, $k, READ)) {
 				unset($folders_hash[$v['parent_id']]['children'][$v['id']]);
 				$folders_hash[$k] = [];
 				unset($folders_hash[$k]);
@@ -241,7 +241,7 @@ class Monitors extends \DB\MySQLObject implements \PermissionSubject_Interface {
 	}
 
 	static public function get_folder_hash_options_hash() {
-		$folders_hash = \Monitors::folders_hash();
+		$folders_hash = static::folders_hash();
 		$options_hash = [];
 		$options_hash[0] = \T::Monitor_Table_Root();
 		static::get_folder_titles($options_hash, $folders_hash, 1);
@@ -257,10 +257,11 @@ class Monitors extends \DB\MySQLObject implements \PermissionSubject_Interface {
 			$monitors_hash = json_decode($cache->get(), true);
 		}
 		if (!$monitors_hash) {
-			$monitors = \Monitors::data(false, '', '`id`, `title`, `parent_id`');
+			$monitors = static::data(false, '', '`id`, `title`, `parent_id`, `status`');
 			if ($monitors) {
 				$monitors_hash = make_hash($monitors, 'id');
 			}
+			$cache->update(json_encode($monitors_hash), 60);
 		}
 		$tmp_monitor = $monitors_hash[$monitor_id];
 		if (!$tmp_monitor) return $title;

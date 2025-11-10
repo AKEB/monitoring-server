@@ -31,7 +31,7 @@ class Dockers extends \DB\MySQLObject implements \PermissionSubject_Interface {
 	}
 
 	static public function permissions_subject_hash(): array {
-		$data = static::data();
+		$data = static::data(false, ' ORDER BY title ASC');
 		$permissions_hash = [];
 		foreach($data as $item) {
 			$permissions_hash[$item['id']] = $item['title'];
