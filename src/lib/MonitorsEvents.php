@@ -111,10 +111,14 @@ class MonitorsEvents extends \DB\MySQLObject {
 		if (!isset($monitors) || !count($monitors)) return;
 		$monitor_ids = array_keys($monitors);
 		if (!count($monitor_ids)) return;
-		$monitors = \Monitors::data(false, sql_pholder(' AND `id` IN (?@) AND `status` = ?', $monitor_ids, \Monitors::STATUS_ENABLED), '`id`, `title`, `last_send_status`, `last_send_time`, `send_repeat_minute`');
+		$monitors = \Monitors::data(false, sql_pholder(' AND `id` IN (?@) AND `status` = ?', $monitor_ids, \Monitors::STATUS_ENABLED), '`id`, `title`, `type`, `last_send_status`, `last_send_time`, `send_repeat_minute`');
 		$monitors_hash = [];
+		$dockers_monitor_hash = [];
 		foreach($monitors as $monitor) {
 			$monitors_hash[$monitor['id']] = $monitor;
+			if ($monitor['type'] == \Monitors::TYPE_DOCKER) {
+				$dockers_monitor_hash[$monitor['docker']][$monitor['id']] = $monitor['id'];
+			}
 		}
 		if (!$monitors_hash) return;
 		$jobs = \MonitoringJobs::data(false, sql_pholder(' AND `monitor_id` IN (?@)', array_keys($monitors_hash)), '`monitor_id`, `worker_id`');
@@ -123,6 +127,16 @@ class MonitorsEvents extends \DB\MySQLObject {
 			if (!$job['worker_id']) continue;
 			$job['worker_id'] = intval($job['worker_id']);
 			$jobs_hash[$job['monitor_id']][$job['worker_id']] = $job['worker_id'];
+		}
+		if ($dockers_monitor_hash) {
+			$dockers = \MonitoringDockers::data(false, sql_pholder(' AND `docker_id` IN (?@)', array_keys($dockers_monitor_hash)), '`docker_id`, `worker_id`');
+			foreach($dockers as $docker) {
+				$monitors_ids = $dockers_monitor_hash[$docker['docker_id']]??[];
+				foreach($monitors_ids as $monitor_id) {
+					if (!isset($jobs_hash[$monitor_id])) $jobs_hash[$monitor_id] = [];
+					$jobs_hash[$monitor_id][$docker['worker_id']] = $docker['worker_id'];
+				}
+			}
 		}
 		$fields = '`monitor_id`, `worker_id`, `status`, `update_time`, `status_code`, `response_error_num`, `response_error`';
 		$sub_sql = sql_pholder(' AND `monitor_id` IN (?@) ', array_keys($monitors_hash));
@@ -155,7 +169,7 @@ class MonitorsEvents extends \DB\MySQLObject {
 			if ($global_good == count($jobs_hash[$monitor_id])) {
 				// Все воркеры вернули успех
 				if ($monitor['last_send_status'] != \MonitoringLogs::STATUS_GOOD) {
-					$text = "✅ Alert Resolved: ".$monitor['title']." is up";
+					$text = "✅ ".\Monitors::get_monitor_title_with_folders($monitor['id'])." is up";
 					\Monitors::save([
 						'id' => $monitor_id,
 						'last_send_status' => \MonitoringLogs::STATUS_GOOD,
@@ -166,7 +180,7 @@ class MonitorsEvents extends \DB\MySQLObject {
 			} elseif ($global_failed == count($jobs_hash[$monitor_id])) {
 				// Все воркеры вернули ошибки
 				if ($monitor['last_send_status'] != \MonitoringLogs::STATUS_FAIL) {
-					$text = "🚫 Alert Firing: ".$monitor['title']." is down";
+					$text = "🚫 ".\Monitors::get_monitor_title_with_folders($monitor['id'])." is down";
 					if ($descriptions) $text .= "\n\n". implode("\n", $descriptions);
 					\Monitors::save([
 						'id' => $monitor_id,
@@ -176,7 +190,7 @@ class MonitorsEvents extends \DB\MySQLObject {
 					]);
 				} elseif ($monitor['send_repeat_minute'] > 0) {
 					if ($monitor['last_send_time'] + $monitor['send_repeat_minute'] * 60 < time()) {
-						$text = "🚫 Alert Firing: ".$monitor['title']." is down";
+						$text = "🚫 ".\Monitors::get_monitor_title_with_folders($monitor['id'])." is down";
 						if ($descriptions) $text .= "\n\n". implode("\n", $descriptions);
 						\Monitors::save([
 							'id' => $monitor_id,

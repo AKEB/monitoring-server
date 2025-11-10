@@ -88,10 +88,63 @@ class State extends \Routing_Parent implements \Routing_Interface {
 		foreach ($dockers as $docker) {
 			$result = $this->updateDockerState($this->worker['id'], $docker);
 			if (!$result) continue;
-
+			$this->updateDockerMonitors($result);
 		}
 
 		return true;
+	}
+
+	private function updateDockerMonitors(?array $param) {
+		$docker_id = $param['id']??0;
+		$container_states = $param['container_states']??'';
+		$job_id = $param['job_id']??0;
+
+		if (!isset($docker_id) || !$docker_id) return false;
+		$docker = \Dockers::get(['id' => $docker_id]);
+		if (!$docker) return false;
+
+		$container_states = @json_decode($container_states, true);
+		if (!is_array($container_states) || !$container_states) return false;
+		$containers_hash = [];
+		foreach ($container_states as $container_state) {
+			if (!isset($container_state['id']) || !$container_state['id']) continue;
+			$containers_hash[$container_state['name']] = $container_state;
+		}
+		$monitors = \Monitors::data(
+			[
+				'type' => \Monitors::TYPE_DOCKER,
+				'status' => \Monitors::STATUS_ENABLED,
+				'docker' => $docker_id,
+			],
+			'',
+			'`id`, `container`'
+		);
+		if (!is_array($monitors) || !$monitors) return false;
+		$notification_check_monitors = [];
+		foreach ($monitors as $monitor) {
+			if (!isset($monitor['id']) || !$monitor['id']) continue;
+			if (!isset($monitor['container']) || !$monitor['container']) continue;
+			if (!isset($containers_hash[$monitor['container']]) || !$containers_hash[$monitor['container']]) continue;
+			$status = \MonitoringLogs::STATUS_FAIL;
+			if ($containers_hash[$monitor['container']]['state'] == 'running') {
+				$status = \MonitoringLogs::STATUS_GOOD;
+			}
+			$monitor_log = [
+				'monitor_id' => $monitor['id'],
+				'worker_id' => $this->worker['id'],
+				'job_id' => $job_id,
+				'status' => $status,
+				'response_error' => $containers_hash[$monitor['container']]['status']??'',
+				'total_time_us' => $containers_hash[$monitor['container']]['total_time_us']??0,
+				'update_time' => $param['update_time']??time(),
+			];
+			$monitor_log['id'] = \MonitoringLogs::save($monitor_log);
+			\MonitorsEvents::updateEvent($monitor_log);
+			$notification_check_monitors[$monitor['id']] = true;
+		}
+		if ($notification_check_monitors && count($notification_check_monitors) > 0) {
+			\MonitorsEvents::checkMonitors($notification_check_monitors);
+		}
 	}
 
 	private function updateDockerState(int $worker_id, array $docker_response): bool|array {
@@ -128,6 +181,7 @@ class State extends \Routing_Parent implements \Routing_Interface {
 			$name = $docker_container['Names'][0] ?? '';
 			$name = substr($name, 1, strlen($name));
 			$state = $docker_container['State']??'';
+			$status = $docker_container['Status']??'';
 			$created = $docker_container['Created']??0;
 			$id = $docker_container['Id']??'';
 			$image = $docker_container['Image']??'';
@@ -156,8 +210,10 @@ class State extends \Routing_Parent implements \Routing_Interface {
 				'image_id' => $image_id,
 				'name' => $name,
 				'state' => $state,
+				'status' => $status,
 				'created' => $created,
 				'ports' => $ports,
+				'total_time_us' => $response['total_time_us'] ?? 0,
 			];
 		}
 		$container_states = json_encode($container_states);
@@ -170,6 +226,7 @@ class State extends \Routing_Parent implements \Routing_Interface {
 		];
 		$params['id'] = \Dockers::save($params);
 		if ($params['id']) {
+			$params['job_id'] = $dockerJob['id'];
 			return $params;
 		}
 

@@ -515,10 +515,14 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 										} else {
 											$params['created'] = '';
 										}
+										$state_class = 'text-danger';
+										if ($params['state'] == 'running') {
+											$state_class = 'text-success';
+										}
 										?>
 										<tr>
 											<th scope="row" class="align-middle"><?=$params['name'];?></th>
-											<td class="align-middle text-center"><?=$params['state'];?></td>
+											<td class="align-middle text-center <?=$state_class;?>"><?=$params['state'];?></td>
 											<td class="align-middle text-center"><?=$params['created'];?></td>
 											<td class="align-middle"><?=$params['ports'];?></td>
 											<td class="align-middle"><?=$params['image'];?></td>

@@ -209,7 +209,7 @@ class MonitoringLogs extends \DB\MySQLObject {
 		}
 		$monitor_workers_hash = [];
 
-		$monitor_workers_data = \MonitoringJobs::data(false, ' ORDER BY `monitor_id` ASC, `worker_id` ASC', '`monitor_id`, `worker_id`, `create_time`');
+		$monitor_workers_data = \MonitoringJobs::data(false, ' ORDER BY NULL', '`monitor_id`, `worker_id`, `create_time`');
 
 		if ($monitor_workers_data) {
 			foreach($monitor_workers_data as $item) {
@@ -217,6 +217,23 @@ class MonitoringLogs extends \DB\MySQLObject {
 				$monitor_workers_hash[$item['monitor_id']][$item['worker_id']] = $item['create_time'] ? $item['create_time'] : 1;
 			}
 		}
+
+		$dockers_hash = [];
+		$dockers = \MonitoringDockers::data(false, ' ORDER BY NULL', '`docker_id`, `worker_id`, `create_time`');
+		if ($dockers) {
+			foreach($dockers as $item) {
+				$dockers_hash[$item['docker_id']][$item['worker_id']] = $item['create_time'] ? $item['create_time'] : 1;
+			}
+		}
+		if ($dockers_hash) {
+			foreach($monitors as $monitor_id=>&$monitor) {
+				if ($monitor['type'] != \Monitors::TYPE_DOCKER) continue;
+				if (!isset($monitor['docker']) || !$monitor['docker']) continue;
+				if (!isset($dockers_hash[$monitor['docker']])) continue;
+				$monitor_workers_hash[$monitor_id] = $dockers_hash[$monitor['docker']];
+			}
+		}
+
 		$cache = new \Cache('AvailabilityPercent_86400');
 		if ($cache->isValid()) {
 			$availability = $cache->get();
@@ -366,9 +383,15 @@ class MonitoringLogs extends \DB\MySQLObject {
 			$current_time = intval(time() / intval($monitor['repeat_seconds'])) * intval($monitor['repeat_seconds']);
 
 			// Get MonitoringJobs
-			$start_time = microtime(true);
-			$jobs = \MonitoringJobs::data(['monitor_id' => $monitor['id']],'','`worker_id`, `create_time`');
-			$return['mysql_time']['MonitoringJobs::data'] = round(microtime(true) - $start_time,3);
+			if ($monitor['type'] == \Monitors::TYPE_DOCKER) {
+				$start_time = microtime(true);
+				$jobs = $monitor['docker'] ? \MonitoringDockers::data(['docker_id' => $monitor['docker']], '','`worker_id`, `create_time`') : [];
+				$return['mysql_time']['MonitoringDockers::data'] = round(microtime(true) - $start_time,3);
+			} else {
+				$start_time = microtime(true);
+				$jobs = \MonitoringJobs::data(['monitor_id' => $monitor['id']],'','`worker_id`, `create_time`');
+				$return['mysql_time']['MonitoringJobs::data'] = round(microtime(true) - $start_time,3);
+			}
 
 			$workers_hash = [];
 			$worker_data_for_charts = [];

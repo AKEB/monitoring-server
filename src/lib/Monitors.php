@@ -247,4 +247,29 @@ class Monitors extends \DB\MySQLObject implements \PermissionSubject_Interface {
 		static::get_folder_titles($options_hash, $folders_hash, 1);
 		return $options_hash;
 	}
+
+	static public function get_monitor_title_with_folders(?int $monitor_id): string {
+		$title = '';
+		if (!isset($monitor_id) || !$monitor_id) return $title;
+		$monitors_hash = [];
+		$cache = new \Cache('monitors_hash');
+		if ($cache->isValid()) {
+			$monitors_hash = json_decode($cache->get(), true);
+		}
+		if (!$monitors_hash) {
+			$monitors = \Monitors::data(false, '', '`id`, `title`, `parent_id`');
+			if ($monitors) {
+				$monitors_hash = make_hash($monitors, 'id');
+			}
+		}
+		$tmp_monitor = $monitors_hash[$monitor_id];
+		if (!$tmp_monitor) return $title;
+		$titles = [];
+		while(true) {
+			$titles[] = $tmp_monitor['title'];
+			if (!$tmp_monitor['parent_id']) break;
+			$tmp_monitor = $monitors_hash[$tmp_monitor['parent_id']];
+		}
+		return implode(' > ', array_reverse($titles));
+	}
 }
