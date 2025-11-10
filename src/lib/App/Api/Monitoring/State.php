@@ -103,6 +103,8 @@ class State extends \Routing_Parent implements \Routing_Interface {
 		$docker = \Dockers::get(['id' => $docker_id]);
 		if (!$docker) return false;
 
+		if ($docker['status'] != \Dockers::STATUS_ENABLED) return false;
+
 		$container_states = @json_decode($container_states, true);
 		if (!is_array($container_states) || !$container_states) return false;
 		$containers_hash = [];
@@ -123,6 +125,9 @@ class State extends \Routing_Parent implements \Routing_Interface {
 		$notification_check_monitors = [];
 		foreach ($monitors as $monitor) {
 			if (!isset($monitor['id']) || !$monitor['id']) continue;
+
+			if (!\Monitors::is_enable($monitor['id'])) continue;
+
 			if (!isset($monitor['container']) || !$monitor['container']) continue;
 			if (!isset($containers_hash[$monitor['container']]) || !$containers_hash[$monitor['container']]) continue;
 			$status = \MonitoringLogs::STATUS_FAIL;
@@ -139,6 +144,7 @@ class State extends \Routing_Parent implements \Routing_Interface {
 				'update_time' => $param['update_time']??time(),
 			];
 			$monitor_log['id'] = \MonitoringLogs::save($monitor_log);
+			$monitor_log = \MonitoringLogs::get(['id' => $monitor_log['id']]);
 			\MonitorsEvents::updateEvent($monitor_log);
 			$notification_check_monitors[$monitor['id']] = true;
 		}
@@ -264,7 +270,9 @@ class State extends \Routing_Parent implements \Routing_Interface {
 		if (!$job) return false;
 		$monitor = \Monitors::get($job['monitor_id']);
 		if (!$monitor) return false;
-		if ($monitor['status'] == \Monitors::STATUS_DISABLED) return false;
+		if ($monitor['status'] != \Monitors::STATUS_ENABLED) return false;
+
+		if (!\Monitors::is_enable($job['monitor_id'])) return false;
 
 		if ($job['update_time'] + 30 < time()) {
 			\MonitoringJobs::save([

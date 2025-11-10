@@ -17,6 +17,8 @@ class Monitors extends \DB\MySQLObject implements \PermissionSubject_Interface {
 	const TYPE_PING   = 3;
 	const TYPE_DOCKER = 4;
 
+	static private array $monitors_hash = [];
+
 
 	static private array $monitorsForAccess = [];
 
@@ -248,23 +250,22 @@ class Monitors extends \DB\MySQLObject implements \PermissionSubject_Interface {
 		return $options_hash;
 	}
 
+	static public function get_hash(): array {
+		if (!static::$monitors_hash) {
+			$monitors = static::data(false, '', '`id`, `title`, `type`, `parent_id`, `status`');
+			if ($monitors) {
+				static::$monitors_hash = make_hash($monitors, 'id');
+			}
+		}
+		return static::$monitors_hash;
+	}
+
 	static public function get_monitor_title_with_folders(?int $monitor_id): string {
 		$title = '';
 		if (!isset($monitor_id) || !$monitor_id) return $title;
-		$monitors_hash = [];
-		$cache = new \Cache('monitors_hash');
-		if ($cache->isValid()) {
-			$monitors_hash = json_decode($cache->get(), true);
-		}
-		if (!$monitors_hash) {
-			$monitors = static::data(false, '', '`id`, `title`, `parent_id`, `status`');
-			if ($monitors) {
-				$monitors_hash = make_hash($monitors, 'id');
-			}
-			$cache->update(json_encode($monitors_hash), 60);
-		}
+		$monitors_hash = static::get_hash();
+		if (!isset($monitors_hash[$monitor_id]) || !$monitors_hash[$monitor_id]) return $title;
 		$tmp_monitor = $monitors_hash[$monitor_id];
-		if (!$tmp_monitor) return $title;
 		$titles = [];
 		while(true) {
 			$titles[] = $tmp_monitor['title'];
@@ -272,5 +273,23 @@ class Monitors extends \DB\MySQLObject implements \PermissionSubject_Interface {
 			$tmp_monitor = $monitors_hash[$tmp_monitor['parent_id']];
 		}
 		return implode(' > ', array_reverse($titles));
+	}
+
+	static public function is_enable(?int $monitor_id): bool {
+		if (!isset($monitor_id) || !$monitor_id) return false;
+		$monitors_hash = static::get_hash();
+		if (!isset($monitors_hash[$monitor_id]) || !$monitors_hash[$monitor_id]) return false;
+
+		$enable = true;
+		$tmp_monitor = $monitors_hash[$monitor_id];
+		while(true) {
+			if ($tmp_monitor['status'] != static::STATUS_ENABLED) {
+				$enable = false;
+				break;
+			}
+			if (!$tmp_monitor['parent_id']) break;
+			$tmp_monitor = $monitors_hash[$tmp_monitor['parent_id']];
+		}
+		return $enable;
 	}
 }

@@ -244,7 +244,13 @@ class MonitoringLogs extends \DB\MySQLObject {
 			}
 			$cache->update($availability, 30*60);
 		}
-
+		$dockers_hash = [];
+		$dockers = \Dockers::data(false, '', '`id`, `title`, `repeat_seconds`, `status`');
+		if ($dockers) {
+			foreach($dockers as $item) {
+				$dockers_hash[$item['id']] = $item;
+			}
+		}
 
 		$repeat_seconds = [];
 		$global_min_time = 0;
@@ -253,13 +259,22 @@ class MonitoringLogs extends \DB\MySQLObject {
 		// Make monitors structure
 		foreach($monitors as $monitor_id=>&$monitor) {
 			if (!isset($monitor['type'])) continue;
-			if ($monitor['status'] == \Monitors::STATUS_DISABLED) continue;
+			if ($monitor['status'] != \Monitors::STATUS_ENABLED) continue;
+			if (!\Monitors::is_enable($monitor_id)) continue;
 			if ($monitor['type'] != \Monitors::TYPE_FOLDER) {
 				if (!\Sessions::checkPermission(\Monitors::PERMISSION_ACCESS, $monitor_id, READ)) {
 					unset($monitors[$monitor_id]);
 					continue;
 				}
 			}
+
+			if ($monitor['type'] == \Monitors::TYPE_DOCKER) {
+				if (!isset($monitor['docker']) || !$monitor['docker']) continue;
+				if (!isset($dockers_hash[$monitor['docker']])) continue;
+				if ($dockers_hash[$monitor['docker']]['status'] != \Dockers::STATUS_ENABLED) continue;
+				$monitor['repeat_seconds'] = $dockers_hash[$monitor['docker']]['repeat_seconds'] ?? 0;
+			}
+
 			$monitor_ids[$monitor_id] = $monitor_id;
 			if (!$monitor['repeat_seconds']) $monitor['repeat_seconds'] = 30;
 

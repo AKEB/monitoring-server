@@ -177,6 +177,13 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 						$this->error = \T::Monitor_Edit_PermissionDenied();
 						break;
 					}
+					$docker = \Dockers::get(['id' => $params['docker']]);
+					if (!$docker) {
+						$this->error = \T::Monitor_Edit_DockerNotFound();
+						break;
+					}
+					$params['repeat_seconds'] = intval($docker['repeat_seconds']);
+					$params['timeout'] = intval($docker['timeout']);
 				}
 				if (isset($data['container'])) {
 					$data['container'] = trim($data['container']);
@@ -410,7 +417,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 			}
 			if ($monitor_id) {
 				$monitor = \Monitors::get(['id' => $monitor_id]);
-				if ($monitor['type'] == \Monitors::TYPE_FOLDER) {
+				if ($monitor['type'] == \Monitors::TYPE_FOLDER && !$old_monitor) {
 					common_redirect('/monitors/'.$monitor['id'].'/');
 				} else {
 					common_redirect('/monitors/'.$monitor['parent_id'].'/');

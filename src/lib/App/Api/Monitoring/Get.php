@@ -83,7 +83,7 @@ class Get extends \Routing_Parent implements \Routing_Interface {
 		$jobs = [];
 		if ($this->worker && $this->worker['id']) {
 			$sql = sql_pholder(' AND M.`status` = ? ',\Monitors::STATUS_ENABLED);
-			$sql .= sql_pholder(' AND `type` NOT IN (?@)', [\Monitors::TYPE_FOLDER, \Monitors::TYPE_DOCKER]);
+			$sql .= sql_pholder(' AND M.`type` NOT IN (?@)', [\Monitors::TYPE_FOLDER, \Monitors::TYPE_DOCKER]);
 			$jobs = \MonitoringJobs::data(
 				[
 					'worker_id' => $this->worker['id']
@@ -96,8 +96,16 @@ class Get extends \Routing_Parent implements \Routing_Interface {
 					'_join' => ' JOIN `'.\Monitors::getTable().'` M ON t.`monitor_id` = M.`id`'
 				]
 			);
+			$enabled_jobs = [];
+			foreach($jobs as $job) {
+				if (!\Monitors::is_enable($job['monitor_id'])) {
+					continue;
+				}
+
+				$enabled_jobs[] = $job;
+			}
 		}
-		return $jobs;
+		return $enabled_jobs;
 	}
 
 	private function getDockersData(): array {

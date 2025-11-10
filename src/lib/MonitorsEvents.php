@@ -111,10 +111,11 @@ class MonitorsEvents extends \DB\MySQLObject {
 		if (!isset($monitors) || !count($monitors)) return;
 		$monitor_ids = array_keys($monitors);
 		if (!count($monitor_ids)) return;
-		$monitors = \Monitors::data(false, sql_pholder(' AND `id` IN (?@) AND `status` = ?', $monitor_ids, \Monitors::STATUS_ENABLED), '`id`, `title`, `type`, `last_send_status`, `last_send_time`, `send_repeat_minute`');
+		$monitors = \Monitors::data(false, sql_pholder(' AND `id` IN (?@) AND `status` = ?', $monitor_ids, \Monitors::STATUS_ENABLED), '`id`, `title`, `type`, `docker`, `last_send_status`, `last_send_time`, `send_repeat_minute`');
 		$monitors_hash = [];
 		$dockers_monitor_hash = [];
 		foreach($monitors as $monitor) {
+			if (!\Monitors::is_enable($monitor['id'])) continue;
 			$monitors_hash[$monitor['id']] = $monitor;
 			if ($monitor['type'] == \Monitors::TYPE_DOCKER) {
 				$dockers_monitor_hash[$monitor['docker']][$monitor['id']] = $monitor['id'];
