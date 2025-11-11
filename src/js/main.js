@@ -155,7 +155,7 @@ function filterAndHideMonitors() {
 	searchText = document.getElementById('monitorSearch').value;
 	searchStatus = $('#monitorStatus').val(); // Array
 
-	console.log('filterAndHideMonitors', searchText, searchStatus);
+	// console.log('filterAndHideMonitors', searchText, searchStatus);
 	const allMonitors = document.querySelectorAll('.monitor-item, .monitor-folder');
 	let hasResults = false;
 
@@ -166,7 +166,7 @@ function filterAndHideMonitors() {
 		let matches = searchText === '' ||
 					text.toLowerCase().includes(searchText.toLowerCase());
 		if (searchStatus && searchStatus.length > 0) {
-			console.log(title ? title.dataset.searchStatus : '', searchStatus);
+			// console.log(title ? title.dataset.searchStatus : '', searchStatus);
 			matches = matches && searchStatus.includes(title ? title.dataset.searchStatus : '');
 		}
 		
