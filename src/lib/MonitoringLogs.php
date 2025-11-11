@@ -37,12 +37,15 @@ class MonitoringLogs extends \DB\MySQLObject {
 
 		foreach ($data as $k=>&$monitor) {
 			if ($monitor['type'] == \Monitors::TYPE_FOLDER) {
+				$monitor['children'] = static::getDataForParents($monitor['children']);
+
 				if (!isset($monitor['children']) || !$monitor['children']) {
-					$monitor = [];
+					// error_log($monitor['title']);
+					unset($data[$k]['children']);
 					unset($data[$k]);
 					continue;
 				}
-				$monitor['children'] = static::getDataForParents($monitor['children']);
+
 				$monitor['states'] = [];
 				foreach($monitor['children'] as $child) {
 					$monitor['repeat_seconds'] = max($monitor['repeat_seconds']??0, $child['repeat_seconds']??0);
