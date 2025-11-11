@@ -29,7 +29,7 @@ function printMonitors(data, level=0, searchText='') {
 					show = true;
 				}
 				// Заголовок папки с отступом, значком доступности и иконкой сворачивания
-				HTML += '<div class="col-9 col-md-8'+(show ? '':' collapsed')+' monitor-title" data-search-text="'+searchText + monitor.title +'" data-monitor-id="'+monitor.id+'" aria-controls="collapseMonitors_'+monitor.id+'">';
+				HTML += '<div class="col-9 col-md-8'+(show ? '':' collapsed')+' monitor-title" data-search-status="'+(monitor.badge_class)+'" data-search-text="'+searchText + monitor.title +'" data-monitor-id="'+monitor.id+'" aria-controls="collapseMonitors_'+monitor.id+'">';
 				HTML += '<span class="ml-padding-'+level+'"></span><span class="badge rounded-pill monitor-badge '+(monitor.badge_class)+'" data-bs-toggle="tooltip" data-bs-html="true" data-bs-title="24-hours" data-monitor-id="'+monitor.id+'">'+monitor.availability_percent+'%</span>';
 				HTML += '<i class="bi bi-caret-down"></i>';
 				HTML += monitor.title;
@@ -71,7 +71,7 @@ function printMonitors(data, level=0, searchText='') {
 			}
 		} else {
 			// Monitor
-			HTML += '<div class="row monitor-item mb-1" data-monitor-id="'+monitor.id+'"><div class="col-9 col-md-8 monitor-title pointer" data-search-text="'+searchText + monitor.title +'" data-monitor-id="'+monitor.id+'">';
+			HTML += '<div class="row monitor-item mb-1" data-monitor-id="'+monitor.id+'"><div class="col-9 col-md-8 monitor-title pointer" data-search-status="'+(monitor.badge_class)+'" data-search-text="'+searchText + monitor.title +'" data-monitor-id="'+monitor.id+'">';
 			// Заголовок монитора с отступом и значком доступности
 			HTML += '<span class="ml-padding-'+level+'"></span><span class="badge rounded-pill monitor-badge '+(monitor.badge_class)+'" data-bs-toggle="tooltip" data-bs-html="true" data-bs-title="24-hours" data-monitor-id="'+monitor.id+'">'+monitor.availability_percent+'%</span>'+"\n";
 			HTML += monitor.title;
@@ -153,7 +153,9 @@ function MonitorsUpdate(count=25) {
  */
 function filterAndHideMonitors() {
 	searchText = document.getElementById('monitorSearch').value;
-	// console.log('filterAndHideMonitors', searchText);
+	searchStatus = $('#monitorStatus').val(); // Array
+
+	console.log('filterAndHideMonitors', searchText, searchStatus);
 	const allMonitors = document.querySelectorAll('.monitor-item, .monitor-folder');
 	let hasResults = false;
 
@@ -161,9 +163,13 @@ function filterAndHideMonitors() {
 		const title = monitor.querySelector('.monitor-title');
 		// Получаем текст для поиска из специального атрибута или из содержимого
 		const text = title ? (title.dataset.searchText || title.textContent || title.innerText) : '';
-		const matches = searchText === '' ||
+		let matches = searchText === '' ||
 					text.toLowerCase().includes(searchText.toLowerCase());
-
+		if (searchStatus && searchStatus.length > 0) {
+			console.log(title ? title.dataset.searchStatus : '', searchStatus);
+			matches = matches && searchStatus.includes(title ? title.dataset.searchStatus : '');
+		}
+		
 		if (matches) {
 			$(monitor).show();
 			hasResults = true;
@@ -939,6 +945,10 @@ $(document).ready(function() {
 		monitorSearchTimeout = setTimeout(function() {
 			filterAndHideMonitors();
 		}, 500);
+	});
+
+	$('#monitorStatus').on('change', function() {
+		filterAndHideMonitors();
 	});
 
 	// Обработчик события popstate (когда пользователь нажимает назад/вперед)

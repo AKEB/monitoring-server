@@ -1,5 +1,12 @@
 MainPage: "Главная страница"
 
+Status:
+  Success: "Успешно"
+  Error: "Ошибка"
+  Warning: "Предупреждение"
+  Unknown: "Неизвестно"
+
+
 Menu:
   Home: "Главная"
 

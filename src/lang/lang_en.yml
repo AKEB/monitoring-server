@@ -1,5 +1,11 @@
 MainPage: "Main page"
 
+Status:
+  Success: "Success"
+  Error: "Error"
+  Warning: "Warning"
+  Unknown: "Unknown"
+
 Menu:
   Home: "Home"
 

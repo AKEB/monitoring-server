@@ -13,6 +13,28 @@ class MonitoringLogs extends \DB\MySQLObject {
 
 	static private function getDataForParents($data):array {
 
+		usort($data, function($a, $b){
+			$titleA = $a['title'];
+			$titleB = $b['title'];
+
+			// Проверяем, начинается ли строка с русской буквы
+			$isRussianA = preg_match('/^[а-яё]/iu', $titleA);
+			$isRussianB = preg_match('/^[а-яё]/iu', $titleB);
+
+			// Если одна строка начинается с русской буквы, а другая - нет,
+			// русская строка должна идти первой
+			if ($isRussianA && !$isRussianB) {
+				return -1;
+			}
+			if (!$isRussianA && $isRussianB) {
+				return 1;
+			}
+
+			// Если обе строки начинаются с русских букв или обе с английских,
+			// сортируем регистронезависимо
+			return strcasecmp($titleA, $titleB);
+		});
+
 		foreach ($data as $k=>&$monitor) {
 			if ($monitor['type'] == \Monitors::TYPE_FOLDER) {
 				if (!isset($monitor['children']) || !$monitor['children']) {
@@ -31,7 +53,6 @@ class MonitoringLogs extends \DB\MySQLObject {
 
 					$monitor['availability_percent'] = min($monitor['availability_percent']??100, $child['availability_percent']??0);
 				}
-				error_log($monitor['title'].' - '.$monitor['repeat_seconds']);
 				$last_class = '';
 				for($i=$monitor['min_time']; $i<=$monitor['max_time']; $i+=intval($monitor['repeat_seconds'])) {
 					if ($i > time()) continue;

@@ -9,6 +9,38 @@ class T {
 	public static function MainPage(...$argv): string { return ''; }
 
 	/**
+	 * Status_Success
+	 * 
+	 * @return string "Success"
+	 * @return string "Успешно"
+	 */
+	public static function Status_Success(...$argv): string { return ''; }
+
+	/**
+	 * Status_Error
+	 * 
+	 * @return string "Error"
+	 * @return string "Ошибка"
+	 */
+	public static function Status_Error(...$argv): string { return ''; }
+
+	/**
+	 * Status_Warning
+	 * 
+	 * @return string "Warning"
+	 * @return string "Предупреждение"
+	 */
+	public static function Status_Warning(...$argv): string { return ''; }
+
+	/**
+	 * Status_Unknown
+	 * 
+	 * @return string "Unknown"
+	 * @return string "Неизвестно"
+	 */
+	public static function Status_Unknown(...$argv): string { return ''; }
+
+	/**
 	 * Menu_Home
 	 * 
 	 * @return string "Home"
