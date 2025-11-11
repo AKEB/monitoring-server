@@ -30,7 +30,7 @@ function printMonitors(data, level=0, searchText='') {
 				}
 				// Заголовок папки с отступом, значком доступности и иконкой сворачивания
 				HTML += '<div class="col-9 col-md-8'+(show ? '':' collapsed')+' monitor-title" data-search-text="'+searchText + monitor.title +'" data-monitor-id="'+monitor.id+'" aria-controls="collapseMonitors_'+monitor.id+'">';
-				HTML += '<span class="ml-padding-'+level+'"></span><span class="badge rounded-pill monitor-badge '+(monitor.badge_class)+'" title="24-hours" data-monitor-id="'+monitor.id+'">'+monitor.availability_percent+'%</span>';
+				HTML += '<span class="ml-padding-'+level+'"></span><span class="badge rounded-pill monitor-badge '+(monitor.badge_class)+'" data-bs-toggle="tooltip" data-bs-html="true" data-bs-title="24-hours" data-monitor-id="'+monitor.id+'">'+monitor.availability_percent+'%</span>';
 				HTML += '<i class="bi bi-caret-down"></i>';
 				HTML += monitor.title;
 				HTML += '</div>';
@@ -45,7 +45,7 @@ function printMonitors(data, level=0, searchText='') {
 						old_states[obj.data('min-time')] = {
 							min_time: obj.data('min-time'),
 							class: obj.attr('class'),
-							title: obj.attr('title'),
+							title: obj.attr('data-bs-title'),
 						};
 					}
 				}
@@ -53,9 +53,13 @@ function printMonitors(data, level=0, searchText='') {
 					const state = monitor.states[time];
 					old_states[time] = state;
 				}
-				for (var time in old_states) {
+
+				const keys = Object.keys(old_states).sort((a, b) => a - b);
+				const lastKeys = keys.slice(-25);
+				for (var i in lastKeys) {
+					const time = lastKeys[i];
 					const state = old_states[time];
-					HTML += '<div data-min-time="'+ state.min_time + '" class="' + state.class + '" title="' + state.title + '"></div>';
+					HTML += '<div data-min-time="'+ state.min_time + '" class="' + state.class + '" data-bs-toggle="tooltip" data-bs-html="true" data-bs-title="' + state.title + '"></div>';
 				}
 				HTML += '</div></div></div>';
 
@@ -69,7 +73,7 @@ function printMonitors(data, level=0, searchText='') {
 			// Monitor
 			HTML += '<div class="row monitor-item mb-1" data-monitor-id="'+monitor.id+'"><div class="col-9 col-md-8 monitor-title pointer" data-search-text="'+searchText + monitor.title +'" data-monitor-id="'+monitor.id+'">';
 			// Заголовок монитора с отступом и значком доступности
-			HTML += '<span class="ml-padding-'+level+'"></span><span class="badge rounded-pill monitor-badge '+(monitor.badge_class)+'" title="24-hours" data-monitor-id="'+monitor.id+'">'+monitor.availability_percent+'%</span>'+"\n";
+			HTML += '<span class="ml-padding-'+level+'"></span><span class="badge rounded-pill monitor-badge '+(monitor.badge_class)+'" data-bs-toggle="tooltip" data-bs-html="true" data-bs-title="24-hours" data-monitor-id="'+monitor.id+'">'+monitor.availability_percent+'%</span>'+"\n";
 			HTML += monitor.title;
 			HTML += '</div>';
 			// Блок с полосками состояний (uptime bars)
@@ -83,7 +87,7 @@ function printMonitors(data, level=0, searchText='') {
 					old_states[obj.data('min-time')] = {
 						min_time: obj.data('min-time'),
 						class: obj.attr('class'),
-						title: obj.attr('title'),
+						title: obj.attr('data-bs-title'),
 					};
 				}
 			}
@@ -91,14 +95,33 @@ function printMonitors(data, level=0, searchText='') {
 				const state = monitor.states[time];
 				old_states[time] = state;
 			}
-			for (var time in old_states) {
+			const keys = Object.keys(old_states).sort((a, b) => a - b);
+			const lastKeys = keys.slice(-25);
+			for (var i in lastKeys) {
+				const time = lastKeys[i];
 				const state = old_states[time];
-				HTML += '<div data-min-time="'+ state.min_time + '" class="' + state.class + '" title="' + state.title + '"></div>';
+				HTML += '<div data-min-time="'+ state.min_time + '" class="' + state.class + '" data-bs-toggle="tooltip" data-bs-html="true" data-bs-title="' + state.title + '"></div>';
 			}
 			HTML += '</div></div></div></div>';
 		}
 	}
 	return HTML;
+}
+
+function hideAllTooltips() {
+	const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+	tooltipTriggerList.forEach(tooltipTriggerEl => {
+		const tooltip = bootstrap.Tooltip.getInstance(tooltipTriggerEl)
+		if (tooltip) {
+			tooltip.hide();
+		}
+	});
+
+}
+
+function applyAllTooltips() {
+	const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+	const tooltipList = [...tooltipTriggerList].map(element => new bootstrap.Tooltip(element));
 }
 
 /**
@@ -112,8 +135,10 @@ function MonitorsUpdate(count=25) {
 		if (response.message === undefined) {
 			console.log(response);
 		} else {
+			hideAllTooltips();
 			const html = printMonitors(response.message, 0);
 			$('div.monitor-list-items>div.col').html(html);
+			applyAllTooltips();
 			filterAndHideMonitors();
 		}
 	});
@@ -278,7 +303,7 @@ function updateMonitorWorkersLogs(data) {
 							}
 							title = log.title;
 						}
-						HTML += '<div data-min-time="'+ time + '" class="' + className + '" title="' + title + '"></div>';
+						HTML += '<div data-min-time="'+ time + '" class="' + className + '" data-bs-toggle="tooltip" data-bs-html="true" data-bs-title="' + title + '"></div>';
 					}
 				HTML += '</div></div>';
 			HTML += '</div>';
@@ -399,7 +424,15 @@ function printMonitorData(data, period) {
 	if (!cardObj || cardObj.length < 1) {
 		HTML += '<div class="card" id="monitor-data-'+data.monitor.id+'">';
 		if (data.monitor.id) {
-			HTML += '<div class="card-header bg-transparent"><h5>'+data.monitor.title+'</h5></div>';
+			HTML += '<div class="card-header bg-transparent d-flex justify-content-between align-items-center">';
+			if (data.monitor.url) {
+				HTML += '<a href="'+data.monitor.url+'" target="_blank"><h5>'+data.monitor.title+'</h5></a>';
+			} else {
+				HTML += '<h5>'+data.monitor.title+'</h5>';
+			}
+			// HTML += '<h5><a href="/monitors/'+data.monitor.parent_id+'/edit/'+data.monitor.id+'/" target="_blank"><i class="bi bi-eye me-2 fs-4 text-info pointer"></i></a></h5>';
+			HTML += '</div>';
+
 		}
 		
 		HTML += '<div class="card-body">';
@@ -779,7 +812,9 @@ function MonitorShowData(monitorId, period=1) {
 			console.log(response);
 		} else {
 			if (response.message) {
+				hideAllTooltips();
 				printMonitorData(response.message, period);
+				applyAllTooltips();
 			}
 		}
 	});
