@@ -116,12 +116,16 @@ function hideAllTooltips() {
 			tooltip.hide();
 		}
 	});
-
 }
 
 function applyAllTooltips() {
 	const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
-	const tooltipList = [...tooltipTriggerList].map(element => new bootstrap.Tooltip(element));
+	tooltipTriggerList.forEach(tooltipTriggerEl => {
+		const tooltip = bootstrap.Tooltip.getInstance(tooltipTriggerEl)
+		if (!tooltip) {
+			new bootstrap.Tooltip(tooltipTriggerEl)
+		}
+	});
 }
 
 /**
