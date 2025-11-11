@@ -98,7 +98,7 @@ class Get extends \Routing_Parent implements \Routing_Interface {
 			);
 			$enabled_jobs = [];
 			foreach($jobs as $job) {
-				if (!\Monitors::is_enable($job['monitor_id'])) {
+				if (!\Monitors::is_enable($job['id'])) {
 					continue;
 				}
 
