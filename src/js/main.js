@@ -982,4 +982,31 @@ $(document).ready(function() {
 			new bootstrap.Tooltip(target).show();
 		}
 	});
+
+	// --- Логика перезагрузки страницы при неактивности ---
+	let inactivityTimer;
+
+	/**
+	 * Сбрасывает и заново запускает таймер неактивности.
+	 * Если таймер сработает, страница будет перезагружена.
+	 */
+	function resetInactivityTimer() {
+		// Очищаем предыдущий таймер
+		clearTimeout(inactivityTimer);
+
+		// Устанавливаем новый таймер на 1 час (60 * 60 * 1000 миллисекунд)
+		inactivityTimer = setTimeout(() => {
+			// Эта функция выполнится, если не было активности в течение часа
+			window.location.reload();
+		}, 60 * 60 * 1000);
+	}
+
+	// Список событий, которые считаются активностью пользователя
+	const userActivityEvents = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'];
+
+	// На каждое событие активности сбрасываем таймер
+	userActivityEvents.forEach(event => document.addEventListener(event, resetInactivityTimer, false));
+
+	// Запускаем таймер при первой загрузке страницы
+	resetInactivityTimer();
 });

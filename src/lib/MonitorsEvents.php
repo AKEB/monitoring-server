@@ -170,7 +170,7 @@ class MonitorsEvents extends \DB\MySQLObject {
 			$text = '';
 			$success = 1;
 			if ($global_good == count($jobs_hash[$monitor_id])) {
-				// Все воркеры вернули успех
+				// Все обработчики вернули успех
 				if ($monitor['last_send_status'] != \MonitoringLogs::STATUS_GOOD) {
 					$title = "Success";
 					$success = 1;
@@ -183,7 +183,7 @@ class MonitorsEvents extends \DB\MySQLObject {
 					]);
 				}
 			} elseif ($global_failed == count($jobs_hash[$monitor_id])) {
-				// Все воркеры вернули ошибки
+				// Все обработчики вернули ошибки
 				if ($monitor['last_send_status'] != \MonitoringLogs::STATUS_FAIL) {
 					$title = "Error";
 					$success = 0;

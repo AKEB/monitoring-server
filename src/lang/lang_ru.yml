@@ -99,7 +99,7 @@ Monitor:
     Port: "Порт"
     Method: "Метод запроса"
     Timeout: "Таймаут запроса в секундах"
-    MaxRedirects: "Максимум редиректов"
+    MaxRedirects: "Максимум переходов"
     RepeatSeconds: "Частота опроса в секундах"
     SSLVerify: "Валидация SSL"
     SSLVerifyHost: "Валидация домена SSL"

@@ -660,7 +660,7 @@ class T {
 	 * Monitor_Edit_MaxRedirects
 	 * 
 	 * @return string "Max redirects"
-	 * @return string "Максимум редиректов"
+	 * @return string "Максимум переходов"
 	 */
 	public static function Monitor_Edit_MaxRedirects(...$argv): string { return ''; }
 
