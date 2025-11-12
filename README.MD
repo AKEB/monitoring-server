@@ -4,39 +4,43 @@
 
 Default User Email: `admin@admin.com` and Password `Admin@123`
 
+## Features
+
+- [x] Create/edit workers
+- [x] List of workers
+- [x] Create/edit monitors
+- [x] List of monitors
+- [x] Access rights to monitors, inherited from folders
+- [x] Displaying the list of monitors on the main page
+- [x] Filtering monitors by name
+- [x] Displaying the selected monitor on the main page
+- [x] Updating the list of monitors in the background
+- [x] Updating the selected monitor in the background
+- [x] Consider ClickHouse as a data storage
+- [x] Aggregate data into a separate table
+- [x] Delete logs older than 24 hours
+- [x] Deploy a production instance
+- [x] Events in the database
+- [x] Displaying events on the main page
+- [x] Displaying events in the selected monitor
+- [x] Event notifications
+- [x] New monitor type: TCP
+- [x] New monitor type: PING
+- [x] New monitor type: Docker API
+- [x] Filtering monitors by status
+- [x] Subscribing to notifications in the web interface
+- [x] Notification about expiring SSL certificate
+
 ## Issues
 
-- [x] Создание/редактирование обработчиков
-- [x] Список обработчиков
-- [x] Создание/редактирование мониторов
-- [x] Список мониторов
-- [x] Права доступа к мониторам, наследуемые из папок
-- [x] Отображение списка мониторов на главной странице
-- [x] Фильтрация мониторов по названию
-- [x] Отображение выбранного монитора на главной странице
-- [x] Обновление списка мониторов в фоне
-- [x] Обновление выбранного монитора в фоне
-- [x] Рассмотреть clickhouse в качестве хранилища данных
-- [x] Агрегировать данные в отдельную таблицу
-- [x] Удалять логи старше 24 часов.
-- [x] Развернуть боевой инстанс
-- [x] События в базе
-- [x] Отображение событий на главной странице
-- [x] Отображение событий в выбранном мониторе
-- [x] Нотификации о событиях
-- [x] Новый тип монитора TCP
-- [x] Новый тип монитора PING
-- [x] Новый тип монитора Docker API
-- [x] Фильтрация мониторов по статусу
-- [x] Подписка на уведомления в Веб интерфейсе
-- [ ] Уведомление о протухающем SSL сертификате
-- [ ] Технические работы
-- [ ] Новый тип монитора node-exporter
-- [ ] Новый тип монитора MySQL
-- [ ] Новый тип монитора PostgreSQL
-- [ ] Проверить еще раз все страницы на мобильном устройстве
-- [ ] Проверить еще раз светлую тему
-- [ ] Подумать над багами с докер АПИ (почему подвисают запросы)
+- [ ] Maintenance work
+- [ ] New monitor type: node-exporter
+- [ ] New monitor type: MySQL
+- [ ] New monitor type: PostgreSQL
+- [ ] Double-check all pages on a mobile device
+- [ ] Double-check the light theme
+- [ ] Investigate bugs with the Docker API (why requests are hanging)
+- [ ] Figure out memory leaks in Javascript
 
 ## Environments
 

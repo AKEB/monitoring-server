@@ -145,7 +145,7 @@ class MonitorsEvents extends \DB\MySQLObject {
 		$sub_query_sql = "SELECT ".$fields.", ROW_NUMBER() OVER (PARTITION BY `monitor_id`, `worker_id` ORDER BY `update_time` DESC) as rn FROM ".\MonitoringLogs::$table." WHERE 1 $sub_sql";
 		$sql_query = "SELECT ".$fields." FROM ($sub_query_sql) as sub WHERE sub.rn = 1 ";
 		$logs = [];
-		\MonitoringLogs::$database->db_GetQueryArray($sql_query, $logs);
+		\MonitoringLogs::getDatabase()->db_GetQueryArray($sql_query, $logs);
 		$logs_hash = [];
 		foreach($logs as $log) {
 			$logs_hash[$log['monitor_id']][$log['worker_id']] = $log;

@@ -79,6 +79,12 @@ Monitor:
     MonitorNotFound: "Monitor not found"
     PermissionDenied: "You don't have permission to delete this monitor"
     MonitorFolderNotEmpty: "This monitor folder is not empty"
+  Expire:
+    Title: "SSL certificate expires"
+    Text: "SSL certificate %s expires in %d %s"
+    Day: "day"
+    Days: "days"
+    Days5: "days"
   Edit:
     CreateTitle: "Create monitor"
     EditTitle: "Edit monitor &quot;%s&quot; [ID=%d]"
@@ -96,6 +102,7 @@ Monitor:
     RepeatSeconds: "Repeat seconds"
     SSLVerify: "SSL verify"
     SSLVerifyHost: "SSL verify host"
+    SSLCertExpireAlert: "SSL certificate expire notifications"
     ResponseCode: "Allowed status codes"
     ProxyHost: "Proxy host"
     ProxyType: "Proxy type"

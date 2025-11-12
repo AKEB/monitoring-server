@@ -143,6 +143,13 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				} else {
 					$params['ssl_verify_host'] = 0;
 				}
+
+				if (isset($data['ssl_cert_expire_alert']) && $data['ssl_cert_expire_alert'] == 'true') {
+					$params['ssl_cert_expire_alert'] = 1;
+				} else {
+					$params['ssl_cert_expire_alert'] = 0;
+				}
+
 				if (isset($data['response_code'])) {
 					$data['response_code'] = array_map('intval',array_map('trim',$data['response_code']));
 					$params['response_code'] = implode(',', $data['response_code']);
@@ -492,6 +499,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 			$this->monitor['repeat_seconds'] ??= 60;
 			$this->monitor['ssl_verify'] ??= 1;
 			$this->monitor['ssl_verify_host'] ??= 1;
+			$this->monitor['ssl_cert_expire_alert'] ??= 1;
 			$this->monitor['proxy_type'] ??= 0;
 			$this->monitor['workers'] ??= [];
 			$this->monitor['notify'] ??= [];
@@ -678,6 +686,10 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 					echo $this->template->html_switch("ssl_verify_host", intval($this->monitor['ssl_verify_host']??0), \T::Monitor_Edit_SSLVerifyHost(), false,[
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS,
+						'readonly' => !($this->can_write || $this->can_create),
+					]);
+					echo $this->template->html_switch("ssl_cert_expire_alert", intval($this->monitor['ssl_cert_expire_alert']??0), \T::Monitor_Edit_SSLCertExpireAlert(), false,[
 						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS,
 						'readonly' => !($this->can_write || $this->can_create),
 					]);

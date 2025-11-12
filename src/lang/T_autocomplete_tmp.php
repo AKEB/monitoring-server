@@ -521,6 +521,46 @@ class T {
 	public static function Monitor_Delete_MonitorFolderNotEmpty(...$argv): string { return ''; }
 
 	/**
+	 * Monitor_Expire_Title
+	 * 
+	 * @return string "SSL certificate expires"
+	 * @return string "Истекает SSL Сертификат"
+	 */
+	public static function Monitor_Expire_Title(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Expire_Text
+	 * 
+	 * @return string "SSL certificate %s expires in %d %s"
+	 * @return string "Сертификат SSL %s истекает через %d %s"
+	 */
+	public static function Monitor_Expire_Text(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Expire_Day
+	 * 
+	 * @return string "day"
+	 * @return string "день"
+	 */
+	public static function Monitor_Expire_Day(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Expire_Days
+	 * 
+	 * @return string "days"
+	 * @return string "дня"
+	 */
+	public static function Monitor_Expire_Days(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Expire_Days5
+	 * 
+	 * @return string "days"
+	 * @return string "дней"
+	 */
+	public static function Monitor_Expire_Days5(...$argv): string { return ''; }
+
+	/**
 	 * Monitor_Edit_CreateTitle
 	 * 
 	 * @return string "Create monitor"
@@ -636,7 +676,7 @@ class T {
 	 * Monitor_Edit_SSLVerify
 	 * 
 	 * @return string "SSL verify"
-	 * @return string "SSL verify"
+	 * @return string "Валидация SSL"
 	 */
 	public static function Monitor_Edit_SSLVerify(...$argv): string { return ''; }
 
@@ -644,9 +684,17 @@ class T {
 	 * Monitor_Edit_SSLVerifyHost
 	 * 
 	 * @return string "SSL verify host"
-	 * @return string "SSL verify host"
+	 * @return string "Валидация домена SSL"
 	 */
 	public static function Monitor_Edit_SSLVerifyHost(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_SSLCertExpireAlert
+	 * 
+	 * @return string "SSL certificate expire notifications"
+	 * @return string "Уведомления о истечении срока действия сертификата"
+	 */
+	public static function Monitor_Edit_SSLCertExpireAlert(...$argv): string { return ''; }
 
 	/**
 	 * Monitor_Edit_ResponseCode
@@ -660,7 +708,7 @@ class T {
 	 * Monitor_Edit_ProxyHost
 	 * 
 	 * @return string "Proxy host"
-	 * @return string "Proxy host"
+	 * @return string "Proxy домен и порт"
 	 */
 	public static function Monitor_Edit_ProxyHost(...$argv): string { return ''; }
 
@@ -668,7 +716,7 @@ class T {
 	 * Monitor_Edit_ProxyType
 	 * 
 	 * @return string "Proxy type"
-	 * @return string "Proxy type"
+	 * @return string "Proxy Тип"
 	 */
 	public static function Monitor_Edit_ProxyType(...$argv): string { return ''; }
 
