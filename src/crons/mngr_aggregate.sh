@@ -1,7 +1,7 @@
 #!/bin/bash
 
 LOG="/var/log/php/mngr_aggregate.log"
-PHP="php -d memory_limit=512M -d allow_url_fopen=true -d error_log=${LOG}"
+PHP="php -d memory_limit=1024M -d allow_url_fopen=true -d error_log=${LOG}"
 
 while [ 1 ] ;
 do

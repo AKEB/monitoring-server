@@ -113,7 +113,7 @@ function hideAllTooltips() {
 	tooltipTriggerList.forEach(tooltipTriggerEl => {
 		const tooltip = bootstrap.Tooltip.getInstance(tooltipTriggerEl)
 		if (tooltip) {
-			tooltip.hide();
+			tooltip.dispose(); // dispose() также скроет подсказку, если она видима
 		}
 	});
 }
@@ -139,16 +139,16 @@ function MonitorsUpdate(count=25) {
 		if (response.message === undefined) {
 			console.log(response);
 		} else {
+			// Сначала уничтожаем старые всплывающие подсказки, затем обновляем DOM
 			hideAllTooltips();
-			const html = printMonitors(response.message, 0);
-			$('div.monitor-list-items>div.col').html(html);
+			$('div.monitor-list-items>div.col').html(printMonitors(response.message, 0));
 			applyAllTooltips();
 			filterAndHideMonitors();
 		}
 	});
 	// Установка таймаута для следующего обновления через 30 секунд
 	monitorUpdateTimeout = setTimeout(function() {
-		MonitorsUpdate(5);
+		MonitorsUpdate(4);
 	}, 30000);
 }
 
@@ -361,7 +361,7 @@ function updateMonitorLastInfo(data) {
 		}
 	HTML += '</div>';
 	HTML += '</div>';
-	container.html(HTML);
+	container.empty().html(HTML);
 }
 
 function updateMonitorEvents(data) {
@@ -408,7 +408,12 @@ function updateMonitorEvents(data) {
 	HTML += '</table>';
 	HTML += '</div>';
 	HTML += '</div>';
-	container.html(HTML);
+	// Проверяем, существует ли уже экземпляр DataTable, и уничтожаем его перед повторной инициализацией
+	if ($.fn.DataTable.isDataTable('#Table')) {
+		$('#Table').DataTable().destroy();
+	}
+	// Очищаем контейнер перед новой отрисовкой, чтобы избежать дублирования
+	container.empty().html(HTML);
 	new DataTable('#Table', {
 		paging: true,
 		searching: false,
@@ -491,6 +496,10 @@ function initECharts() {
 	// Определяем тему в зависимости от системных настроек
 	const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
 	const chartDom = document.getElementById('MonitorEChart');
+	// Проверяем и уничтожаем предыдущий экземпляр графика, чтобы избежать утечек памяти
+	if (monitorChart && !monitorChart.isDisposed()) {
+		monitorChart.dispose();
+	}
 	monitorChart = echarts.init(chartDom, isDark ? 'dark' : 'light');
 	
 	// Базовые опции для графика
@@ -831,7 +840,7 @@ function MonitorShowData(monitorId, period=1) {
 	// Устанавливаем таймаут для автоматического обновления через 60 секунд
 	monitorShowTimeout = setTimeout(function() {
 		MonitorShowData(monitorId, period);
-	}, 60000);
+	}, 30000);
 }
 
 /**
@@ -965,4 +974,12 @@ $(document).ready(function() {
 		}
 	});
 
+	// Инициализация всплывающих подсказок с использованием делегирования событий
+	// Это более надежный способ для динамически создаваемого контента
+	document.body.addEventListener('mouseover', function(event) {
+		const target = event.target.closest('[data-bs-toggle="tooltip"]');
+		if (target && !bootstrap.Tooltip.getInstance(target)) {
+			new bootstrap.Tooltip(target).show();
+		}
+	});
 });

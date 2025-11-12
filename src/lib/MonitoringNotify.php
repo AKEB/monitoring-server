@@ -12,7 +12,16 @@ class MonitoringNotify extends \DB\MySQLObject {
 		if ($cache->isValid()) {
 			$notifications = $cache->get();
 		} else {
-			$folders_hash = make_hash(\Monitors::data(false, sql_pholder(' AND (`type` = ? OR `id` = ?)', \Monitors::TYPE_FOLDER, $monitor_id), '`id`, `parent_id`'), 'id');
+			$data = \Monitors::get_hash();
+			$folders_hash = [];
+			foreach($data as $id=>$monitor) {
+				if ($id == $monitor_id) {
+					$folders_hash[$id] = $monitor;
+				}
+				if ($monitor['type'] == \Monitors::TYPE_FOLDER) {
+					$folders_hash[$id] = $monitor;
+				}
+			}
 			$monitor_ids = $folders_hash ? array_keys($folders_hash) : [];
 			if (!isset($monitor_ids[$monitor_id]) || !$monitor_ids[$monitor_id]) {
 				$monitor_ids[] = $monitor_id;

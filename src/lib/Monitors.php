@@ -104,7 +104,7 @@ class Monitors extends \DB\MySQLObject implements \PermissionSubject_Interface {
 		}
 
 		if (!isset(static::$monitorsForAccess[$user['id']]) || !static::$monitorsForAccess[$user['id']]) {
-			$data = static::data(false,' ORDER BY NULL ', '`id`, `parent_id`, `type`, `title`');
+			$data = static::get_hash();
 			foreach($data as $item) {
 				if (!isset(static::$monitorsForAccess[$user['id']][$item['id']])) {
 					static::$monitorsForAccess[$user['id']][$item['id']] = [];
@@ -167,7 +167,7 @@ class Monitors extends \DB\MySQLObject implements \PermissionSubject_Interface {
 	}
 
 	static public function permissions_subject_hash(): array {
-		$data = static::data();
+		$data = static::get_hash();
 		$permissions_hash = [];
 		foreach($data as $item) {
 			$permissions_hash[$item['id']] = ($item['type'] == static::TYPE_FOLDER ? \T::Monitor_Permissions_Folder().': ' : \T::Monitor_Permissions_Monitor().': ') .$item['title'];
@@ -182,9 +182,10 @@ class Monitors extends \DB\MySQLObject implements \PermissionSubject_Interface {
 	}
 
 	static public function folders_hash(): array {
-		$data = static::data(['type' => static::TYPE_FOLDER], '', '`id`, `parent_id`, `title`');
+		$data = static::get_hash();
 		$folders_hash = [];
 		foreach($data as $item) {
+			if ($item['type'] != static::TYPE_FOLDER) continue;
 			if (!isset($folders_hash[$item['id']])) {
 				$folders_hash[$item['id']] = $item;
 				$folders_hash[$item['id']]['children'] = [];

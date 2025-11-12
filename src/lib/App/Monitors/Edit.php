@@ -525,14 +525,8 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 	}
 
 	private function get_breadcrumb() {
-		// if (!$parent_id) return false;
-		$sql = sql_pholder(' AND type = ?', \Monitors::TYPE_FOLDER);
-		$data = \Monitors::data(false, $sql, '`id`, `title`, `parent_id`');
-		$data_hash = [];
+		$data_hash = \Monitors::get_hash();
 		$folders = [];
-		foreach($data as $item) {
-			$data_hash[$item['id']] = $item;
-		}
 		$parent_id = $this->parent_id;
 		while(true && $parent_id) {
 			$folders[] = [

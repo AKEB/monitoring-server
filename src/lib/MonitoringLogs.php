@@ -165,7 +165,7 @@ class MonitoringLogs extends \DB\MySQLObject {
 		if ($count < 1) return [];
 		if (!$max_time) $max_time = time();
 
-		$data = \Monitors::data(false,' ORDER BY title ASC ');
+		$data = \Monitors::data(false,' ORDER BY NULL ');
 
 		$monitors = [];
 		foreach($data as $item) {
@@ -512,7 +512,7 @@ class MonitoringLogs extends \DB\MySQLObject {
 			$return['events'] = \MonitorsEvents::getEventsForMonitor($monitor_id);
 		} else {
 			$return['workers'] = make_hash(\Workers::data(false, '', '`id`, `title`'));
-			$return['monitors'] = make_hash(\Monitors::data(false, '', '`id`, `title`'));
+			$return['monitors'] = \Monitors::get_hash();
 			$return['events'] = \MonitorsEvents::getEventsForMonitor(0);
 		}
 

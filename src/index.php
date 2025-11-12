@@ -89,6 +89,8 @@ require_once("./autoload.php");
 \Routes::addRoute('/dockers/(?P<action>[^/]+)/(?P<docker_id>\d+)/', '\\App\\Dockers\\Show');
 \Routes::addRoute('/dockers/', '\\App\\Dockers\\Show');
 
+\MonitoringSubscribe::init();
+
 new \Routing();
 
 // Main Page
