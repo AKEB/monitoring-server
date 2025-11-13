@@ -93,7 +93,9 @@ class MonitoringLogs extends \DB\MySQLObject {
 							$has_unknown = true;
 						}
 					}
-					if ($has_error) {
+					if (isset($monitor['maintenances']) && $monitor['maintenances']) {
+						$monitor['states'][$i]['class'] = 'bg-primary';
+					} elseif ($has_error) {
 						$monitor['states'][$i]['class'] = 'bg-danger';
 					} elseif ($has_warning) {
 						$monitor['states'][$i]['class'] = 'bg-warning';
@@ -141,7 +143,9 @@ class MonitoringLogs extends \DB\MySQLObject {
 							$has_unknown++;
 						}
 					}
-					if ($has_error && $has_success && $has_error <= $has_success) {
+					if (isset($monitor['maintenances']) && $monitor['maintenances']) {
+						$monitor['states'][$i]['class'] = 'bg-primary';
+					} elseif ($has_error && $has_success && $has_error <= $has_success) {
 						$monitor['states'][$i]['class'] = 'bg-warning';
 					} elseif($has_error && $has_success && $has_error > $has_success) {
 						$monitor['states'][$i]['class'] = 'bg-danger';
@@ -243,6 +247,13 @@ class MonitoringLogs extends \DB\MySQLObject {
 			if (!$monitor['repeat_seconds']) $monitor['repeat_seconds'] = 30;
 
 			$repeat_seconds[$monitor['repeat_seconds']] = $monitor['repeat_seconds'];
+
+			$maintenances = \MonitoringMaintenances::getMaintenancesForMonitor($monitor_id);
+			if ($maintenances) {
+				$monitor['maintenances'] = $maintenances;
+			} else {
+				unset($monitor['maintenances']);
+			}
 
 			$monitor_max_time = intval($max_time / intval($monitor['repeat_seconds'])) * intval($monitor['repeat_seconds']);
 			$monitor_min_time = $monitor_max_time - ( $count * intval($monitor['repeat_seconds']) );
@@ -408,6 +419,16 @@ class MonitoringLogs extends \DB\MySQLObject {
 
 			$logs_hash = [];
 			$last_data = [];
+
+			$maintenances = \MonitoringMaintenances::getMaintenancesForMonitor($monitor_id);
+			if ($maintenances) {
+				$return['monitor']['maintenances'] = [];
+				foreach($maintenances as $item) {
+					$return['monitor']['maintenances'][$item['id']] = date("Y-m-d H:i:s",$item['start_time']).' - '.date("Y-m-d H:i:s",$item['finish_time']);
+				}
+			} else {
+				unset($return['monitor']['maintenances']);
+			}
 
 			for($i=$max_time - 60*60; $i <= $max_time; $i+=intval($monitor['repeat_seconds'])) {
 				$time = intval($i / intval($monitor['repeat_seconds'])) * intval($monitor['repeat_seconds']);

@@ -6,7 +6,7 @@ Status:
   Error: "Ошибка"
   Warning: "Предупреждение"
   Unknown: "Неизвестно"
-
+  Maintenance: "Тех. работы"
 
 Menu:
   Home: "Главная"
@@ -75,6 +75,9 @@ Monitor:
     Edit: "Редактировать"
     Copy: "Копировать"
     Root: "Главная"
+  Copy:
+    PermissionDenied: "У вас нет прав на копирование этого монитора"
+    MonitorNotFound: "Монитор не найден"
   Delete:
     Title: "Удаление монитора"
     Confirmation: "Вы уверены, что хотите удалить монитор {title}?"
@@ -245,3 +248,44 @@ Docker:
       Image: "Image"
       ImageId: "Image ID"
       Id: "Container ID"
+
+Maintenances:
+  Menu: "Тех. работы"
+  PageTitle: "Технические работы"
+  Permissions:
+    Access: "Доступ"
+    Create: "Добавление технической работы"
+  Copy:
+    PermissionDenied: "У вас нет прав на копирование этой технической работы"
+    NotFound: "Техническая работа не найдена"
+  Delete:
+    Title: "Удаление технической работы"
+    Confirmation: "Вы уверены, что хотите удалить техническую работу {title}?"
+    PermissionDenied: "У вас нет прав на удаления этой технической работы"
+    NotFound: "Техническая работа не найдена"
+  Table:
+    Title: "Название"
+    StartTime: "Время начала"
+    FinishTime: "Время окончания"
+    CreateTime: "Время создания"
+    UpdateTime: "Время обновления"
+    Actions: "Действия"
+    Copy: "Копировать"
+    Delete: "Удалить"
+    Edit: "Редактировать"
+  Edit:
+    CreateTitle: "Создание тех. работы"
+    EditTitle: "Редактирование тех. работы &quot;%s&quot; [ID=%d]"
+    Title: "Название"
+    StartTime: "Время начала"
+    FinishTime: "Время окончания"
+    CreateTime: "Время создания"
+    UpdateTime: "Время обновления"
+    ChangeButton: "Обновить"
+    CreateButton: "Создать"
+    Monitors: "Мониторы"
+    NameLengthError: "Название должно быть от 2 до 255 символов"
+    NotFound: "Техническая работа не найдена"
+    PermissionDenied: "У вас нет прав на редактирование этой технической работы"
+    NotingChanged: "Ничего не изменилось"
+    TimeError: "Ошибка времени"

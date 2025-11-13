@@ -57,8 +57,29 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 			$this->error = \T::Worker_Delete_WorkerNotFound();
 			return;
 		}
+		$jobs = \MonitoringJobs::data(['worker_id' => $workerId]);
+		foreach($jobs as $job) {
+			$log_id = \Logs::delete_log(\MonitoringJobs::LOGS_OBJECT, $job['id'], $job);
+			if ($log_id) {
+				\Logs::add_tag($log_id, \Monitors::LOGS_OBJECT, $job['monitor_id']);
+				\Logs::add_tag($log_id, \Workers::LOGS_OBJECT, $job['worker_id']);
+			}
+			\MonitoringJobs::delete(['id' => $job['id']]);
+		}
+		$jobs = \MonitoringDockers::data(['worker_id' => $workerId]);
+		foreach($jobs as $job) {
+			$log_id = \Logs::delete_log(\MonitoringDockers::LOGS_OBJECT, $job['id'], $job);
+			if ($log_id) {
+				\Logs::add_tag($log_id, \Workers::LOGS_OBJECT, $job['worker_id']);
+				\Logs::add_tag($log_id, \Dockers::LOGS_OBJECT, $job['docker_id']);
+			}
+			\MonitoringDockers::delete(['id' => $job['id']]);
+		}
+		\MonitorsEvents::delete(['worker_id' => $workerId]);
+		\MonitoringLogs::delete(['worker_id' => $workerId]);
+		\MonitoringLogsAggregate::delete(['worker_id' => $workerId]);
 		\Workers::delete(['id' => $workerId]);
-		\Logs::delete_log(\Workers::LOGS_OBJECT, $workerId, $worker);
+		$log_id = \Logs::delete_log(\Workers::LOGS_OBJECT, $workerId, $worker);
 		common_redirect('/workers/');
 	}
 

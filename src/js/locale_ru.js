@@ -23,3 +23,5 @@ var Dashboard_Events_Worker="Обработчик"
 var Dashboard_Events_Time="Время"
 var Dashboard_Events_StatusCode="Код ответа"
 var Dashboard_Events_ResponseError="Ошибка ответа"
+
+var Maintenance_Title="Технические работы"

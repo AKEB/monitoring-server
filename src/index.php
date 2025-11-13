@@ -18,12 +18,14 @@ require_once("./autoload.php");
 \Permissions::add_permission(\Workers::PERMISSION_CREATE, \T::Worker_Permissions_Create());
 \Permissions::add_permission(\Monitors::PERMISSION_CREATE, \T::Monitor_Permissions_Create());
 \Permissions::add_permission(\Notify::PERMISSION_CREATE, \T::Notify_Permissions_Create());
+\Permissions::add_permission(\Maintenances::PERMISSION_CREATE, \T::Maintenances_Permissions_Create());
 \Permissions::add_permission(\Dockers::PERMISSION_CREATE, \T::Docker_Permissions_Create());
 
 // Add another permissions subject types
 \Permissions::set_subject_type('worker', '\\Workers', 'Workers');
 \Permissions::set_subject_type('monitor', '\\Monitors', 'Monitors');
 \Permissions::set_subject_type('notify', '\\Notify', 'Notify');
+\Permissions::set_subject_type('maintenance', '\\Maintenances', 'Maintenances');
 \Permissions::set_subject_type('docker', '\\Dockers', 'Docker');
 
 \Sessions::session_init(true); // This need to check Permissions and user language
@@ -44,6 +46,7 @@ require_once("./autoload.php");
 \Template::addJSFile('/js/main.js');
 
 \Template::addMenuItem(new \MenuItem('', \T::Menu_Home(), '/', null, null));
+\Template::addMenuItem(new \MenuItem('bi bi-hammer', \T::Maintenances_Menu(), '/maintenances/', null, null));
 \Template::addMenuAdminItem(new \MenuItem('bi bi-hdd-network', \T::Worker_Menu(), '/workers/', null, [
 	new \MenuPermissionItem(\Workers::PERMISSION_ACCESS, -1, READ),
 	new \MenuPermissionItem(\Workers::PERMISSION_CREATE, 0, WRITE),
@@ -83,6 +86,11 @@ require_once("./autoload.php");
 \Routes::addRoute('/notify/edit/', '\\App\\Notify\\Edit');
 \Routes::addRoute('/notify/(?P<action>[^/]+)/(?P<notify_id>\d+)/', '\\App\\Notify\\Show');
 \Routes::addRoute('/notify/', '\\App\\Notify\\Show');
+
+\Routes::addRoute('/maintenances/edit/(?P<maintenance_id>\d+)/', '\\App\\Maintenances\\Edit');
+\Routes::addRoute('/maintenances/edit/', '\\App\\Maintenances\\Edit');
+\Routes::addRoute('/maintenances/(?P<action>[^/]+)/(?P<maintenance_id>\d+)/', '\\App\\Maintenances\\Show');
+\Routes::addRoute('/maintenances/', '\\App\\Maintenances\\Show');
 
 \Routes::addRoute('/dockers/edit/(?P<docker_id>\d+)/', '\\App\\Dockers\\Edit');
 \Routes::addRoute('/dockers/edit/', '\\App\\Dockers\\Edit');

@@ -239,12 +239,11 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				// Update
 				$params['_mode'] = \DB\Common::CSMODE_UPDATE;
 				$notify_id = \Notify::save($params);
-				$new_notify = \Notify::get(['id' => $params['id']]);
+				$new_notify = \Notify::get(['id' => $notify_id]);
 				\Logs::update_log(\Notify::LOGS_OBJECT, $params['id'], $old_notify, $new_notify,[
 					'_save_fields' => ['id', 'title'],
 				]);
-				$notify = \Notify::get(['id' => $notify_id]);
-				if (!$notify) {
+				if (!$new_notify) {
 					$this->error = \T::Notify_Edit_NotFound();
 					break;
 				}

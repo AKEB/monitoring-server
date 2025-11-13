@@ -313,6 +313,13 @@ function updateMonitorWorkersLogs(data) {
 							}
 							title = log.title;
 						}
+						if (data.monitor.maintenances) {
+							// Собираем все заголовки обслуживания в одну строку
+							const maintenance_title = Object.values(data.monitor.maintenances).join('<br/>');
+							className = "bg-primary";
+							title = title + '<br/>' + Maintenance_Title + '<br/>' + maintenance_title;
+						}
+
 						HTML += '<div data-min-time="'+ time + '" class="' + className + '" data-bs-toggle="tooltip" data-bs-html="true" data-bs-title="' + title + '"></div>';
 					}
 				HTML += '</div></div>';

@@ -61,7 +61,10 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 			$this->error = \T::Monitor_Copy_MonitorNotFound();
 			return;
 		}
-
+		if (!\Sessions::checkPermission(\Monitors::PERMISSION_CREATE, $monitorId, WRITE)) {
+			$this->error = \T::Monitor_Copy_PermissionDenied();
+			return;
+		}
 		if (!\Sessions::checkPermission(\Monitors::PERMISSION_ACCESS, $monitorId, READ)) {
 			$this->error = \T::Monitor_Copy_PermissionDenied();
 			return;
@@ -150,12 +153,40 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 				\Monitors::save($new_child);
 				\Logs::update_log(\Monitors::LOGS_OBJECT, $child['id'], $child, \array_merge($child, $new_child));
 			}
-			// $child_count = \Monitors::count(false, sql_pholder(' AND parent_id = ? ', $monitor['id']));
-			// if ($child_count) {
-			// 	$this->error = \T::Monitor_Delete_MonitorFolderNotEmpty();
-			// 	return;
-			// }
 		}
+
+		$jobs = \MonitoringJobs::data(['monitor_id' => $monitorId]);
+		foreach($jobs as $job) {
+			$log_id = \Logs::delete_log(\MonitoringJobs::LOGS_OBJECT, $job['id'], $job);
+			if ($log_id) {
+				\Logs::add_tag($log_id, \Monitors::LOGS_OBJECT, $job['monitor_id']);
+				\Logs::add_tag($log_id, \Workers::LOGS_OBJECT, $job['worker_id']);
+			}
+			\MonitoringJobs::delete(['id' => $job['id']]);
+		}
+		$jobs = \MonitoringMaintenances::data(['monitor_id' => $monitorId]);
+		foreach($jobs as $job) {
+			$log_id = \Logs::delete_log(\MonitoringMaintenances::LOGS_OBJECT, $job['id'], $job);
+			if ($log_id) {
+				\Logs::add_tag($log_id, \Monitors::LOGS_OBJECT, $job['monitor_id']);
+				\Logs::add_tag($log_id, \Maintenances::LOGS_OBJECT, $job['maintenance_id']);
+			}
+			\MonitoringMaintenances::delete(['id' => $job['id']]);
+		}
+		$jobs = \MonitoringNotify::data(['monitor_id' => $monitorId]);
+		foreach($jobs as $job) {
+			$log_id = \Logs::delete_log(\MonitoringNotify::LOGS_OBJECT, $job['id'], $job);
+			if ($log_id) {
+				\Logs::add_tag($log_id, \Monitors::LOGS_OBJECT, $job['monitor_id']);
+				\Logs::add_tag($log_id, \Notify::LOGS_OBJECT, $job['notify_id']);
+			}
+			\MonitoringNotify::delete(['id' => $job['id']]);
+		}
+
+		\MonitorsEvents::delete(['monitor_id' => $monitorId]);
+		\MonitoringLogs::delete(['monitor_id' => $monitorId]);
+		\MonitoringLogsAggregate::delete(['monitor_id' => $monitorId]);
+		\MonitoringSubscribe::delete(['monitor_id' => $monitorId]);
 
 		\Monitors::delete(['id' => $monitorId]);
 		\Logs::delete_log(\Monitors::LOGS_OBJECT, $monitorId, $monitor);

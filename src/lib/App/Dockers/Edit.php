@@ -143,13 +143,12 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 			}
 
 			$workers_hash = [];
-			$all_jobs = \Workers::data(false, ' ORDER BY `title` ASC', '`id`, `title`');
-			if ($all_jobs) {
-				foreach($all_jobs as $v) {
+			$all_data = \Workers::data(false, ' ORDER BY NULL', '`id`');
+			if ($all_data) {
+				foreach($all_data as $v) {
 					$workers_hash[$v['id']] = \Sessions::checkPermission(\Workers::PERMISSION_ACCESS, $v['id'], READ);
 				}
 			}
-
 
 			$old_docker = [];
 			$update_jobs = [];

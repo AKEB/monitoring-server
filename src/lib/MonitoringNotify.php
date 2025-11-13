@@ -30,7 +30,7 @@ class MonitoringNotify extends \DB\MySQLObject {
 			if ($monitor_ids) {
 				$sql = sql_pholder(' AND monitor_id IN (?@)', $monitor_ids);
 			}
-			$notify = \MonitoringNotify::data(false, $sql, '`monitor_id`, `notify_id`');
+			$notify = static::data(false, $sql, '`monitor_id`, `notify_id`');
 			$notify_hash = [];
 			foreach($notify as $v) {
 				$notify_hash[$v['monitor_id']][$v['notify_id']] = true;
@@ -47,8 +47,13 @@ class MonitoringNotify extends \DB\MySQLObject {
 			} while($monitor['parent_id'] > 0);
 
 			$notifications = array_keys($notifications);
-			$notifications = $notifications ? \Notify::data(false, sql_pholder(' AND `id` IN (?@)', $notifications)) : [];
-
+			if ($notifications) {
+				$sql = sql_pholder(' AND `id` IN (?@)', $notifications);
+				$sql .= sql_pholder(' AND `status` = ? ', \Notify::STATUS_ENABLED);
+				$notifications = \Notify::data(false, $sql);
+			} else {
+				$notifications = [];
+			}
 			$cache->update($notifications, 60);
 		}
 		return $notifications;

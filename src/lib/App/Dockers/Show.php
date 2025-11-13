@@ -57,6 +57,54 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 			$this->error = \T::Docker_Delete_NotFound();
 			return;
 		}
+
+		$jobs = \MonitoringDockers::data(['docker_id' => $docker_id]);
+		foreach($jobs as $job) {
+			$log_id = \Logs::delete_log(\MonitoringDockers::LOGS_OBJECT, $job['id'], $job);
+			if ($log_id) {
+				\Logs::add_tag($log_id, \Workers::LOGS_OBJECT, $job['worker_id']);
+				\Logs::add_tag($log_id, \Dockers::LOGS_OBJECT, $job['docker_id']);
+			}
+			\MonitoringDockers::delete(['id' => $job['id']]);
+		}
+		$monitors = \Monitors::data(['docker_id' => $docker_id, 'type' => \Monitors::TYPE_DOCKER]);
+		foreach($monitors as $monitor) {
+			$jobs = \MonitoringJobs::data(['monitor_id' => $monitor['id']]);
+			foreach($jobs as $job) {
+				$log_id = \Logs::delete_log(\MonitoringJobs::LOGS_OBJECT, $job['id'], $job);
+				if ($log_id) {
+					\Logs::add_tag($log_id, \Monitors::LOGS_OBJECT, $job['monitor_id']);
+					\Logs::add_tag($log_id, \Workers::LOGS_OBJECT, $job['worker_id']);
+				}
+				\MonitoringJobs::delete(['id' => $job['id']]);
+			}
+			$jobs = \MonitoringMaintenances::data(['monitor_id' => $monitor['id']]);
+			foreach($jobs as $job) {
+				$log_id = \Logs::delete_log(\MonitoringMaintenances::LOGS_OBJECT, $job['id'], $job);
+				if ($log_id) {
+					\Logs::add_tag($log_id, \Monitors::LOGS_OBJECT, $job['monitor_id']);
+					\Logs::add_tag($log_id, \Maintenances::LOGS_OBJECT, $job['maintenance_id']);
+				}
+				\MonitoringMaintenances::delete(['id' => $job['id']]);
+			}
+			$jobs = \MonitoringNotify::data(['monitor_id' => $monitor['id']]);
+			foreach($jobs as $job) {
+				$log_id = \Logs::delete_log(\MonitoringNotify::LOGS_OBJECT, $job['id'], $job);
+				if ($log_id) {
+					\Logs::add_tag($log_id, \Monitors::LOGS_OBJECT, $job['monitor_id']);
+					\Logs::add_tag($log_id, \Notify::LOGS_OBJECT, $job['notify_id']);
+				}
+				\MonitoringNotify::delete(['id' => $job['id']]);
+			}
+
+			\MonitorsEvents::delete(['monitor_id' => $monitor['id']]);
+			\MonitoringLogs::delete(['monitor_id' => $monitor['id']]);
+			\MonitoringLogsAggregate::delete(['monitor_id' => $monitor['id']]);
+			\MonitoringSubscribe::delete(['monitor_id' => $monitor['id']]);
+
+			\Monitors::delete(['id' => $monitor['id']]);
+			\Logs::delete_log(\Monitors::LOGS_OBJECT, $monitor['id'], $monitor);
+		}
 		\Dockers::delete(['id' => $docker_id]);
 		\Logs::delete_log(\Dockers::LOGS_OBJECT, $docker_id, $docker);
 		common_redirect('/dockers/');

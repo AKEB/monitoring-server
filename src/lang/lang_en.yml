@@ -6,9 +6,11 @@ Status:
   Error: "Error"
   Warning: "Warning"
   Unknown: "Unknown"
+  Maintenance: "Maintenance"
 
 Menu:
   Home: "Home"
+  Maintenances: "Maintenances"
 
 Worker:
   Menu: "Workers"
@@ -63,6 +65,9 @@ Monitor:
     Create: "Create monitor"
     Folder: "Folder"
     Monitor: "Monitor"
+  Copy:
+    PermissionDenied: "You don't have permission to copy this monitor"
+    MonitorNotFound: "Monitor not found"
   Table:
     Title: "Title"
     Status: "Status"
@@ -246,3 +251,44 @@ Docker:
       Image: "Image"
       ImageId: "Image ID"
       Id: "Container ID"
+
+Maintenances:
+  Menu: "Maintenances"
+  PageTitle: "Maintenances"
+  Permissions:
+    Access: "Access"
+    Create: "Add maintenance"
+  Copy:
+    PermissionDenied: "You don't have permission to copy this maintenance"
+    NotFound: "Maintenance not found"
+  Delete:
+    Title: "Delete maintenance"
+    Confirmation: "Are you sure you want to delete the maintenance {title}?"
+    PermissionDenied: "You don't have permission to delete this maintenance"
+    NotFound: "Maintenance not found"
+  Table:
+    Title: "Title"
+    StartTime: "Start time"
+    FinishTime: "End time"
+    CreateTime: "Create time"
+    UpdateTime: "Update time"
+    Actions: "Actions"
+    Copy: "Copy"
+    Delete: "Delete"
+    Edit: "Edit"
+  Edit:
+    CreateTitle: "Create maintenance"
+    EditTitle: "Edit maintenance &quot;%s&quot; [ID=%d]"
+    Title: "Title"
+    StartTime: "Start time"
+    FinishTime: "End time"
+    CreateTime: "Create time"
+    UpdateTime: "Update time"
+    ChangeButton: "Update"
+    CreateButton: "Create"
+    Monitors: "Monitors"
+    NameLengthError: "Title length must be between 2 and 255 characters"
+    NotFound: "Maintenance not found"
+    PermissionDenied: "You don't have permission to edit this maintenance"
+    NotingChanged: "Nothing changed"
+    TimeError: "Time error"

@@ -26,6 +26,7 @@ class Main extends \Routing_Parent implements \Routing_Interface {
 									<option value="bg-danger" data-content="<span class='badge rounded-pill text-bg-danger'><?=\T::Status_Error();?></span>"><?=\T::Status_Error();?></option>
 									<option value="bg-warning" data-content="<span class='badge rounded-pill text-bg-warning'><?=\T::Status_Warning();?></span>"><?=\T::Status_Warning();?></option>
 									<option value="bg-secondary" data-content="<span class='badge rounded-pill text-bg-secondary'><?=\T::Status_Unknown();?></span>"><?=\T::Status_Unknown();?></option>
+									<option value="bg-primary" data-content="<span class='badge rounded-pill text-bg-primary'><?=\T::Status_Maintenance();?></span>"><?=\T::Status_Maintenance();?></option>
 								</select>
 							</div>
 							<div class="col-6 col-md-8 justify-content-end">

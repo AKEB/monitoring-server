@@ -57,6 +57,16 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 			$this->error = \T::Notify_Delete_NotFound();
 			return;
 		}
+		$jobs = \MonitoringNotify::data(['notify_id' => $notify_id]);
+		foreach($jobs as $job) {
+			$log_id = \Logs::delete_log(\MonitoringNotify::LOGS_OBJECT, $job['id'], $job);
+			if ($log_id) {
+				\Logs::add_tag($log_id, \Monitors::LOGS_OBJECT, $job['monitor_id']);
+				\Logs::add_tag($log_id, \Notify::LOGS_OBJECT, $job['notify_id']);
+			}
+			\MonitoringNotify::delete(['id' => $job['id']]);
+		}
+
 		\Notify::delete(['id' => $notify_id]);
 		\Logs::delete_log(\Notify::LOGS_OBJECT, $notify_id, $notify);
 		common_redirect('/notify/');

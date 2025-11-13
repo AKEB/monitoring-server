@@ -128,6 +128,11 @@ class State extends \Routing_Parent implements \Routing_Interface {
 
 			if (!\Monitors::is_enable($monitor['id'])) continue;
 
+			$maintenances = \MonitoringMaintenances::getMaintenancesForMonitor($monitor['id']);
+			if ($maintenances) {
+				continue;
+			}
+
 			if (!isset($monitor['container']) || !$monitor['container']) continue;
 			if (!isset($containers_hash[$monitor['container']]) || !$containers_hash[$monitor['container']]) continue;
 			$status = \MonitoringLogs::STATUS_FAIL;
@@ -273,6 +278,11 @@ class State extends \Routing_Parent implements \Routing_Interface {
 		if ($monitor['status'] != \Monitors::STATUS_ENABLED) return false;
 
 		if (!\Monitors::is_enable($job['monitor_id'])) return false;
+
+		$maintenances = \MonitoringMaintenances::getMaintenancesForMonitor($job['monitor_id']);
+		if ($maintenances) {
+			return false;
+		}
 
 		if ($job['update_time'] + 30 < time()) {
 			\MonitoringJobs::save([

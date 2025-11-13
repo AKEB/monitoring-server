@@ -116,6 +116,10 @@ class MonitorsEvents extends \DB\MySQLObject {
 		$dockers_monitor_hash = [];
 		foreach($monitors as $monitor) {
 			if (!\Monitors::is_enable($monitor['id'])) continue;
+			$maintenances = \MonitoringMaintenances::getMaintenancesForMonitor($monitor['id']);
+			if ($maintenances) {
+				continue;
+			}
 			$monitors_hash[$monitor['id']] = $monitor;
 			if ($monitor['type'] == \Monitors::TYPE_DOCKER) {
 				$dockers_monitor_hash[$monitor['docker']][$monitor['id']] = $monitor['id'];

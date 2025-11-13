@@ -49,12 +49,28 @@ class T {
 	public static function Status_Unknown(...$argv): string { return ''; }
 
 	/**
+	 * Status_Maintenance
+	 * 
+	 * @return string "Maintenance"
+	 * @return string "Тех. работы"
+	 */
+	public static function Status_Maintenance(...$argv): string { return ''; }
+
+	/**
 	 * Menu_Home
 	 * 
 	 * @return string "Home"
 	 * @return string "Главная"
 	 */
 	public static function Menu_Home(...$argv): string { return ''; }
+
+	/**
+	 * Menu_Maintenances
+	 * 
+	 * @return string "Maintenances"
+	 * @return string ""
+	 */
+	public static function Menu_Maintenances(...$argv): string { return ''; }
 
 	/**
 	 * Worker_Menu
@@ -407,6 +423,22 @@ class T {
 	 * @return string "Монитор"
 	 */
 	public static function Monitor_Permissions_Monitor(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Copy_PermissionDenied
+	 * 
+	 * @return string "You don\'t have permission to copy this monitor"
+	 * @return string "У вас нет прав на копирование этого монитора"
+	 */
+	public static function Monitor_Copy_PermissionDenied(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Copy_MonitorNotFound
+	 * 
+	 * @return string "Monitor not found"
+	 * @return string "Монитор не найден"
+	 */
+	public static function Monitor_Copy_MonitorNotFound(...$argv): string { return ''; }
 
 	/**
 	 * Monitor_Table_Title
@@ -1671,6 +1703,278 @@ class T {
 	 * @return string "Container ID"
 	 */
 	public static function Docker_Container_Table_Id(...$argv): string { return ''; }
+
+	/**
+	 * Maintenances_Menu
+	 * 
+	 * @return string "Maintenances"
+	 * @return string "Тех. работы"
+	 */
+	public static function Maintenances_Menu(...$argv): string { return ''; }
+
+	/**
+	 * Maintenances_PageTitle
+	 * 
+	 * @return string "Maintenances"
+	 * @return string "Технические работы"
+	 */
+	public static function Maintenances_PageTitle(...$argv): string { return ''; }
+
+	/**
+	 * Maintenances_Permissions_Access
+	 * 
+	 * @return string "Access"
+	 * @return string "Доступ"
+	 */
+	public static function Maintenances_Permissions_Access(...$argv): string { return ''; }
+
+	/**
+	 * Maintenances_Permissions_Create
+	 * 
+	 * @return string "Add maintenance"
+	 * @return string "Добавление технической работы"
+	 */
+	public static function Maintenances_Permissions_Create(...$argv): string { return ''; }
+
+	/**
+	 * Maintenances_Copy_PermissionDenied
+	 * 
+	 * @return string "You don\'t have permission to copy this maintenance"
+	 * @return string "У вас нет прав на копирование этой технической работы"
+	 */
+	public static function Maintenances_Copy_PermissionDenied(...$argv): string { return ''; }
+
+	/**
+	 * Maintenances_Copy_NotFound
+	 * 
+	 * @return string "Maintenance not found"
+	 * @return string "Техническая работа не найдена"
+	 */
+	public static function Maintenances_Copy_NotFound(...$argv): string { return ''; }
+
+	/**
+	 * Maintenances_Delete_Title
+	 * 
+	 * @return string "Delete maintenance"
+	 * @return string "Удаление технической работы"
+	 */
+	public static function Maintenances_Delete_Title(...$argv): string { return ''; }
+
+	/**
+	 * Maintenances_Delete_Confirmation
+	 * 
+	 * @return string "Are you sure you want to delete the maintenance {title}?"
+	 * @return string "Вы уверены, что хотите удалить техническую работу {title}?"
+	 */
+	public static function Maintenances_Delete_Confirmation(...$argv): string { return ''; }
+
+	/**
+	 * Maintenances_Delete_PermissionDenied
+	 * 
+	 * @return string "You don\'t have permission to delete this maintenance"
+	 * @return string "У вас нет прав на удаления этой технической работы"
+	 */
+	public static function Maintenances_Delete_PermissionDenied(...$argv): string { return ''; }
+
+	/**
+	 * Maintenances_Delete_NotFound
+	 * 
+	 * @return string "Maintenance not found"
+	 * @return string "Техническая работа не найдена"
+	 */
+	public static function Maintenances_Delete_NotFound(...$argv): string { return ''; }
+
+	/**
+	 * Maintenances_Table_Title
+	 * 
+	 * @return string "Title"
+	 * @return string "Название"
+	 */
+	public static function Maintenances_Table_Title(...$argv): string { return ''; }
+
+	/**
+	 * Maintenances_Table_StartTime
+	 * 
+	 * @return string "Start time"
+	 * @return string "Время начала"
+	 */
+	public static function Maintenances_Table_StartTime(...$argv): string { return ''; }
+
+	/**
+	 * Maintenances_Table_FinishTime
+	 * 
+	 * @return string "End time"
+	 * @return string "Время окончания"
+	 */
+	public static function Maintenances_Table_FinishTime(...$argv): string { return ''; }
+
+	/**
+	 * Maintenances_Table_CreateTime
+	 * 
+	 * @return string "Create time"
+	 * @return string "Время создания"
+	 */
+	public static function Maintenances_Table_CreateTime(...$argv): string { return ''; }
+
+	/**
+	 * Maintenances_Table_UpdateTime
+	 * 
+	 * @return string "Update time"
+	 * @return string "Время обновления"
+	 */
+	public static function Maintenances_Table_UpdateTime(...$argv): string { return ''; }
+
+	/**
+	 * Maintenances_Table_Actions
+	 * 
+	 * @return string "Actions"
+	 * @return string "Действия"
+	 */
+	public static function Maintenances_Table_Actions(...$argv): string { return ''; }
+
+	/**
+	 * Maintenances_Table_Copy
+	 * 
+	 * @return string "Copy"
+	 * @return string "Копировать"
+	 */
+	public static function Maintenances_Table_Copy(...$argv): string { return ''; }
+
+	/**
+	 * Maintenances_Table_Delete
+	 * 
+	 * @return string "Delete"
+	 * @return string "Удалить"
+	 */
+	public static function Maintenances_Table_Delete(...$argv): string { return ''; }
+
+	/**
+	 * Maintenances_Table_Edit
+	 * 
+	 * @return string "Edit"
+	 * @return string "Редактировать"
+	 */
+	public static function Maintenances_Table_Edit(...$argv): string { return ''; }
+
+	/**
+	 * Maintenances_Edit_CreateTitle
+	 * 
+	 * @return string "Create maintenance"
+	 * @return string "Создание тех. работы"
+	 */
+	public static function Maintenances_Edit_CreateTitle(...$argv): string { return ''; }
+
+	/**
+	 * Maintenances_Edit_EditTitle
+	 * 
+	 * @return string "Edit maintenance &quot;%s&quot; [ID=%d]"
+	 * @return string "Редактирование тех. работы &quot;%s&quot; [ID=%d]"
+	 */
+	public static function Maintenances_Edit_EditTitle(...$argv): string { return ''; }
+
+	/**
+	 * Maintenances_Edit_Title
+	 * 
+	 * @return string "Title"
+	 * @return string "Название"
+	 */
+	public static function Maintenances_Edit_Title(...$argv): string { return ''; }
+
+	/**
+	 * Maintenances_Edit_StartTime
+	 * 
+	 * @return string "Start time"
+	 * @return string "Время начала"
+	 */
+	public static function Maintenances_Edit_StartTime(...$argv): string { return ''; }
+
+	/**
+	 * Maintenances_Edit_FinishTime
+	 * 
+	 * @return string "End time"
+	 * @return string "Время окончания"
+	 */
+	public static function Maintenances_Edit_FinishTime(...$argv): string { return ''; }
+
+	/**
+	 * Maintenances_Edit_CreateTime
+	 * 
+	 * @return string "Create time"
+	 * @return string "Время создания"
+	 */
+	public static function Maintenances_Edit_CreateTime(...$argv): string { return ''; }
+
+	/**
+	 * Maintenances_Edit_UpdateTime
+	 * 
+	 * @return string "Update time"
+	 * @return string "Время обновления"
+	 */
+	public static function Maintenances_Edit_UpdateTime(...$argv): string { return ''; }
+
+	/**
+	 * Maintenances_Edit_ChangeButton
+	 * 
+	 * @return string "Update"
+	 * @return string "Обновить"
+	 */
+	public static function Maintenances_Edit_ChangeButton(...$argv): string { return ''; }
+
+	/**
+	 * Maintenances_Edit_CreateButton
+	 * 
+	 * @return string "Create"
+	 * @return string "Создать"
+	 */
+	public static function Maintenances_Edit_CreateButton(...$argv): string { return ''; }
+
+	/**
+	 * Maintenances_Edit_Monitors
+	 * 
+	 * @return string "Monitors"
+	 * @return string "Мониторы"
+	 */
+	public static function Maintenances_Edit_Monitors(...$argv): string { return ''; }
+
+	/**
+	 * Maintenances_Edit_NameLengthError
+	 * 
+	 * @return string "Title length must be between 2 and 255 characters"
+	 * @return string "Название должно быть от 2 до 255 символов"
+	 */
+	public static function Maintenances_Edit_NameLengthError(...$argv): string { return ''; }
+
+	/**
+	 * Maintenances_Edit_NotFound
+	 * 
+	 * @return string "Maintenance not found"
+	 * @return string "Техническая работа не найдена"
+	 */
+	public static function Maintenances_Edit_NotFound(...$argv): string { return ''; }
+
+	/**
+	 * Maintenances_Edit_PermissionDenied
+	 * 
+	 * @return string "You don\'t have permission to edit this maintenance"
+	 * @return string "У вас нет прав на редактирование этой технической работы"
+	 */
+	public static function Maintenances_Edit_PermissionDenied(...$argv): string { return ''; }
+
+	/**
+	 * Maintenances_Edit_NotingChanged
+	 * 
+	 * @return string "Nothing changed"
+	 * @return string "Ничего не изменилось"
+	 */
+	public static function Maintenances_Edit_NotingChanged(...$argv): string { return ''; }
+
+	/**
+	 * Maintenances_Edit_TimeError
+	 * 
+	 * @return string "Time error"
+	 * @return string "Ошибка времени"
+	 */
+	public static function Maintenances_Edit_TimeError(...$argv): string { return ''; }
 
 	/**
 	 * Framework_ServerVersion
