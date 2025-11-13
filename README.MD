@@ -31,10 +31,10 @@ Default User Email: `admin@admin.com` and Password `Admin@123`
 - [x] Subscribing to notifications in the web interface
 - [x] Notification about expiring SSL certificate
 - [x] Figure out memory leaks in Javascript
+- [x] Maintenance work
 
 ## Issues
 
-- [ ] Maintenance work
 - [ ] New monitor type: node-exporter
 - [ ] New monitor type: MySQL
 - [ ] New monitor type: PostgreSQL
