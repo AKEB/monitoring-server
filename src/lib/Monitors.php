@@ -24,7 +24,8 @@ class Monitors extends \DB\MySQLObject implements \PermissionSubject_Interface {
 
 	static public function subject_hash(): array {
 		$data_hash = [];
-		foreach(static::permissions_subject_hash() as $subject_id=>$permissionTitle) {
+		$permissions_hash = static::get_folder_hash_options_hash(false);
+		foreach($permissions_hash as $subject_id=>$permissionTitle) {
 			if (!\Sessions::checkPermission(static::PERMISSION_ACCESS, $subject_id, ACCESS_WRITE)) {
 				continue;
 			}
@@ -170,7 +171,7 @@ class Monitors extends \DB\MySQLObject implements \PermissionSubject_Interface {
 		$data = static::get_hash();
 		$permissions_hash = [];
 		foreach($data as $item) {
-			$permissions_hash[$item['id']] = ($item['type'] == static::TYPE_FOLDER ? \T::Monitor_Permissions_Folder().': ' : \T::Monitor_Permissions_Monitor().': ') .$item['title'];
+			$permissions_hash[$item['id']] = \Monitors::get_monitor_title_with_folders($item['id']);//   ($item['type'] == static::TYPE_FOLDER ? \T::Monitor_Permissions_Folder().': ' : \T::Monitor_Permissions_Monitor().': ') .$item['title'];
 		}
 		return $permissions_hash;
 	}
@@ -181,11 +182,11 @@ class Monitors extends \DB\MySQLObject implements \PermissionSubject_Interface {
 		];
 	}
 
-	static public function folders_hash(): array {
+	static public function folders_hash(?bool $onlyFolders=true): array {
 		$data = static::get_hash();
 		$folders_hash = [];
 		foreach($data as $item) {
-			if ($item['type'] != static::TYPE_FOLDER) continue;
+			if ($onlyFolders && $item['type'] != static::TYPE_FOLDER) continue;
 			if (!isset($folders_hash[$item['id']])) {
 				$folders_hash[$item['id']] = $item;
 				$folders_hash[$item['id']]['children'] = [];
@@ -236,18 +237,27 @@ class Monitors extends \DB\MySQLObject implements \PermissionSubject_Interface {
 		});
 
 		foreach($data as $v) {
-			$options_hash[$v['id']] = str_repeat('&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;', $level).$v['title'];
+			$title = $v['title'];
+			$v['type'] ??= static::TYPE_FOLDER;
+			if ($v['type'] == static::TYPE_FOLDER) {
+				$title = '['.$v['title'].']';
+			}
+			$options_hash[$v['id']] = str_repeat('&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;', $level).$title;
 			if ($v['children']) {
 				static::get_folder_titles($options_hash, $v['children'], $level+1);
 			}
 		}
 	}
 
-	static public function get_folder_hash_options_hash() {
-		$folders_hash = static::folders_hash();
+	static public function get_folder_hash_options_hash(?bool $onlyFolders=true) {
+		$folders_hash = static::folders_hash($onlyFolders);
 		$options_hash = [];
-		$options_hash[0] = \T::Monitor_Table_Root();
-		static::get_folder_titles($options_hash, $folders_hash, 1);
+		if ($onlyFolders) {
+			$options_hash[0] = \T::Monitor_Table_Root();
+			static::get_folder_titles($options_hash, $folders_hash, 1);
+		} else {
+			static::get_folder_titles($options_hash, $folders_hash, 0);
+		}
 		return $options_hash;
 	}
 
