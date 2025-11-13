@@ -9,6 +9,14 @@ class T {
 	public static function MainPage(...$argv): string { return ''; }
 
 	/**
+	 * Status_Title
+	 * 
+	 * @return string "Status"
+	 * @return string "Статус"
+	 */
+	public static function Status_Title(...$argv): string { return ''; }
+
+	/**
 	 * Status_Success
 	 * 
 	 * @return string "Success"

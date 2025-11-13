@@ -1,6 +1,7 @@
 MainPage: "Main page"
 
 Status:
+  Title: "Status"
   Success: "Success"
   Error: "Error"
   Warning: "Warning"

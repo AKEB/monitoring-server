@@ -21,7 +21,7 @@ class Main extends \Routing_Parent implements \Routing_Interface {
 					<div class="col">
 						<div class="row d-flex">
 							<div class="col-6 col-md-4">
-								<select class="selectpicker form-control" id="monitorStatus" data-mobile="false" multiple title="Статус" data-selected-text-format="count > 1">
+								<select class="selectpicker form-control" id="monitorStatus" data-mobile="false" multiple title="<?=\T::Status_Title();?>" data-selected-text-format="count > 1">
 									<option value="bg-success" data-content="<span class='badge rounded-pill text-bg-success'><?=\T::Status_Success();?></span>"><?=\T::Status_Success();?></option>
 									<option value="bg-danger" data-content="<span class='badge rounded-pill text-bg-danger'><?=\T::Status_Error();?></span>"><?=\T::Status_Error();?></option>
 									<option value="bg-warning" data-content="<span class='badge rounded-pill text-bg-warning'><?=\T::Status_Warning();?></span>"><?=\T::Status_Warning();?></option>

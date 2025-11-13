@@ -1,6 +1,7 @@
 MainPage: "Главная страница"
 
 Status:
+  Title: "Статус"
   Success: "Успешно"
   Error: "Ошибка"
   Warning: "Предупреждение"
