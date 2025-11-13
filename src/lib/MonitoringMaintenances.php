@@ -57,7 +57,7 @@ class MonitoringMaintenances extends \DB\MySQLObject {
 			} else {
 				$maintenances = [];
 			}
-			$cache->update($maintenances, 60);
+			$cache->update($maintenances, 30);
 		}
 		return $maintenances;
 	}
