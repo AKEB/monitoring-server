@@ -1612,9 +1612,17 @@ class T {
 	 * Docker_Container_Table_State
 	 * 
 	 * @return string "State"
-	 * @return string "Статус"
+	 * @return string "Состояние"
 	 */
 	public static function Docker_Container_Table_State(...$argv): string { return ''; }
+
+	/**
+	 * Docker_Container_Table_Status
+	 * 
+	 * @return string "Status"
+	 * @return string "Статус"
+	 */
+	public static function Docker_Container_Table_Status(...$argv): string { return ''; }
 
 	/**
 	 * Docker_Container_Table_Created

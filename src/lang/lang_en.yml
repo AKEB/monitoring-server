@@ -239,6 +239,7 @@ Docker:
     Table:
       Name: "Name"
       State: "State"
+      Status: "Status"
       Created: "Created"
       Ports: "Ports"
       Image: "Image"

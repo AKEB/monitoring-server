@@ -293,7 +293,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				<div class="card bg-transparent col-xl-10 p-4 mt-2 mb-3">
 					<div class="card-body">
 						<?php
-						$text = file_get_contents(SERVER_ROOT.'/lang/worker_add_ru.md');
+						$text = file_get_contents(SERVER_ROOT.'/lang/worker_add_'.\T::getCurrentLanguage().'.md');
 						$html = \Michelf\Markdown::defaultTransform($text);
 						echo $html;
 						?>

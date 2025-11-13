@@ -488,11 +488,12 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 								<tr>
 									<th scope="col" class="align-middle" data-priority="1"><?=\T::Docker_Container_Table_Name();?></th>
 									<th scope="col" class="align-middle" data-priority="2"><?=\T::Docker_Container_Table_State();?></th>
-									<th scope="col" class="align-middle" data-priority="3"><?=\T::Docker_Container_Table_Created();?></th>
-									<th scope="col" class="align-middle" data-priority="4"><?=\T::Docker_Container_Table_Ports();?></th>
+									<th scope="col" class="align-middle" data-priority="3"><?=\T::Docker_Container_Table_Status();?></th>
+									<th scope="col" class="align-middle" data-priority="4"><?=\T::Docker_Container_Table_Created();?></th>
 									<th scope="col" class="align-middle" data-priority="5"><?=\T::Docker_Container_Table_Image();?></th>
-									<th scope="col" class="align-middle" data-priority="6"><?=\T::Docker_Container_Table_ImageId();?></th>
-									<th scope="col" class="align-middle" data-priority="7"><?=\T::Docker_Container_Table_Id();?></th>
+									<th scope="col" class="align-middle" data-priority="6"><?=\T::Docker_Container_Table_Ports();?></th>
+									<th scope="col" class="align-middle" data-priority="7"><?=\T::Docker_Container_Table_ImageId();?></th>
+									<th scope="col" class="align-middle" data-priority="8"><?=\T::Docker_Container_Table_Id();?></th>
 								</tr>
 							</thead>
 							<tbody>
@@ -507,6 +508,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 											'ports' => $container_state['ports']??'',
 											'image_id' => $container_state['image_id']??'',
 											'state' => $container_state['state']??'',
+											'status' => $container_state['status']??'',
 											'created' => $container_state['created']??0,
 										];
 										if (!$params['id']) continue;
@@ -523,9 +525,10 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 										<tr>
 											<th scope="row" class="align-middle"><?=$params['name'];?></th>
 											<td class="align-middle text-center <?=$state_class;?>"><?=$params['state'];?></td>
+											<td class="align-middle text-center"><?=$params['status'];?></td>
 											<td class="align-middle text-center"><?=$params['created'];?></td>
-											<td class="align-middle"><?=$params['ports'];?></td>
 											<td class="align-middle"><?=$params['image'];?></td>
+											<td class="align-middle"><?=$params['ports'];?></td>
 											<td class="align-middle"><?=$params['image_id'];?></td>
 											<td class="align-middle"><?=$params['id'];?></td>
 										</tr>

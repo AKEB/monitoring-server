@@ -30,6 +30,7 @@ Default User Email: `admin@admin.com` and Password `Admin@123`
 - [x] Filtering monitors by status
 - [x] Subscribing to notifications in the web interface
 - [x] Notification about expiring SSL certificate
+- [x] Figure out memory leaks in Javascript
 
 ## Issues
 
@@ -40,7 +41,6 @@ Default User Email: `admin@admin.com` and Password `Admin@123`
 - [ ] Double-check all pages on a mobile device
 - [ ] Double-check the light theme
 - [ ] Investigate bugs with the Docker API (why requests are hanging)
-- [ ] Figure out memory leaks in Javascript
 
 ## Environments
 

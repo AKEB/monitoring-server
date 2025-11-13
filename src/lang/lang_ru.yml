@@ -237,7 +237,8 @@ Docker:
   Container:
     Table:
       Name: "Название"
-      State: "Статус"
+      State: "Состояние"
+      Status: "Статус"
       Created: "Дата создания"
       Ports: "Порты"
       Image: "Image"

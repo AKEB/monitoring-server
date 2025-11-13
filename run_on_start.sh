@@ -21,6 +21,21 @@ cd /app/vendor/akeb/framework/src/crons/ && chmod +x *.sh && SERVER_ROOT=/app ./
 
 cd /app/crons/ && chmod +x *.sh && ./run_all.sh
 
+touch /var/log/php/fpm-php.www.log 
+touch /var/log/php/mngr_aggregate.log 
+touch /var/log/php/mngr_clear.log 
+touch /var/log/php/mngr_sessions.log 
+touch /var/log/php/mngr_ssl_notify.log 
+touch /var/log/php/php-fpm.log
+
+touch /var/log/nginx/access.log
+touch /var/log/nginx/error.log
+
+chmod -R 0777 /var/log/php/
+chmod -R 0777 /var/log/nginx/
+chown -R www-data:www-data /var/log/php/
+
+
 echo "Server started successfully.";
 echo "For run server in browser type: http://127.0.0.1:${NGINX_PORT}"
 
