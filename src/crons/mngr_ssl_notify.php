@@ -40,7 +40,11 @@ foreach($logs as $log) {
 	$title = \T::Monitor_Expire_Title();
 	$text = \T::Monitor_Expire_Text($monitor['title'], $days, (\T::declension($days, \T::Monitor_Expire_Day(), \T::Monitor_Expire_Days(), \T::Monitor_Expire_Days5())));
 
-	\MonitoringNotify::sendNotification($monitor_id, $text);
+	if ($monitor['additional_text']) {
+		$text .= "\n\n" . $monitor['additional_text'];
+	}
+
+	\MonitoringNotify::sendNotification($monitor_id, $text, $title, false);
 	$subs = \MonitoringSubscribe::data(false, sql_pholder(' AND `monitor_id` = ? AND `expire_time` >= ? ', $monitor_id, time()), '`user_id`');
 	if (is_array($subs) && $subs) {
 		foreach($subs as $sub) {

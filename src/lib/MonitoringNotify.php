@@ -59,14 +59,18 @@ class MonitoringNotify extends \DB\MySQLObject {
 		return $notifications;
 	}
 
-	static public function sendNotification(int $monitor_id, string $text): bool {
+	static public function sendNotification(int $monitor_id, string $text, ?string $title='', ?bool $status=false): bool {
 		if (!$monitor_id) return false;
 		if (!$text) return false;
 		$notifications = static::getNotificationsForMonitor($monitor_id);
 		if (!$notifications) return false;
 		foreach($notifications as $notify) {
+			$text_send = $text??'';
+			$title_send = $title??'';
 			$notify['json_data'] = json_decode($notify['json_data'], true);
 			if ($notify['type'] == \Notify::TYPE_TELEGRAM) {
+				$text_send = $title_send."\n".$text_send;
+				$text_send .= "\n\n".'<i>Alert: '.$notify['title'].'</i>';
 				try {
 					$t = explode(':',$notify['receiver']);
 					$telegram_chat_id = $t[0];
@@ -78,7 +82,7 @@ class MonitoringNotify extends \DB\MySQLObject {
 					$bot = new \TelegramBot\Api\BotApi($notify['json_data']['telegram_bot_token']);
 					@$bot->sendMessage(
 						$telegram_chat_id,
-						$text,
+						$text_send,
 						'HTML', true, null, null, false,
 						$telegram_thread_id
 					);
@@ -88,16 +92,36 @@ class MonitoringNotify extends \DB\MySQLObject {
 				continue;
 			} elseif ($notify['type'] == \Notify::TYPE_MATTERMOST) {
 				try {
+					$text_send = str_replace(
+						['<br/>', '<br />', '<br>', '<strong>', '</strong>', '<b>', '</b>', '<i>', '</i>', '<em>', '</em>', '<u>', '</u>'],
+						["\n",    "\n",     "\n",   '**',       '**',        '**',  '**',   '*',   '*',    '*',    '*',     '__',  '__'],
+						$text_send
+					);
+					$props = [
+						'attachments' => [
+							[
+								'color'       => $status ? '#00FF00' : '#FF0000',
+								'author_name' => 'Monitoring Alert Manager',
+								'title'       => $title_send,
+								'text'        => $text_send,
+								'ts'          => time(),
+								'footer'      => 'Alert: '.$notify['title'],
+							],
+						],
+					];
+
 					$mattermost = new \Mattermost($notify['json_data']['mattermost_url'], $notify['json_data']['mattermost_token']);
 					if (strpos($notify['receiver'], '@') !== false) {
 						$mattermost->sendMessageByEmail(
 							$notify['receiver'],
-							$text,
+							'',
+							$props
 						);
 					} else {
 						$mattermost->sendMessage(
 							$notify['receiver'],
-							$text,
+							'',
+							$props
 						);
 					}
 				} catch (\Exception $e) {

@@ -119,6 +119,7 @@ Monitor:
     Notify: "Notifications"
     Docker: "Docker"
     Container: "Container"
+    AdditionalAlertText: "Additional alert text"
     SendRepeatMinute: "Resending error notifications in minutes"
     NameLengthError: "Name length must be between 2 and 255 characters"
     MonitorNotFound: "Monitor not found"

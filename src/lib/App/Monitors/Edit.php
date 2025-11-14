@@ -120,6 +120,13 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				$params['timeout'] = intval($data['timeout']);
 			}
 
+			if (isset($data['additional_text'])) {
+				$data['additional_text'] = trim($data['additional_text']);
+				$params['additional_text'] = $data['additional_text'];
+			} else {
+				$params['additional_text'] = '';
+			}
+
 			if ($data['type'] == \Monitors::TYPE_HTTPS) {
 				if (isset($data['url'])) {
 					$data['url'] = trim($data['url']);
@@ -507,6 +514,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 			$this->monitor['container'] ??= '';
 			$this->monitor['response_code'] ??= [2];
 			$this->monitor['parent_id'] ??= $this->parent_id;
+			$this->monitor['additional_text'] ??= '';
 		}
 
 		$this->workers_hash = [];
@@ -693,6 +701,15 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS,
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
+
+					echo $this->template->html_input("additional_text", $this->monitor['additional_text']??'', \T::Monitor_Edit_AdditionalAlertText(), false, [
+						'type' => 'textarea',
+						'rows' => '5',
+						'cols' => '60',
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_PING.' type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_DOCKER,
+						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6'
+					]);
+
 					echo $this->template->html_input("proxy_host", $this->monitor['proxy_host']??'', \T::Monitor_Edit_ProxyHost(), false, [
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
 						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS,

@@ -111,7 +111,7 @@ class MonitorsEvents extends \DB\MySQLObject {
 		if (!isset($monitors) || !count($monitors)) return;
 		$monitor_ids = array_keys($monitors);
 		if (!count($monitor_ids)) return;
-		$monitors = \Monitors::data(false, sql_pholder(' AND `id` IN (?@) AND `status` = ?', $monitor_ids, \Monitors::STATUS_ENABLED), '`id`, `title`, `type`, `docker`, `last_send_status`, `last_send_time`, `send_repeat_minute`');
+		$monitors = \Monitors::data(false, sql_pholder(' AND `id` IN (?@) AND `status` = ?', $monitor_ids, \Monitors::STATUS_ENABLED), '`id`, `title`, `type`, `docker`, `last_send_status`, `last_send_time`, `send_repeat_minute`, `additional_text`');
 		$monitors_hash = [];
 		$dockers_monitor_hash = [];
 		foreach($monitors as $monitor) {
@@ -176,9 +176,9 @@ class MonitorsEvents extends \DB\MySQLObject {
 			if ($global_good == count($jobs_hash[$monitor_id])) {
 				// Все обработчики вернули успех
 				if ($monitor['last_send_status'] != \MonitoringLogs::STATUS_GOOD) {
-					$title = "Success";
+					$title = "✅ Success ".date("Y-m-d H:i:s");
 					$success = 1;
-					$text = "✅ ".\Monitors::get_monitor_title_with_folders($monitor['id'])." is up ".date("Y-m-d H:i:s");
+					$text = '<b>'.\Monitors::get_monitor_title_with_folders($monitor['id'])."</b> is up ";
 					\Monitors::save([
 						'id' => $monitor_id,
 						'last_send_status' => \MonitoringLogs::STATUS_GOOD,
@@ -189,10 +189,11 @@ class MonitorsEvents extends \DB\MySQLObject {
 			} elseif ($global_failed == count($jobs_hash[$monitor_id])) {
 				// Все обработчики вернули ошибки
 				if ($monitor['last_send_status'] != \MonitoringLogs::STATUS_FAIL) {
-					$title = "Error";
+					$title = "🚫 Error ".date("Y-m-d H:i:s");
 					$success = 0;
-					$text = "🚫 ".\Monitors::get_monitor_title_with_folders($monitor['id'])." is down ".date("Y-m-d H:i:s");
-					if ($descriptions) $text .= "\n\n". implode("\n", $descriptions);
+					$text = '<b>'.\Monitors::get_monitor_title_with_folders($monitor['id'])."</b> is down ";
+					if ($descriptions) $text .= "\n\n<i>". implode("\n", $descriptions).'</i>';
+					if ($monitor['additional_text']) $text .= "\n\n". $monitor['additional_text'];
 					\Monitors::save([
 						'id' => $monitor_id,
 						'last_send_status' => \MonitoringLogs::STATUS_FAIL,
@@ -201,10 +202,11 @@ class MonitorsEvents extends \DB\MySQLObject {
 					]);
 				} elseif ($monitor['send_repeat_minute'] > 0) {
 					if ($monitor['last_send_time'] + $monitor['send_repeat_minute'] * 60 < time()) {
-						$title = "Error";
+						$title = "🚫 Error ".date("Y-m-d H:i:s");
 						$success = 0;
-						$text = "🚫 ".\Monitors::get_monitor_title_with_folders($monitor['id'])." is down ".date("Y-m-d H:i:s");
-						if ($descriptions) $text .= "\n\n". implode("\n", $descriptions);
+						$text = '<b>'.\Monitors::get_monitor_title_with_folders($monitor['id'])."</b> is down ";
+						if ($descriptions) $text .= "\n\n<i>". implode("\n", $descriptions).'</i>';
+						if ($monitor['additional_text']) $text .= "\n\n". $monitor['additional_text'];
 						\Monitors::save([
 							'id' => $monitor_id,
 							'last_send_status' => \MonitoringLogs::STATUS_FAIL,
@@ -215,12 +217,12 @@ class MonitorsEvents extends \DB\MySQLObject {
 				}
 			}
 			if ($text) {
-				\MonitoringNotify::sendNotification($monitor_id, $text);
+				\MonitoringNotify::sendNotification($monitor_id, $text, $title, $success);
 				$subs = \MonitoringSubscribe::data(false, sql_pholder(' AND `monitor_id` = ? AND `expire_time` >= ? ', $monitor_id, time()), '`user_id`');
 				if (is_array($subs) && $subs) {
 					foreach($subs as $sub) {
 						if (!$sub['user_id']) continue;
-						\Notifications::sendNotification($title, $text, $success, $sub['user_id']);
+						\Notifications::sendNotification($title, str_replace("\n","<br/>",$text), $success, $sub['user_id']);
 					}
 				}
 			}

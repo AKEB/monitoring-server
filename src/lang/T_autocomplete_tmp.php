@@ -817,6 +817,14 @@ class T {
 	public static function Monitor_Edit_Container(...$argv): string { return ''; }
 
 	/**
+	 * Monitor_Edit_AdditionalAlertText
+	 * 
+	 * @return string "Additional alert text"
+	 * @return string "Дополнительный текст уведомлений"
+	 */
+	public static function Monitor_Edit_AdditionalAlertText(...$argv): string { return ''; }
+
+	/**
 	 * Monitor_Edit_SendRepeatMinute
 	 * 
 	 * @return string "Resending error notifications in minutes"
