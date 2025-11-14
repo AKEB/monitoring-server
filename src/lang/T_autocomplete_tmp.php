@@ -1731,8 +1731,8 @@ class T {
 	/**
 	 * Maintenances_Permissions_Create
 	 * 
-	 * @return string "Add maintenance"
-	 * @return string "Добавление технической работы"
+	 * @return string "Create maintenance"
+	 * @return string "Создание технической работы"
 	 */
 	public static function Maintenances_Permissions_Create(...$argv): string { return ''; }
 

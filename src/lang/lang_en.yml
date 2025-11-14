@@ -257,7 +257,7 @@ Maintenances:
   PageTitle: "Maintenances"
   Permissions:
     Access: "Access"
-    Create: "Add maintenance"
+    Create: "Create maintenance"
   Copy:
     PermissionDenied: "You don't have permission to copy this maintenance"
     NotFound: "Maintenance not found"
