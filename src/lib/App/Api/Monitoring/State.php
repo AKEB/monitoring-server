@@ -314,6 +314,15 @@ class State extends \Routing_Parent implements \Routing_Interface {
 			if ($job_response['response']['status'] == 1) {
 				$status = \MonitoringLogs::STATUS_GOOD;
 			}
+		} elseif ($monitor['type'] == \Monitors::TYPE_EXPORTER_DISK || $monitor['type'] == \Monitors::TYPE_EXPORTER_MEMORY || $monitor['type'] == \Monitors::TYPE_EXPORTER_CPU) {
+			if (isset($job_response['response']['result'])) {
+				if ($job_response['response']['result'] <= $monitor['value']) {
+					$status = \MonitoringLogs::STATUS_GOOD;
+				} else {
+					$status = \MonitoringLogs::STATUS_FAIL;
+				}
+				$job_response['response']['response_error'] = $job_response['response']['result'];
+			}
 		} else {
 			return false;
 		}

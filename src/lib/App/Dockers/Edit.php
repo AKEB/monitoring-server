@@ -92,6 +92,14 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				$data['timeout'] = trim($data['timeout']);
 				$params['timeout'] = intval($data['timeout']);
 			}
+			if (isset($data['proxy_host'])) {
+				$data['proxy_host'] = trim($data['proxy_host']);
+				$params['proxy_host'] = $data['proxy_host'];
+			}
+			if (isset($data['proxy_type'])) {
+				$data['proxy_type'] = trim($data['proxy_type']);
+				$params['proxy_type'] = intval($data['proxy_type']);
+			}
 
 			if (isset($data['tls']) && trim($data['tls']) != '') {
 				$data['tls'] = trim($data['tls']);
@@ -435,6 +443,15 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					]);
 					echo $this->template->html_input("repeat_seconds", $this->docker['repeat_seconds']??0, \T::Docker_Edit_RepeatSeconds(), false, [
 						'type' => 'number',
+						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+						'readonly' => !($this->can_write || $this->can_create),
+					]);
+
+					echo $this->template->html_input("proxy_host", $this->monitor['proxy_host']??'', \T::Docker_Edit_ProxyHost(), false, [
+						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+						'readonly' => !($this->can_write || $this->can_create),
+					]);
+					echo $this->template?->html_select('proxy_type', \Monitors::proxy_type_hash(), $this->monitor['proxy_type']??0, \T::Docker_Edit_ProxyType(), false,[
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
 						'readonly' => !($this->can_write || $this->can_create),
 					]);

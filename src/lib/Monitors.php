@@ -11,11 +11,14 @@ class Monitors extends \DB\MySQLObject implements \PermissionSubject_Interface {
 	const STATUS_DISABLED = 0;
 	const STATUS_ENABLED = 1;
 
-	const TYPE_HTTPS  = 0;
-	const TYPE_FOLDER = 1;
-	const TYPE_TCP    = 2;
-	const TYPE_PING   = 3;
-	const TYPE_DOCKER = 4;
+	const TYPE_HTTPS           = 0;
+	const TYPE_FOLDER          = 1;
+	const TYPE_TCP             = 2;
+	const TYPE_PING            = 3;
+	const TYPE_DOCKER          = 4;
+	const TYPE_EXPORTER_DISK   = 5;
+	const TYPE_EXPORTER_MEMORY = 6;
+	const TYPE_EXPORTER_CPU    = 7;
 
 	static private array $monitors_hash = [];
 
@@ -41,6 +44,9 @@ class Monitors extends \DB\MySQLObject implements \PermissionSubject_Interface {
 			static::TYPE_TCP => \T::Monitor_Type_TCP(),
 			static::TYPE_PING => \T::Monitor_Type_Ping(),
 			static::TYPE_DOCKER => \T::Monitor_Type_Docker(),
+			static::TYPE_EXPORTER_DISK => \T::Monitor_Type_ExporterDisk(),
+			static::TYPE_EXPORTER_MEMORY => \T::Monitor_Type_ExporterMemory(),
+			// static::TYPE_EXPORTER_CPU => \T::Monitor_Type_ExporterCPU(),
 		];
 	}
 

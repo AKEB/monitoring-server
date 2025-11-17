@@ -769,6 +769,14 @@ class T {
 	public static function Monitor_Edit_Workers(...$argv): string { return ''; }
 
 	/**
+	 * Monitor_Edit_Value
+	 * 
+	 * @return string "Greater than (%%)"
+	 * @return string "Больше чем (%%)"
+	 */
+	public static function Monitor_Edit_Value(...$argv): string { return ''; }
+
+	/**
 	 * Monitor_Edit_ChangeButton
 	 * 
 	 * @return string "Update"
@@ -911,6 +919,22 @@ class T {
 	 * @return string "Docker"
 	 */
 	public static function Monitor_Type_Docker(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Type_ExporterDisk
+	 * 
+	 * @return string "Node Exporter (disk)"
+	 * @return string "Node Exporter (disk)"
+	 */
+	public static function Monitor_Type_ExporterDisk(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Type_ExporterMemory
+	 * 
+	 * @return string "Node Exporter (memory)"
+	 * @return string "Node Exporter (memory)"
+	 */
+	public static function Monitor_Type_ExporterMemory(...$argv): string { return ''; }
 
 	/**
 	 * Dashboard_Response
@@ -1599,6 +1623,22 @@ class T {
 	 * @return string "Частота опроса в секундах"
 	 */
 	public static function Docker_Edit_RepeatSeconds(...$argv): string { return ''; }
+
+	/**
+	 * Docker_Edit_ProxyHost
+	 * 
+	 * @return string "Proxy host"
+	 * @return string ""
+	 */
+	public static function Docker_Edit_ProxyHost(...$argv): string { return ''; }
+
+	/**
+	 * Docker_Edit_ProxyType
+	 * 
+	 * @return string "Proxy type"
+	 * @return string ""
+	 */
+	public static function Docker_Edit_ProxyType(...$argv): string { return ''; }
 
 	/**
 	 * Docker_Edit_Host

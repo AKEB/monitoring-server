@@ -19,6 +19,8 @@ Create a `docker-compose.yml` file
           - SERVER_HOST=${SERVER_HOST} # Server host https://monitoring.example.com/
           - WORKER_KEY_HASH=${WORKER_KEY_HASH} # Worker hash. Get it from your server
           - DEBUG=${DEBUG:-false} # Debug mode
+          - CURL_DEBUG=${CURL_DEBUG:-false} # Debug mode for curl
+          - DOCKER_DEBUG=${DOCKER_DEBUG:-false} # Debug mode for Docker
           - WORKER_THREADS=${WORKER_THREADS:-10} # Worker threads count
           - JOBS_GET_TIMEOUT=${JOBS_GET_TIMEOUT:-10} # How often to request new data from the server (in seconds)
           - PROXY_HOST=${PROXY_HOST:-} # Proxy host

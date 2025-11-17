@@ -117,6 +117,7 @@ Monitor:
     ParentFolder: "Родительская папка"
     Notify: "Уведомления"
     Docker: "Docker"
+    Value: "Больше чем (%%)"
     Container: "Контейнер"
     AdditionalAlertText: "Дополнительный текст уведомлений"
     SendRepeatMinute: "Повторная отправка уведомлений об ошибках в минутах"
@@ -132,6 +133,9 @@ Monitor:
     TCP: "TCP Port"
     Ping: "Ping"
     Docker: "Docker"
+    ExporterDisk: "Node Exporter (disk)"
+    ExporterMemory: "Node Exporter (memory)"
+    ExporterCPU: "Node Exporter (cpu)"
 
 Dashboard:
   Response: "Ответ"

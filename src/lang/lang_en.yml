@@ -113,6 +113,7 @@ Monitor:
     ProxyHost: "Proxy host"
     ProxyType: "Proxy type"
     Workers: "Workers"
+    Value: "Greater than (%%)"
     ChangeButton: "Update"
     CreateButton: "Create"
     ParentFolder: "Parent folder"
@@ -133,6 +134,9 @@ Monitor:
     TCP: "TCP Port"
     Ping: "Ping"
     Docker: "Docker"
+    ExporterDisk: "Node Exporter (disk)"
+    ExporterMemory: "Node Exporter (memory)"
+    ExporterCPU: "Node Exporter (cpu)"
 
 
 
@@ -236,6 +240,8 @@ Docker:
     TlsError: "TLS error"
     Timeout: "Request timeout"
     RepeatSeconds: "Repeat seconds"
+    ProxyHost: "Proxy host"
+    ProxyType: "Proxy type"
     Host: "Host"
     Port: "Port"
     Tls: "TLS"

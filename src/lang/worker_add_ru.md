@@ -19,6 +19,8 @@
           - SERVER_HOST=${SERVER_HOST} # Адрес сервера https://monitoring.example.com/
           - WORKER_KEY_HASH=${WORKER_KEY_HASH} # Hash обработчика. Получить его нужно на сайте сервера
           - DEBUG=${DEBUG:-false} # Debug mode
+          - CURL_DEBUG=${CURL_DEBUG:-false} # Debug mode for curl
+          - DOCKER_DEBUG=${DOCKER_DEBUG:-false} # Debug mode for Docker
           - WORKER_THREADS=${WORKER_THREADS:-10} # Кол-во потоков обработчика
           - JOBS_GET_TIMEOUT=${JOBS_GET_TIMEOUT:-10} # Как часто запрашивать новые данные в сервера (в секундах)
           - PROXY_HOST=${PROXY_HOST:-} # Proxy host

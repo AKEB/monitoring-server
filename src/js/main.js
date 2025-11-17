@@ -943,7 +943,34 @@ function list_dashboard_mobile(dashboard_active=false) {
 	});
 }
 
+function showPushNotification(title = '', message = '') {
+	if (!("Notification" in window)) {
+		return;
+	}
+
+	if (Notification.permission === "granted") {
+		const notification = new Notification(title, {
+			body: message,
+			icon: '/images/favicon.ico'
+		});
+		notification.onclick = function() {
+			window.focus();
+			notification.close();
+		};
+	} else if (Notification.permission !== "denied") {
+		Notification.requestPermission().then(permission => {
+			if (permission === "granted") {
+				showNotification(title, message);
+			}
+		});
+	}
+}
+
 $(document).ready(function() {
+	// if ("Notification" in window && Notification.permission === "default") {
+	// 	Notification.requestPermission();
+	// }
+	// showPushNotification('Test Title!','TEST message <br/><em>html?</em>');
 	// Делегированный обработчик клика на заголовок монитора
 	$('body').delegate('.monitor-item>.monitor-title', 'click', function(){
 		Loading = '<div class="d-flex justify-content-center"><div class="spinner-border text-warning" role="status"><span class="visually-hidden">Loading...</span></div></div>';
