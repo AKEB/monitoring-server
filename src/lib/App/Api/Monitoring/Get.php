@@ -26,6 +26,8 @@ class Get extends \Routing_Parent implements \Routing_Interface {
 		]);
 	}
 
+	
+
 	private function responseSuccess(array $response=[]) {
 		if (isset($response['error'])) unset($response['error']);
 		if (!isset($response['status'])) $response['status'] = 0;
