@@ -32,15 +32,15 @@ Default User Email: `admin@admin.com` and Password `Admin@123`
 - [x] Notification about expiring SSL certificate
 - [x] Figure out memory leaks in Javascript
 - [x] Maintenance work
+- [x] New monitor type: node-exporter
+- [x] Investigate bugs with the Docker API (why requests are hanging)
+- [x] Double-check all pages on a mobile device
+- [x] Double-check the light theme
 
 ## Issues
 
-- [ ] New monitor type: node-exporter
 - [ ] New monitor type: MySQL
 - [ ] New monitor type: PostgreSQL
-- [ ] Double-check all pages on a mobile device
-- [ ] Double-check the light theme
-- [ ] Investigate bugs with the Docker API (why requests are hanging)
 
 ## Environments
 
