@@ -42,6 +42,22 @@ Default User Email: `admin@admin.com` and Password `Admin@123`
 - [ ] New monitor type: MySQL
 - [ ] New monitor type: PostgreSQL
 
+## PHP extensions
+
+pdo
+pdo_mysql
+json
+curl
+mbstring
+openssl
+ctype
+iconv
+zip
+yaml
+xml
+mysqli
+memcached
+
 ## Environments
 
 | Environment                  |  Default             |   Type   | Description                   |

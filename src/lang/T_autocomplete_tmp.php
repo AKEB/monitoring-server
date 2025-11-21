@@ -937,6 +937,14 @@ class T {
 	public static function Monitor_Type_ExporterMemory(...$argv): string { return ''; }
 
 	/**
+	 * Monitor_Type_ExporterCPU
+	 * 
+	 * @return string "Node Exporter (cpu)"
+	 * @return string "Node Exporter (cpu)"
+	 */
+	public static function Monitor_Type_ExporterCPU(...$argv): string { return ''; }
+
+	/**
 	 * Dashboard_Response
 	 * 
 	 * @return string "Response"

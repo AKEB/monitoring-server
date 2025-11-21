@@ -41,10 +41,6 @@ div.text-success>input {
 	--mon-list-padding: 1.2rem;
 }
 
-.monitor-states {
-	/* line-height: 2rem; */
-}
-
 .monitor-states-big {
 	line-height: 3rem;
 }
@@ -99,10 +95,6 @@ div.text-success>input {
 
 .monitor-folder>div.collapsed>i.bi::before {
 	content: "\f234";
-}
-
-.monitor-folder>div.collapsed>i.bi::before {
-	/* content: "\f22C"; */
 }
 
 .monitor-badge {

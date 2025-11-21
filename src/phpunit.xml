@@ -10,14 +10,15 @@
     cacheDirectory=".phpunit.cache"
     backupStaticProperties="false"
 >
-    <coverage>
+    <!-- <coverage>
         <report>
             <text outputFile="php://stdout" showUncoveredFiles="false"/>
         </report>
-    </coverage>
+    </coverage> -->
     <testsuites>
         <testsuite name="Tests">
             <directory suffix=".php">tests</directory>
+            <exclude>vendor</exclude>
         </testsuite>
     </testsuites>
     <logging/>
@@ -25,5 +26,6 @@
         <include>
             <directory suffix=".php">src</directory>
         </include>
+        <exclude>vendor</exclude>
     </source>
 </phpunit>

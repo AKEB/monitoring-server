@@ -14,6 +14,7 @@ class Dockers extends \DB\MySQLObject implements \PermissionSubject_Interface {
 
 	static public function subject_hash(): array {
 		$data_hash = [];
+		// Получаем список субъектов для которых у пользователя есть доступ к docker
 		foreach(static::permissions_subject_hash() as $subject_id=>$permissionTitle) {
 			if (!\Sessions::checkPermission(static::PERMISSION_ACCESS, $subject_id, ACCESS_WRITE)) {
 				continue;
