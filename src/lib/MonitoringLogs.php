@@ -1,5 +1,11 @@
 <?php
 
+/**
+ * Агрегатор логов мониторинга.
+ *
+ * Класс отвечает за получение логов, построение деревьев мониторов и расчёт
+ * визуальных метрик (состояния, проценты доступности, таймлайны).
+ */
 class MonitoringLogs extends \DB\MySQLObject {
 	static public $table = 'monitoring_logs';
 
@@ -11,8 +17,17 @@ class MonitoringLogs extends \DB\MySQLObject {
 	const STATE_ERROR = 2;
 
 
+	/**
+	 * Рекурсивно обходит дерево мониторов и рассчитывает состояние родительских
+	 * узлов на основании детей.
+	 *
+	 * @param array $data  Уже собранные данные по мониторам, где папки содержат
+	 *                     массив children.
+	 */
 	static private function getDataForParents($data):array {
 
+		// Отрисовка в UI ожидает, что названия папок отсортированы с учётом
+		// Кириллицы, поэтому сортируем специальной функцией.
 		usort($data, function($a, $b){
 			$titleA = $a['title'];
 			$titleB = $b['title'];
@@ -37,6 +52,7 @@ class MonitoringLogs extends \DB\MySQLObject {
 
 		foreach ($data as $k=>&$monitor) {
 			if ($monitor['type'] == \Monitors::TYPE_FOLDER) {
+				// Для папки сначала пересобираем состояния всех детей.
 				$monitor['children'] = static::getDataForParents($monitor['children']);
 
 				if (!isset($monitor['children']) || !$monitor['children']) {
@@ -57,6 +73,8 @@ class MonitoringLogs extends \DB\MySQLObject {
 					$monitor['availability_percent'] = min($monitor['availability_percent']??100, $child['availability_percent']??0);
 				}
 				$last_class = '';
+				// Пробегаемся по историческому диапазону и выбираем «худшее»
+				// состояние среди дочерних мониторов.
 				for($i=$monitor['min_time']; $i<=$monitor['max_time']; $i+=intval($monitor['repeat_seconds'])) {
 					if ($i > time()) continue;
 					if ($i+$monitor['repeat_seconds'] > time()) continue;
@@ -109,6 +127,8 @@ class MonitoringLogs extends \DB\MySQLObject {
 				$monitor['badge_class'] = $last_class;
 				unset($child);
 			} else {
+				// Обычный монитор: построение временной шкалы и вычисление
+				// агрегированных классов состояния.
 				$monitor['repeat_seconds'] ??= 60;
 				$monitor['max_time'] ??= time();
 				$monitor['min_time'] ??= 0;
@@ -165,10 +185,17 @@ class MonitoringLogs extends \DB\MySQLObject {
 		return $data;
 	}
 
+	/**
+	 * Возвращает дерево мониторов с агрегированными состояниями за последние
+	 * $count интервалов.
+	 *
+	 * Используется для основной вкладки мониторинга.
+	 */
 	static public function getMonitorsWithData(int $count=5, ?int $max_time=null): array {
 		if ($count < 1) return [];
 		if (!$max_time) $max_time = time();
 
+		// Загружаем плоский список мониторов без сортировки (ORDER BY NULL быстрее).
 		$data = \Monitors::data(false,' ORDER BY NULL ');
 
 		$monitors = [];
@@ -177,6 +204,7 @@ class MonitoringLogs extends \DB\MySQLObject {
 		}
 		$monitor_workers_hash = [];
 
+		// Работники, которые привязаны к каждому монитору (по самим джобам).
 		$monitor_workers_data = \MonitoringJobs::data(false, ' ORDER BY NULL', '`monitor_id`, `worker_id`, `create_time`');
 
 		if ($monitor_workers_data) {
@@ -202,6 +230,7 @@ class MonitoringLogs extends \DB\MySQLObject {
 			}
 		}
 
+		// Кэшируем метрику AvailabilityPercent, чтобы не дергать БД на каждый запрос.
 		$cache = new \Cache('AvailabilityPercent_86400');
 		if ($cache->isValid()) {
 			$availability = $cache->get();
@@ -224,7 +253,7 @@ class MonitoringLogs extends \DB\MySQLObject {
 		$global_min_time = 0;
 		$global_max_time = 0;
 		$monitor_ids = [];
-		// Make monitors structure
+		// Собираем дерево: фильтруем выключенные и без прав.
 		foreach($monitors as $monitor_id=>&$monitor) {
 			if (!isset($monitor['type'])) continue;
 			if ($monitor['status'] != \Monitors::STATUS_ENABLED) continue;
@@ -311,6 +340,7 @@ class MonitoringLogs extends \DB\MySQLObject {
 			$fields .= 'FLOOR(`update_time` / '.intval($interval_seconds).') * '.intval($interval_seconds).' as `interval_time_'.intval($interval_seconds).'`,';
 		}
 		$fields .= '`update_time`';
+		// Загружаем фактические логи за выбранный период.
 		$data = static::data(false, $sql, $fields);
 		foreach($data as $item) {
 			$monitor_id = $item['monitor_id']??0;
@@ -345,6 +375,11 @@ class MonitoringLogs extends \DB\MySQLObject {
 		return $monitors;
 	}
 
+	/**
+	 * Детальный отчёт по одному монитору.
+	 *
+	 * Возвращает метрики для карточки в UI (история логов, uptime, графики).
+	 */
 	static public function getMonitorData(int $monitor_id, float $period): array {
 		$cache = new \Cache('monitor_data_'.md5($monitor_id.'__'.$period));
 		if ($cache->isValid()) {
@@ -361,6 +396,7 @@ class MonitoringLogs extends \DB\MySQLObject {
 		$max_time = time();
 
 		if ($monitor_id) {
+			// Без прав доступа отдаём пустой ответ, но всё равно замеряем время.
 			if (!\Sessions::checkPermission(\Monitors::PERMISSION_ACCESS, $monitor_id, READ)) return $return;
 			// Get Monitor
 			$start_time = microtime(true);
@@ -394,7 +430,7 @@ class MonitoringLogs extends \DB\MySQLObject {
 			}
 			if ($workers_hash) {
 				$start_time = microtime(true);
-				$workers = \Workers::data(['id' => array_keys($workers_hash)],'','`id`, `title`');
+				$workers = \Workers::data(['id' => array_keys($workers_hash)],' ORDER BY title ASC','`id`, `title`');
 				$return['mysql_time']['Workers::data'] = round(microtime(true) - $start_time,3);
 				foreach($workers as $item) {
 					$workers_hash[$item['id']]['title'] = $item['title'] ?? '';
