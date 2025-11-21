@@ -18,7 +18,6 @@
     <testsuites>
         <testsuite name="Tests">
             <directory suffix=".php">tests</directory>
-            <exclude>vendor</exclude>
         </testsuite>
     </testsuites>
     <logging/>
@@ -26,6 +25,5 @@
         <include>
             <directory suffix=".php">src</directory>
         </include>
-        <exclude>vendor</exclude>
     </source>
 </phpunit>
