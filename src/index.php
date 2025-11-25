@@ -30,6 +30,18 @@ require_once("./autoload.php");
 
 \Sessions::session_init(true); // This need to check Permissions and user language
 
+\Logs::add_params_hash_for_print('worker_key_hash', \Logs::PARAM_HASH_SECRET);
+\Logs::add_object(\Workers::LOGS_OBJECT, \Workers::LOGS_OBJECT);
+\Logs::add_object(\Monitors::LOGS_OBJECT, \Monitors::LOGS_OBJECT);
+\Logs::add_object(\MonitoringJobs::LOGS_OBJECT, \MonitoringJobs::LOGS_OBJECT);
+\Logs::add_object(\MonitoringSubscribe::LOGS_OBJECT, \MonitoringSubscribe::LOGS_OBJECT);
+\Logs::add_object(\Dockers::LOGS_OBJECT, \Dockers::LOGS_OBJECT);
+\Logs::add_object(\MonitoringDockers::LOGS_OBJECT, \MonitoringDockers::LOGS_OBJECT);
+\Logs::add_object(\Maintenances::LOGS_OBJECT, \Maintenances::LOGS_OBJECT);
+\Logs::add_object(\MonitoringMaintenances::LOGS_OBJECT, \MonitoringMaintenances::LOGS_OBJECT);
+\Logs::add_object(\Notify::LOGS_OBJECT, \Notify::LOGS_OBJECT);
+\Logs::add_object(\MonitoringNotify::LOGS_OBJECT, \MonitoringNotify::LOGS_OBJECT);
+
 // Set Application Settings
 \Template::setProjectName("Monitoring");
 \Template::setTheme('auto');
