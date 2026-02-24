@@ -10,8 +10,9 @@ class Notify extends \DB\MySQLObject implements \PermissionSubject_Interface {
 	const PERMISSION_SECRETS = 'notify_secrets';
 	const PERMISSION_CREATE = 'create_notify';
 
-	const TYPE_TELEGRAM = 0;
+	const TYPE_TELEGRAM   = 0;
 	const TYPE_MATTERMOST = 1;
+	const TYPE_GOTIFY     = 2;
 
 	const STATUS_DISABLED = 0;
 	const STATUS_ENABLED = 1;
@@ -31,6 +32,7 @@ class Notify extends \DB\MySQLObject implements \PermissionSubject_Interface {
 		return [
 			static::TYPE_TELEGRAM   => \T::Notify_Type_Telegram(),
 			static::TYPE_MATTERMOST => \T::Notify_Type_Mattermost(),
+			static::TYPE_GOTIFY     => \T::Notify_Type_Gotify(),
 		];
 	}
 

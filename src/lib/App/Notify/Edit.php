@@ -86,12 +86,19 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					if (isset($data['json_data']['telegram_bot_token']) && $data['json_data']['telegram_bot_token'] && trim($data['json_data']['telegram_bot_token']) != '') {
 						$params['json_data']['telegram_bot_token'] = trim($data['json_data']['telegram_bot_token']);
 					}
-				} else if ($params['type'] == \Notify::TYPE_MATTERMOST) {
+				} elseif ($params['type'] == \Notify::TYPE_MATTERMOST) {
 					if (isset($data['json_data']['mattermost_url']) && $data['json_data']['mattermost_url'] && trim($data['json_data']['mattermost_url']) != '') {
 						$params['json_data']['mattermost_url'] = trim($data['json_data']['mattermost_url']);
 					}
 					if (isset($data['json_data']['mattermost_token']) && $data['json_data']['mattermost_token'] && trim($data['json_data']['mattermost_token']) != '') {
 						$params['json_data']['mattermost_token'] = trim($data['json_data']['mattermost_token']);
+					}
+				} elseif ($params['type'] == \Notify::TYPE_GOTIFY) {
+					if (isset($data['json_data']['gotify_url']) && $data['json_data']['gotify_url'] && trim($data['json_data']['gotify_url']) != '') {
+						$params['json_data']['gotify_url'] = trim($data['json_data']['gotify_url']);
+					}
+					if (isset($data['json_data']['gotify_priority']) && $data['json_data']['gotify_priority'] && trim($data['json_data']['gotify_priority']) != '') {
+						$params['json_data']['gotify_priority'] = trim($data['json_data']['gotify_priority']);
 					}
 				}
 			}
@@ -124,7 +131,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					$params['json_data'] = [];
 				}
 				if (!isset($params['receiver']) || !$params['receiver']) {
-					$this->error = \T::Notify_Edit_TestError();
+					$this->error = \T::Notify_Edit_TestError(0);
 					break;
 				}
 
@@ -138,7 +145,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 
 				if ($params['type'] == \Notify::TYPE_TELEGRAM) {
 					if (!isset($params['json_data']['telegram_bot_token']) || !$params['json_data']['telegram_bot_token']) {
-						$this->error = \T::Notify_Edit_TestError();
+						$this->error = \T::Notify_Edit_TestError(10);
 						break;
 					}
 					try {
@@ -157,18 +164,18 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 							$telegram_thread_id
 						);
 					} catch (\Exception $e) {
-						$this->error = \T::Notify_Edit_TestError();
+						$this->error = \T::Notify_Edit_TestError(11);
 						break;
 					}
 					$this->success = \T::Notify_Edit_TestSuccess();
 					break;
 				} else if ($params['type'] == \Notify::TYPE_MATTERMOST) {
 					if (!isset($params['json_data']['mattermost_url']) || !$params['json_data']['mattermost_url']) {
-						$this->error = \T::Notify_Edit_TestError();
+						$this->error = \T::Notify_Edit_TestError(20);
 						break;
 					}
 					if (!isset($params['json_data']['mattermost_token']) || !$params['json_data']['mattermost_token']) {
-						$this->error = \T::Notify_Edit_TestError();
+						$this->error = \T::Notify_Edit_TestError(21);
 						break;
 					}
 					try {
@@ -185,13 +192,31 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 							);
 						}
 					} catch (\Exception $e) {
-						$this->error = \T::Notify_Edit_TestError();
+						$this->error = \T::Notify_Edit_TestError(22);
+						break;
+					}
+					$this->success = \T::Notify_Edit_TestSuccess();
+					break;
+				} else if ($params['type'] == \Notify::TYPE_GOTIFY) {
+					if (!isset($params['json_data']['gotify_url']) || !$params['json_data']['gotify_url']) {
+						$this->error = \T::Notify_Edit_TestError(30);
+						break;
+					}
+					try {
+						$curl = new \AKEB\CurlGet(($params['json_data']['gotify_url']??'').'/message?token='.($params['receiver']??''), [], [], ['Content-Type: application/json;charset=utf-8']);
+						$curl->setBody(json_encode([
+							'message' => 'Test Message '.date('Y-m-d H:i:s',time()).'',
+							'priority' => intval($params['json_data']['gotify_priority']??0),
+						]));
+						$curl->exec();
+					} catch (\Exception $e) {
+						$this->error = \T::Notify_Edit_TestError(31);
 						break;
 					}
 					$this->success = \T::Notify_Edit_TestSuccess();
 					break;
 				}
-				$this->error = \T::Notify_Edit_TestError();
+				$this->error = \T::Notify_Edit_TestError(1);
 				break;
 			}
 
@@ -307,6 +332,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 		} else {
 			$this->can_read = \Sessions::checkPermission(\Notify::PERMISSION_ACCESS, -1, READ);
 			$this->can_create = \Sessions::checkPermission(\Notify::PERMISSION_CREATE, 0, WRITE);
+			$this->can_write = $this->can_create;
 			if (!$this->can_read && !$this->can_create) {
 				e403();
 			}
@@ -399,7 +425,18 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 							'global-class' => 'type-dependence type-'.\Notify::TYPE_MATTERMOST,
 							'readonly' => !($this->can_write || $this->can_create),
 						]);
+						echo $this->template->html_input("json_data[gotify_url]", $this->notify['json_data']['gotify_url']??'', \T::Notify_Edit_GotifyServer(), false, [
+							'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+							'global-class' => 'type-dependence type-'.\Notify::TYPE_GOTIFY,
+							'readonly' => !($this->can_write || $this->can_create),
+						]);
 					}
+
+					echo $this->template->html_input("json_data[gotify_priority]", $this->notify['json_data']['gotify_priority']??'', \T::Notify_Edit_GotifyPriority(), false, [
+						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+						'global-class' => 'type-dependence type-'.\Notify::TYPE_GOTIFY,
+						'readonly' => !($this->can_write || $this->can_create),
+					]);
 
 					if ($this->notify['id']) {
 						echo $this->template->html_input("create_date", $this->notify['create_date']??'', \T::Notify_Edit_CreateTime(), false, ['readonly' => true]);

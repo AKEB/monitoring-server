@@ -1121,6 +1121,14 @@ class T {
 	public static function Notify_Type_Mattermost(...$argv): string { return ''; }
 
 	/**
+	 * Notify_Type_Gotify
+	 * 
+	 * @return string "Gottify"
+	 * @return string "Gottify"
+	 */
+	public static function Notify_Type_Gotify(...$argv): string { return ''; }
+
+	/**
 	 * Notify_Table_Title
 	 * 
 	 * @return string "Title"
@@ -1265,6 +1273,30 @@ class T {
 	public static function Notify_Edit_MattermostToken(...$argv): string { return ''; }
 
 	/**
+	 * Notify_Edit_GotifyServer
+	 * 
+	 * @return string "Gotify server"
+	 * @return string "Gotify сервер"
+	 */
+	public static function Notify_Edit_GotifyServer(...$argv): string { return ''; }
+
+	/**
+	 * Notify_Edit_GotifyToken
+	 * 
+	 * @return string "Gotify token"
+	 * @return string "Gotify токен"
+	 */
+	public static function Notify_Edit_GotifyToken(...$argv): string { return ''; }
+
+	/**
+	 * Notify_Edit_GotifyPriority
+	 * 
+	 * @return string "Gotify priority"
+	 * @return string "Gotify приоритет"
+	 */
+	public static function Notify_Edit_GotifyPriority(...$argv): string { return ''; }
+
+	/**
 	 * Notify_Edit_CreateTime
 	 * 
 	 * @return string "Create time"
@@ -1315,8 +1347,8 @@ class T {
 	/**
 	 * Notify_Edit_TestError
 	 * 
-	 * @return string "Test failed"
-	 * @return string "Тест не пройден"
+	 * @return string "Test failed (%d)"
+	 * @return string "Тест не пройден (%d)"
 	 */
 	public static function Notify_Edit_TestError(...$argv): string { return ''; }
 

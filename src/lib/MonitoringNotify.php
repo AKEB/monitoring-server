@@ -128,6 +128,26 @@ class MonitoringNotify extends \DB\MySQLObject {
 					continue;
 				}
 				continue;
+
+			} elseif ($notify['type'] == \Notify::TYPE_GOTIFY) {
+				try {
+					$text_send = $title_send."\n".$text_send;
+					$text_send .= "\n\n".'<i>Alert: '.$notify['title'].'</i>';
+					$text_send = str_replace(
+						['<br/>', '<br />', '<br>', '<strong>', '</strong>', '<b>', '</b>', '<i>', '</i>', '<em>', '</em>', '<u>', '</u>'],
+						["\n",    "\n",     "\n",   '',         '',          '',    '',     '',    '',     '',     '',      '',    ''],
+						$text_send
+					);
+					$curl = new \AKEB\CurlGet(($notify['json_data']['gotify_url']??'').'/message?token='.($notify['receiver']??''), [], [], ['Content-Type: application/json;charset=utf-8']);
+					$curl->setBody(json_encode([
+						'message' => $text_send,
+						'priority' => intval($notify['json_data']['gotify_priority']??0),
+					]));
+					$curl->exec();
+				} catch (\Exception $e) {
+					continue;
+				}
+				continue;
 			} else {
 				continue;
 			}
