@@ -78,6 +78,7 @@ class Monitors extends \DB\MySQLObject implements \PermissionSubject_Interface {
 
 	static private function setAccessForChild(&$data) {
 		// vardump($data);
+		if (!isset($data) || !$data) return;
 		foreach($data as $k=>$v) {
 			if (isset($v['children']) && $v['children']) {
 				foreach($v['children'] as $k2=>$v2) {
