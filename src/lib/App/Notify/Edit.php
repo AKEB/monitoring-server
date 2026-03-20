@@ -157,6 +157,12 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 							$telegram_thread_id = 0;
 						}
 						$bot = new \TelegramBot\Api\BotApi($params['json_data']['telegram_bot_token']);
+						if (\Config::getInstance()->telegram_proxy_host) {
+							$bot->setProxy((\Config::getInstance()->telegram_proxy_host).':'.(\Config::getInstance()->telegram_proxy_port), \Config::getInstance()->telegram_proxy_socks5);
+							if (\Config::getInstance()->telegram_proxy_username && \Config::getInstance()->telegram_proxy_password) {
+								$bot->setCurlOption(CURLOPT_PROXYUSERPWD, \Config::getInstance()->telegram_proxy_username.':'.\Config::getInstance()->telegram_proxy_password);
+							}
+						}
 						@$bot->sendMessage(
 							$telegram_chat_id,
 							'Test Message '.date('Y-m-d H:i:s',time()).'',

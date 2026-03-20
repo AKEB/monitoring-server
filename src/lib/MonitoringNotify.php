@@ -80,6 +80,12 @@ class MonitoringNotify extends \DB\MySQLObject {
 						$telegram_thread_id = 0;
 					}
 					$bot = new \TelegramBot\Api\BotApi($notify['json_data']['telegram_bot_token']);
+					if (\Config::getInstance()->telegram_proxy_host) {
+						$bot->setProxy((\Config::getInstance()->telegram_proxy_host).':'.(\Config::getInstance()->telegram_proxy_port), \Config::getInstance()->telegram_proxy_socks5);
+						if (\Config::getInstance()->telegram_proxy_username && \Config::getInstance()->telegram_proxy_password) {
+							$bot->setCurlOption(CURLOPT_PROXYUSERPWD, \Config::getInstance()->telegram_proxy_username.':'.\Config::getInstance()->telegram_proxy_password);
+						}
+					}
 					@$bot->sendMessage(
 						$telegram_chat_id,
 						$text_send,

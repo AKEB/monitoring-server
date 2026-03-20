@@ -110,6 +110,12 @@ memcached
 | MEMCACHED_PORT               | 11211                | integer  | Memcached Port                |
 | ---------------------------- | -------------------- | -------- | ----------------------------- |
 | TELEGRAM_BOT_TOKEN           |                      | string   | Telegram Bot Token            |
+| TELEGRAM_PROXY_SOCKS5        | true                 | boolean  | Telegram Proxy Use Socks5     |
+| TELEGRAM_PROXY_HOST          |                      | string   | Telegram Proxy Host           |
+| TELEGRAM_PROXY_PORT          | 8080                 | integer  | Telegram Proxy Port           |
+| TELEGRAM_PROXY_USERNAME      |                      | string   | Telegram Proxy Username       |
+| TELEGRAM_PROXY_PASSWORD      |                      | string   | Telegram Proxy Password       |
+
 
 ### .env file
 
