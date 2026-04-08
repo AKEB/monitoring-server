@@ -127,7 +127,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				$params['additional_text'] = '';
 			}
 
-			if ($data['type'] == \Monitors::TYPE_HTTPS) {
+			if ($data['type'] == \Monitors::TYPE_HTTPS || $data['type'] == \Monitors::TYPE_HTTP_JSON) {
 				if (isset($data['url'])) {
 					$data['url'] = trim($data['url']);
 					$params['url'] = $data['url'];
@@ -168,6 +168,22 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				if (isset($data['proxy_type'])) {
 					$data['proxy_type'] = trim($data['proxy_type']);
 					$params['proxy_type'] = intval($data['proxy_type']);
+				}
+				if (isset($data['request_headers'])) {
+					$data['request_headers'] = trim($data['request_headers']);
+					$params['request_headers'] = $data['request_headers'];
+				}
+				if (isset($data['json_path'])) {
+					$data['json_path'] = trim($data['json_path']);
+					$params['json_path'] = $data['json_path'];
+				}
+				if (isset($data['json_expected_value'])) {
+					$data['json_expected_value'] = trim($data['json_expected_value']);
+					$params['json_expected_value'] = $data['json_expected_value'];
+				}
+				if (isset($data['json_expected_type'])) {
+					$data['json_expected_type'] = trim($data['json_expected_type']);
+					$params['json_expected_type'] = $data['json_expected_type'];
 				}
 			} elseif ($data['type'] == \Monitors::TYPE_EXPORTER_DISK || $data['type'] == \Monitors::TYPE_EXPORTER_MEMORY || $data['type'] == \Monitors::TYPE_EXPORTER_CPU) {
 				if (isset($data['host'])) {
@@ -537,6 +553,10 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 			$this->monitor['parent_id'] ??= $this->parent_id;
 			$this->monitor['additional_text'] ??= '';
 			$this->monitor['value'] ??= 80;
+			$this->monitor['request_headers'] ??= '';
+			$this->monitor['json_path'] ??= '';
+			$this->monitor['json_expected_value'] ??= 'true';
+			$this->monitor['json_expected_type'] ??= 'bool';
 		}
 
 		$this->workers_hash = [];
@@ -635,7 +655,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 
 					echo $this->template->html_input("url", $this->monitor['url']??'https://', \T::Monitor_Edit_Url(), false, [
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
-						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS,
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_HTTP_JSON,
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 
@@ -673,7 +693,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 
 					echo $this->template->html_params("workers[]", $this->workers_hash, $this->monitor['workers']??[], \T::Monitor_Edit_Workers(),false,[
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
-						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_PING.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU,
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_HTTP_JSON.' type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_PING.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU,
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 
@@ -684,49 +704,76 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 
 					echo $this->template?->html_select('method', \Monitors::HTTP_methods(), $this->monitor['method']??'', \T::Monitor_Edit_Method(), false,[
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
-						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS,
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_HTTP_JSON,
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 					echo $this->template->html_input("timeout", $this->monitor['timeout']??0, \T::Monitor_Edit_Timeout(), false, [
 						'type' => 'number',
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
-						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_PING.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU,
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_HTTP_JSON.' type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_PING.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU,
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 					echo $this->template->html_input("repeat_seconds", $this->monitor['repeat_seconds']??0, \T::Monitor_Edit_RepeatSeconds(), false, [
 						'type' => 'number',
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
-						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_PING.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU,
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_HTTP_JSON.' type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_PING.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU,
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 					echo $this->template->html_input("max_redirects", $this->monitor['max_redirects']??0, \T::Monitor_Edit_MaxRedirects(), false, [
 						'type' => 'number',
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
-						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS,
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_HTTP_JSON,
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 					echo $this->template->html_input("send_repeat_minute", $this->monitor['send_repeat_minute']??0, \T::Monitor_Edit_SendRepeatMinute(), false, [
 						'type' => 'number',
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
-						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_PING.' type-'.\Monitors::TYPE_DOCKER.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU,
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_HTTP_JSON.' type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_PING.' type-'.\Monitors::TYPE_DOCKER.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU,
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 					echo $this->template?->html_select('response_code[]', \Monitors::response_code_hash(), $this->monitor['response_code']??[], \T::Monitor_Edit_ResponseCode(), false,[
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
 						'multiple' => 'multiple',
-						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS,
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_HTTP_JSON,
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 					echo $this->template->html_switch("ssl_verify", intval($this->monitor['ssl_verify']??0), \T::Monitor_Edit_SSLVerify(), false,[
-						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS,
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_HTTP_JSON,
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 					echo $this->template->html_switch("ssl_verify_host", intval($this->monitor['ssl_verify_host']??0), \T::Monitor_Edit_SSLVerifyHost(), false,[
-						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS,
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_HTTP_JSON,
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 					echo $this->template->html_switch("ssl_cert_expire_alert", intval($this->monitor['ssl_cert_expire_alert']??0), \T::Monitor_Edit_SSLCertExpireAlert(), false,[
-						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS,
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_HTTP_JSON,
+						'readonly' => !($this->can_write || $this->can_create),
+					]);
+					echo $this->template->html_input("request_headers", $this->monitor['request_headers']??'', \T::Monitor_Edit_RequestHeaders(), false, [
+						'type' => 'textarea',
+						'rows' => '4',
+						'cols' => '60',
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTP_JSON.' type-'.\Monitors::TYPE_HTTPS,
+						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+						'readonly' => !($this->can_write || $this->can_create),
+					]);
+					echo $this->template->html_input("json_path", $this->monitor['json_path']??'', \T::Monitor_Edit_JSONPath(), false, [
+						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTP_JSON,
+						'readonly' => !($this->can_write || $this->can_create),
+					]);
+					echo $this->template->html_input("json_expected_value", $this->monitor['json_expected_value']??'', \T::Monitor_Edit_JSONExpectedValue(), false, [
+						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTP_JSON,
+						'readonly' => !($this->can_write || $this->can_create),
+					]);
+					echo $this->template?->html_select('json_expected_type', [
+						'string' => 'string',
+						'number' => 'number',
+						'bool' => 'bool',
+					], $this->monitor['json_expected_type']??'bool', \T::Monitor_Edit_JSONExpectedType(), false,[
+						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTP_JSON,
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 
@@ -734,18 +781,18 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 						'type' => 'textarea',
 						'rows' => '5',
 						'cols' => '60',
-						'global-class' => 'type-dependence type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_PING.' type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_DOCKER.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU,
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_PING.' type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_HTTP_JSON.' type-'.\Monitors::TYPE_DOCKER.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU,
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6'
 					]);
 
 					echo $this->template->html_input("proxy_host", $this->monitor['proxy_host']??'', \T::Monitor_Edit_ProxyHost(), false, [
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
-						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU,
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_HTTP_JSON.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU,
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 					echo $this->template?->html_select('proxy_type', \Monitors::proxy_type_hash(), $this->monitor['proxy_type']??0, \T::Monitor_Edit_ProxyType(), false,[
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
-						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU,
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_HTTP_JSON.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU,
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 					echo $this->template?->html_select('parent_id', \Monitors::get_folder_hash_options_hash(), $this->monitor['parent_id']??0, \T::Monitor_Edit_ParentFolder(), false,[

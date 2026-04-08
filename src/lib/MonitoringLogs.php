@@ -406,6 +406,8 @@ class MonitoringLogs extends \DB\MySQLObject {
 			if (!$monitor) return $return;
 			if(!isset($monitor['repeat_seconds']) || !$monitor['repeat_seconds']) $monitor['repeat_seconds'] = 60;
 			$return['monitor'] = $monitor;
+			$return['monitor']['can_read'] = \Sessions::checkPermission(\Monitors::PERMISSION_ACCESS, $monitor_id, READ);
+			$return['monitor']['can_write'] = \Sessions::checkPermission(\Monitors::PERMISSION_ACCESS, $monitor_id, WRITE);
 			$current_time = intval(time() / intval($monitor['repeat_seconds'])) * intval($monitor['repeat_seconds']);
 
 			// Get MonitoringJobs

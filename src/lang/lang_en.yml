@@ -103,6 +103,7 @@ Monitor:
     Host: "Host"
     Port: "Port"
     Method: "Method"
+    RequestHeaders: "HTTP headers (one per line: Key: Value)"
     Timeout: "Request timeout"
     MaxRedirects: "Max redirects"
     RepeatSeconds: "Repeat seconds"
@@ -112,6 +113,9 @@ Monitor:
     ResponseCode: "Allowed status codes"
     ProxyHost: "Proxy host"
     ProxyType: "Proxy type"
+    JSONPath: "JSON path (example: data.configurationInfo.Status)"
+    JSONExpectedValue: "Expected JSON value"
+    JSONExpectedType: "Expected JSON value type"
     Workers: "Workers"
     Value: "Greater than (%%)"
     ChangeButton: "Update"
@@ -137,6 +141,7 @@ Monitor:
     ExporterDisk: "Node Exporter (disk)"
     ExporterMemory: "Node Exporter (memory)"
     ExporterCPU: "Node Exporter (cpu)"
+    HTTPJson: "HTTP(s) JSON check"
 
 
 

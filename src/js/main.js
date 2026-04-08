@@ -452,7 +452,11 @@ function printMonitorData(data, period) {
 			} else {
 				HTML += '<h5>'+data.monitor.title+'</h5>';
 			}
-			// HTML += '<h5><a href="/monitors/'+data.monitor.parent_id+'/edit/'+data.monitor.id+'/" target="_blank"><i class="bi bi-eye me-2 fs-4 text-info pointer"></i></a></h5>';
+			if (data.monitor.can_write) {
+				HTML += '<h5 class="mb-0"><a href="/monitors/'+data.monitor.parent_id+'/edit/'+data.monitor.id+'/"><i class="bi bi-pencil-square fs-4 text-info pointer"></i></a></h5>';
+			} else if (data.monitor.can_read) {
+				HTML += '<h5 class="mb-0"><a href="/monitors/'+data.monitor.parent_id+'/edit/'+data.monitor.id+'/"><i class="bi bi-eye fs-4 text-info pointer"></i></a></h5>';
+			}
 			HTML += '</div>';
 
 		}

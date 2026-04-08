@@ -102,6 +102,7 @@ Monitor:
     Host: "Хост"
     Port: "Порт"
     Method: "Метод запроса"
+    RequestHeaders: "HTTP заголовки (по одному на строку: Key: Value)"
     Timeout: "Таймаут запроса в секундах"
     MaxRedirects: "Максимум переходов"
     RepeatSeconds: "Частота опроса в секундах"
@@ -111,6 +112,9 @@ Monitor:
     ResponseCode: "Допустимые коды статуса"
     ProxyHost: "Proxy домен и порт"
     ProxyType: "Proxy Тип"
+    JSONPath: "JSON путь (например: data.configurationInfo.Status)"
+    JSONExpectedValue: "Ожидаемое значение JSON"
+    JSONExpectedType: "Тип ожидаемого значения JSON"
     Workers: "Обработчики"
     ChangeButton: "Изменить"
     CreateButton: "Создать"
@@ -136,6 +140,7 @@ Monitor:
     ExporterDisk: "Node Exporter (disk)"
     ExporterMemory: "Node Exporter (memory)"
     ExporterCPU: "Node Exporter (cpu)"
+    HTTPJson: "HTTP(s) JSON check"
 
 Dashboard:
   Response: "Ответ"

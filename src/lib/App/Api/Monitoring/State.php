@@ -306,6 +306,23 @@ class State extends \Routing_Parent implements \Routing_Interface {
 			) {
 				$status = \MonitoringLogs::STATUS_GOOD;
 			}
+		} elseif ($monitor['type'] == \Monitors::TYPE_HTTP_JSON) {
+			$httpStatusGood =
+				($job_response['response']['status_code'] >= 100 && in_array($job_response['response']['status_code'], $monitor['response_code'])) ||
+				(in_array(1, $monitor['response_code']) && $job_response['response']['status_code'] >= 100 && $job_response['response']['status_code'] < 200) ||
+				(in_array(2, $monitor['response_code']) && $job_response['response']['status_code'] >= 200 && $job_response['response']['status_code'] < 300) ||
+				(in_array(3, $monitor['response_code']) && $job_response['response']['status_code'] >= 300 && $job_response['response']['status_code'] < 400) ||
+				(in_array(4, $monitor['response_code']) && $job_response['response']['status_code'] >= 400 && $job_response['response']['status_code'] < 500) ||
+				(in_array(5, $monitor['response_code']) && $job_response['response']['status_code'] >= 500 && $job_response['response']['status_code'] < 600);
+			$jsonValid = intval($job_response['response']['json_valid'] ?? 0) === 1;
+			if ($httpStatusGood && $jsonValid) {
+				$status = \MonitoringLogs::STATUS_GOOD;
+			} else {
+				$status = \MonitoringLogs::STATUS_FAIL;
+				if (!$httpStatusGood && (!isset($job_response['response']['response_error']) || !$job_response['response']['response_error'])) {
+					$job_response['response']['response_error'] = 'Unexpected HTTP status code: '.intval($job_response['response']['status_code'] ?? 0);
+				}
+			}
 		} elseif ($monitor['type'] == \Monitors::TYPE_TCP) {
 			if ($job_response['response']['status'] == 1) {
 				$status = \MonitoringLogs::STATUS_GOOD;
