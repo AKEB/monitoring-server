@@ -86,8 +86,12 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 	private function get_data() {
 		$this->workers = [];
 		$data = \Workers::data();
+		$worker_ids = array_map(static fn($item) => intval($item['id'] ?? 0), $data);
+		$jobs_count_hash = \MonitoringJobs::countMonitorsByWorkerIds($worker_ids);
+		$dockers_count_hash = \MonitoringDockers::countMonitorsByWorkerIds($worker_ids);
 		foreach($data as $item) {
 			if (!\Sessions::checkPermission(\Workers::PERMISSION_ACCESS, $item['id'], READ)) continue;
+			$item['monitors_count'] = intval($jobs_count_hash[$item['id']] ?? 0) + intval($dockers_count_hash[$item['id']] ?? 0);
 			$this->workers[$item['id']] = $item;
 		}
 	}
@@ -117,6 +121,7 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 					<tr>
 						<th scope="col" class="align-middle" data-priority="1">ID</th>
 						<th scope="col" class="align-middle" data-priority="2"><?=\T::Worker_Table_Title();?></th>
+						<th scope="col" class="align-middle text-center" data-priority="4"><?=\T::Monitor_PageTitle();?></th>
 						<th scope="col" class="align-middle" data-priority="4"><?=\T::Worker_Table_LastActiveTime();?></th>
 
 						<th scope="col" class="align-middle text-center" data-priority="6"><?=\T::Worker_Table_ProtocolVersion();?></th>
@@ -139,6 +144,7 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 							'title' => htmlspecialchars(trim($item['title'] ?? '')),
 							'protocol_version' => htmlspecialchars(trim($item['protocol_version'] ?? '')),
 							'worker_version' => htmlspecialchars(trim($item['worker_version'] ?? '')),
+							'monitors_count' => intval($item['monitors_count'] ?? 0),
 							'last_active_time' => isset($item['last_active_time']) && $item['last_active_time'] > 0 ? date("Y-m-d H:i:s", $item['last_active_time']) : '',
 							'create_time' => isset($item['create_time']) && $item['create_time'] > 0 ? date("Y-m-d H:i:s", $item['create_time']) : '',
 							'update_time' => isset($item['update_time']) && $item['update_time'] > 0 ? date("Y-m-d H:i:s", $item['update_time']) : '',
@@ -168,6 +174,7 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 								}
 								?>
 							</td>
+							<td class="align-middle text-center"><?=$params['monitors_count'];?></td>
 							<td class="align-middle text-center"><?=($online ? '<span class="text-success">Online</span>: ':'<span class="text-danger">Offline</span>: ');?><?=$params['last_active_time'];?></td>
 							<td class="align-middle text-center"><?=$params['protocol_version'];?></td>
 							<td class="align-middle text-center"><?=$params['worker_version'];?></td>

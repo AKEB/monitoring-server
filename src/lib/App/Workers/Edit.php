@@ -5,7 +5,9 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 	private int $worker_id = 0;
 	private array $worker = [];
 	private bool $can_read = false;
+	private bool $can_write = false;
 	private bool $can_create = false;
+	private array $monitors_options = [];
 
 	public function Run($worker_id=0) {
 		$this->worker_id = intval($worker_id ?? 0);
@@ -72,6 +74,12 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 			}
 
 			$old_worker = [];
+			$update_jobs = [];
+			if (!isset($data['monitors']) || !is_array($data['monitors'])) {
+				$data['monitors'] = [];
+			}
+			$data['monitors'] = array_map('intval', $data['monitors']);
+
 			if (isset($params['id']) && $params['id']) {
 				if (!\Sessions::checkPermission(\Workers::PERMISSION_ACCESS, $params['id'], WRITE)) {
 					$this->error = \T::Worker_Edit_PermissionDenied();
@@ -82,12 +90,32 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					$this->error = \T::Worker_Edit_WorkerNotFound();
 					break;
 				}
+				$allowed_monitors = [];
+				$all_monitors = \Monitors::data(false, sql_pholder(' AND `type` NOT IN (?@)', [\Monitors::TYPE_FOLDER, \Monitors::TYPE_DOCKER]), '`id`');
+				if ($all_monitors) {
+					foreach ($all_monitors as $monitor) {
+						$allowed_monitors[intval($monitor['id'])] = \Sessions::checkPermission(\Monitors::PERMISSION_ACCESS, intval($monitor['id']), READ);
+					}
+				}
+				$old_jobs = get_hash(\MonitoringJobs::data(['worker_id' => $params['id']], false, '`monitor_id`'), 'monitor_id', 'monitor_id');
+				foreach ($old_jobs as $monitor_id => $_) {
+					if (!isset($allowed_monitors[$monitor_id]) || !$allowed_monitors[$monitor_id]) continue;
+					if (!in_array(intval($monitor_id), $data['monitors'], true)) {
+						$update_jobs[intval($monitor_id)] = -1;
+					}
+				}
+				foreach ($data['monitors'] as $monitor_id) {
+					if (!isset($allowed_monitors[$monitor_id]) || !$allowed_monitors[$monitor_id]) continue;
+					if (isset($update_jobs[$monitor_id])) continue;
+					if (isset($old_jobs[$monitor_id]) && $old_jobs[$monitor_id]) continue;
+					$update_jobs[$monitor_id] = 1;
+				}
 				foreach($params as $k=>$v) {
 					if ($old_worker[$k] == $v) {
 						unset($params[$k]);
 					}
 				}
-				if (!$params) {
+				if (!$params && !$update_jobs) {
 					$this->success = \T::Worker_Edit_NotingChanged();
 					break;
 				}
@@ -123,6 +151,31 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				if (!$worker) {
 					$this->error = \T::Worker_Edit_WorkerNotFound();
 					break;
+				}
+				foreach ($update_jobs as $monitor_id => $status) {
+					if ($status < 0) {
+						$old_job = \MonitoringJobs::get([
+							'monitor_id' => $monitor_id,
+							'worker_id' => $params['id'],
+						]);
+						if (isset($old_job['id']) && $old_job['id']) {
+							\MonitoringJobs::delete($old_job['id']);
+							$log_id = \Logs::delete_log(\MonitoringJobs::LOGS_OBJECT, $old_job['id'], $old_job);
+							\Logs::add_tag($log_id, \Monitors::LOGS_OBJECT, $monitor_id);
+							\Logs::add_tag($log_id, \Workers::LOGS_OBJECT, $params['id']);
+						}
+					} else {
+						$job = [
+							'monitor_id' => $monitor_id,
+							'worker_id' => $params['id'],
+							'create_time' => time(),
+							'update_time' => time(),
+						];
+						$job['id'] = \MonitoringJobs::save($job);
+						$log_id = \Logs::create_log(\MonitoringJobs::LOGS_OBJECT, $job['id'], $job);
+						\Logs::add_tag($log_id, \Monitors::LOGS_OBJECT, $monitor_id);
+						\Logs::add_tag($log_id, \Workers::LOGS_OBJECT, $params['id']);
+					}
 				}
 			} else {
 				// Create
@@ -180,6 +233,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 			if (!$this->can_read) {
 				e403();
 			}
+			$this->can_write = \Sessions::checkPermission(\Workers::PERMISSION_ACCESS, $this->worker_id, WRITE);
 		} else {
 			$this->can_read = \Sessions::checkPermission(\Workers::PERMISSION_ACCESS, -1, READ);
 			$this->can_create = \Sessions::checkPermission(\Workers::PERMISSION_CREATE, 0, WRITE);
@@ -191,6 +245,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 
 	private function get_data() {
 		if (!isset($this->worker['id'])) $this->worker['id'] = '';
+		$this->worker['monitors'] ??= [];
 
 		if ($this->worker['id']) {
 			$this->worker['create_date'] = (
@@ -205,6 +260,24 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				isset($this->worker['last_active_time']) && $this->worker['last_active_time'] > 0 ?
 				date('Y-m-d H:i:s', $this->worker['last_active_time']) : ''
 			);
+			$jobs = \MonitoringJobs::data(['worker_id' => $this->worker['id']], false, '`monitor_id`');
+			if ($jobs) {
+				foreach ($jobs as $job) {
+					$this->worker['monitors'][] = intval($job['monitor_id']);
+				}
+			}
+		}
+		$monitors = \Monitors::data(
+			false,
+			sql_pholder(' AND `type` NOT IN (?@) ORDER BY `title` ASC', [\Monitors::TYPE_FOLDER, \Monitors::TYPE_DOCKER]),
+			'`id`, `title`, `parent_id`'
+		);
+		if ($monitors) {
+			foreach ($monitors as $monitor) {
+				$monitor_id = intval($monitor['id']);
+				if (!\Sessions::checkPermission(\Monitors::PERMISSION_ACCESS, $monitor_id, READ)) continue;
+				$this->monitors_options[$monitor_id] = htmlspecialchars(\Monitors::get_monitor_title_with_folders($monitor_id));
+			}
 		}
 	}
 
@@ -282,11 +355,18 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 							'type' => 'number',
 							'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6'
 						]);
+						echo $this->template?->html_select("monitors[]", $this->monitors_options, $this->worker['monitors']??[], \T::Monitor_PageTitle(), false, [
+							'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+							'multiple' => true,
+							'readonly' => !$this->can_write,
+						]);
 					}
 					?>
-					<div class="d-flex flex-row-reverse">
-						<button type="submit" class="btn btn-primary" name="<?=$this->worker['id'] ? 'editWorker' : 'createWorker';?>" value="true"><?=($this->worker['id'] ? \T::Worker_Edit_ChangeButton() : \T::Worker_Edit_CreateButton());?></button>
-					</div>
+					<?php if ($this->can_write || $this->can_create) { ?>
+						<div class="d-flex flex-row-reverse">
+							<button type="submit" class="btn btn-primary" name="<?=$this->worker['id'] ? 'editWorker' : 'createWorker';?>" value="true"><?=($this->worker['id'] ? \T::Worker_Edit_ChangeButton() : \T::Worker_Edit_CreateButton());?></button>
+						</div>
+					<?php } ?>
 				</form>
 			</div>
 			<?php if ($this->worker['id']) { ?>
