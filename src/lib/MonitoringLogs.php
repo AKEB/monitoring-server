@@ -437,6 +437,9 @@ class MonitoringLogs extends \DB\MySQLObject {
 				foreach($workers as $item) {
 					$workers_hash[$item['id']]['title'] = $item['title'] ?? '';
 				}
+				uasort($workers_hash, function($a, $b) {
+					return strcasecmp($a['title'] ?? '', $b['title'] ?? '');
+				});
 			}
 			$return['workers'] = $workers_hash;
 
