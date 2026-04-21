@@ -8,6 +8,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 	private bool $can_write = false;
 	private bool $can_create = false;
 	private array $monitors_options = [];
+	private array $dockers_options = [];
 
 	public function Run($worker_id=0) {
 		$this->worker_id = intval($worker_id ?? 0);
@@ -75,10 +76,15 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 
 			$old_worker = [];
 			$update_jobs = [];
+			$update_dockers = [];
 			if (!isset($data['monitors']) || !is_array($data['monitors'])) {
 				$data['monitors'] = [];
 			}
 			$data['monitors'] = array_map('intval', $data['monitors']);
+			if (!isset($data['dockers']) || !is_array($data['dockers'])) {
+				$data['dockers'] = [];
+			}
+			$data['dockers'] = array_map('intval', $data['dockers']);
 
 			if (isset($params['id']) && $params['id']) {
 				if (!\Sessions::checkPermission(\Workers::PERMISSION_ACCESS, $params['id'], WRITE)) {
@@ -110,12 +116,33 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					if (isset($old_jobs[$monitor_id]) && $old_jobs[$monitor_id]) continue;
 					$update_jobs[$monitor_id] = 1;
 				}
+
+				$allowed_dockers = [];
+				$all_dockers = \Dockers::data(false, ' ORDER BY NULL', '`id`');
+				if ($all_dockers) {
+					foreach ($all_dockers as $docker) {
+						$allowed_dockers[intval($docker['id'])] = \Sessions::checkPermission(\Dockers::PERMISSION_ACCESS, intval($docker['id']), READ);
+					}
+				}
+				$old_dockers = get_hash(\MonitoringDockers::data(['worker_id' => $params['id']], false, '`docker_id`'), 'docker_id', 'docker_id');
+				foreach ($old_dockers as $docker_id => $_) {
+					if (!isset($allowed_dockers[$docker_id]) || !$allowed_dockers[$docker_id]) continue;
+					if (!in_array(intval($docker_id), $data['dockers'], true)) {
+						$update_dockers[intval($docker_id)] = -1;
+					}
+				}
+				foreach ($data['dockers'] as $docker_id) {
+					if (!isset($allowed_dockers[$docker_id]) || !$allowed_dockers[$docker_id]) continue;
+					if (isset($update_dockers[$docker_id])) continue;
+					if (isset($old_dockers[$docker_id]) && $old_dockers[$docker_id]) continue;
+					$update_dockers[$docker_id] = 1;
+				}
 				foreach($params as $k=>$v) {
 					if ($old_worker[$k] == $v) {
 						unset($params[$k]);
 					}
 				}
-				if (!$params && !$update_jobs) {
+				if (!$params && !$update_jobs && !$update_dockers) {
 					$this->success = \T::Worker_Edit_NotingChanged();
 					break;
 				}
@@ -174,6 +201,31 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 						$job['id'] = \MonitoringJobs::save($job);
 						$log_id = \Logs::create_log(\MonitoringJobs::LOGS_OBJECT, $job['id'], $job);
 						\Logs::add_tag($log_id, \Monitors::LOGS_OBJECT, $monitor_id);
+						\Logs::add_tag($log_id, \Workers::LOGS_OBJECT, $params['id']);
+					}
+				}
+				foreach ($update_dockers as $docker_id => $status) {
+					if ($status < 0) {
+						$old_job = \MonitoringDockers::get([
+							'docker_id' => $docker_id,
+							'worker_id' => $params['id'],
+						]);
+						if (isset($old_job['id']) && $old_job['id']) {
+							\MonitoringDockers::delete($old_job['id']);
+							$log_id = \Logs::delete_log(\MonitoringDockers::LOGS_OBJECT, $old_job['id'], $old_job);
+							\Logs::add_tag($log_id, \Dockers::LOGS_OBJECT, $docker_id);
+							\Logs::add_tag($log_id, \Workers::LOGS_OBJECT, $params['id']);
+						}
+					} else {
+						$job = [
+							'docker_id' => $docker_id,
+							'worker_id' => $params['id'],
+							'create_time' => time(),
+							'update_time' => time(),
+						];
+						$job['id'] = \MonitoringDockers::save($job);
+						$log_id = \Logs::create_log(\MonitoringDockers::LOGS_OBJECT, $job['id'], $job);
+						\Logs::add_tag($log_id, \Dockers::LOGS_OBJECT, $docker_id);
 						\Logs::add_tag($log_id, \Workers::LOGS_OBJECT, $params['id']);
 					}
 				}
@@ -246,6 +298,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 	private function get_data() {
 		if (!isset($this->worker['id'])) $this->worker['id'] = '';
 		$this->worker['monitors'] ??= [];
+		$this->worker['dockers'] ??= [];
 
 		if ($this->worker['id']) {
 			$this->worker['create_date'] = (
@@ -266,6 +319,12 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					$this->worker['monitors'][] = intval($job['monitor_id']);
 				}
 			}
+			$dockerJobs = \MonitoringDockers::data(['worker_id' => $this->worker['id']], false, '`docker_id`');
+			if ($dockerJobs) {
+				foreach ($dockerJobs as $job) {
+					$this->worker['dockers'][] = intval($job['docker_id']);
+				}
+			}
 		}
 		$monitors = \Monitors::data(
 			false,
@@ -277,6 +336,14 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				$monitor_id = intval($monitor['id']);
 				if (!\Sessions::checkPermission(\Monitors::PERMISSION_ACCESS, $monitor_id, READ)) continue;
 				$this->monitors_options[$monitor_id] = htmlspecialchars(\Monitors::get_monitor_title_with_folders($monitor_id));
+			}
+		}
+		$dockers = \Dockers::data(false, ' ORDER BY `title` ASC', '`id`, `title`');
+		if ($dockers) {
+			foreach ($dockers as $docker) {
+				$docker_id = intval($docker['id']);
+				if (!\Sessions::checkPermission(\Dockers::PERMISSION_ACCESS, $docker_id, READ)) continue;
+				$this->dockers_options[$docker_id] = htmlspecialchars(trim($docker['title'] ?? ''));
 			}
 		}
 	}
@@ -356,6 +423,11 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 							'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6'
 						]);
 						echo $this->template?->html_select("monitors[]", $this->monitors_options, $this->worker['monitors']??[], \T::Monitor_PageTitle(), false, [
+							'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+							'multiple' => true,
+							'readonly' => !$this->can_write,
+						]);
+						echo $this->template?->html_select("dockers[]", $this->dockers_options, $this->worker['dockers']??[], \T::Docker_PageTitle(), false, [
 							'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
 							'multiple' => true,
 							'readonly' => !$this->can_write,
