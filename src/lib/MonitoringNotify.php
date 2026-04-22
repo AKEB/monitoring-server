@@ -154,6 +154,25 @@ class MonitoringNotify extends \DB\MySQLObject {
 					continue;
 				}
 				continue;
+			} elseif ($notify['type'] == \Notify::TYPE_MAX) {
+				try {
+					$text_send = $title_send."\n".$text_send;
+					$text_send .= "\n\n".'<i>Alert: '.$notify['title'].'</i>';
+					$token = $notify['json_data']['max_token'] ?? '';
+					if ($token === '' || !isset($notify['receiver']) || trim((string) $notify['receiver']) === '') {
+						continue;
+					}
+					$body = mb_substr($text_send, 0, 4000);
+					\MaxMessenger::send(
+						$token,
+						trim((string) $notify['receiver']),
+						$body,
+						'html'
+					);
+				} catch (\Exception $e) {
+					continue;
+				}
+				continue;
 			} else {
 				continue;
 			}

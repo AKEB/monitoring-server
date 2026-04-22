@@ -100,6 +100,10 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					if (isset($data['json_data']['gotify_priority']) && $data['json_data']['gotify_priority'] && trim($data['json_data']['gotify_priority']) != '') {
 						$params['json_data']['gotify_priority'] = trim($data['json_data']['gotify_priority']);
 					}
+				} elseif ($params['type'] == \Notify::TYPE_MAX) {
+					if (isset($data['json_data']['max_token']) && $data['json_data']['max_token'] && trim($data['json_data']['max_token']) != '') {
+						$params['json_data']['max_token'] = trim($data['json_data']['max_token']);
+					}
 				}
 			}
 
@@ -217,6 +221,34 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 						$curl->exec();
 					} catch (\Exception $e) {
 						$this->error = \T::Notify_Edit_TestError(31);
+						break;
+					}
+					$this->success = \T::Notify_Edit_TestSuccess();
+					break;
+				} else if ($params['type'] == \Notify::TYPE_MAX) {
+					if (!isset($params['json_data']['max_token']) || !$params['json_data']['max_token']) {
+						$this->error = \T::Notify_Edit_TestError(40);
+						break;
+					}
+					$maxReceiverStr = trim((string) ($params['receiver'] ?? ''));
+					if ($maxReceiverStr === '' || !preg_match('/^-?\d+$/', $maxReceiverStr)
+						|| $maxReceiverStr === '0' || $maxReceiverStr === '-0') {
+						$this->error = \T::Notify_Edit_TestError(42);
+						break;
+					}
+					try {
+						$ok = \MaxMessenger::send(
+							$params['json_data']['max_token'],
+							$maxReceiverStr,
+							'Test Message '.date('Y-m-d H:i:s', time()),
+							'html'
+						);
+						if (!$ok) {
+							$this->error = \T::Notify_Edit_TestError(41);
+							break;
+						}
+					} catch (\Exception $e) {
+						$this->error = \T::Notify_Edit_TestError(41);
 						break;
 					}
 					$this->success = \T::Notify_Edit_TestSuccess();
@@ -415,10 +447,20 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
+					?>
+					<div class="type-dependence type-<?=\Notify::TYPE_MAX;?> col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6 mb-2">
+						<small class="text-muted"><?=\T::Notify_Edit_MaxReceiverHint();?></small>
+					</div>
+					<?php
 					if ($secrets_show) {
 						echo $this->template->html_input("json_data[telegram_bot_token]", $this->notify['json_data']['telegram_bot_token']??'', \T::Notify_Edit_TelegramBotToken(), false, [
 							'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
 							'global-class' => 'type-dependence type-'.\Notify::TYPE_TELEGRAM,
+							'readonly' => !($this->can_write || $this->can_create),
+						]);
+						echo $this->template->html_input("json_data[max_token]", $this->notify['json_data']['max_token']??'', \T::Notify_Edit_MaxToken(), false, [
+							'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+							'global-class' => 'type-dependence type-'.\Notify::TYPE_MAX,
 							'readonly' => !($this->can_write || $this->can_create),
 						]);
 						echo $this->template->html_input("json_data[mattermost_url]", $this->notify['json_data']['mattermost_url']??'', \T::Notify_Edit_MattermostDomain(), false, [

@@ -689,6 +689,14 @@ class T {
 	public static function Monitor_Edit_Method(...$argv): string { return ''; }
 
 	/**
+	 * Monitor_Edit_RequestHeaders
+	 * 
+	 * @return string "HTTP headers (one per line: Key: Value)"
+	 * @return string "HTTP заголовки (по одному на строку: Key: Value)"
+	 */
+	public static function Monitor_Edit_RequestHeaders(...$argv): string { return ''; }
+
+	/**
 	 * Monitor_Edit_Timeout
 	 * 
 	 * @return string "Request timeout"
@@ -759,6 +767,30 @@ class T {
 	 * @return string "Proxy Тип"
 	 */
 	public static function Monitor_Edit_ProxyType(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_JSONPath
+	 * 
+	 * @return string "JSON path (example: data.configurationInfo.Status)"
+	 * @return string "JSON путь (например: data.configurationInfo.Status)"
+	 */
+	public static function Monitor_Edit_JSONPath(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_JSONExpectedValue
+	 * 
+	 * @return string "Expected JSON value"
+	 * @return string "Ожидаемое значение JSON"
+	 */
+	public static function Monitor_Edit_JSONExpectedValue(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_JSONExpectedType
+	 * 
+	 * @return string "Expected JSON value type"
+	 * @return string "Тип ожидаемого значения JSON"
+	 */
+	public static function Monitor_Edit_JSONExpectedType(...$argv): string { return ''; }
 
 	/**
 	 * Monitor_Edit_Workers
@@ -945,6 +977,14 @@ class T {
 	public static function Monitor_Type_ExporterCPU(...$argv): string { return ''; }
 
 	/**
+	 * Monitor_Type_HTTPJson
+	 * 
+	 * @return string "HTTP(s) JSON check"
+	 * @return string "HTTP(s) JSON check"
+	 */
+	public static function Monitor_Type_HTTPJson(...$argv): string { return ''; }
+
+	/**
 	 * Dashboard_Response
 	 * 
 	 * @return string "Response"
@@ -1129,6 +1169,14 @@ class T {
 	public static function Notify_Type_Gotify(...$argv): string { return ''; }
 
 	/**
+	 * Notify_Type_Max
+	 * 
+	 * @return string "Max"
+	 * @return string "Max"
+	 */
+	public static function Notify_Type_Max(...$argv): string { return ''; }
+
+	/**
 	 * Notify_Table_Title
 	 * 
 	 * @return string "Title"
@@ -1255,6 +1303,22 @@ class T {
 	 * @return string "Токен бота Telegram"
 	 */
 	public static function Notify_Edit_TelegramBotToken(...$argv): string { return ''; }
+
+	/**
+	 * Notify_Edit_MaxToken
+	 * 
+	 * @return string "Max access token (Authorization)"
+	 * @return string "Токен доступа Max (Authorization)"
+	 */
+	public static function Notify_Edit_MaxToken(...$argv): string { return ''; }
+
+	/**
+	 * Notify_Edit_MaxReceiverHint
+	 * 
+	 * @return string "In «Receiver»: positive user_id for a DM, or negative chat_id for a group chat."
+	 * @return string "В поле «Получатель»: положительный user_id личного чата или отрицательный chat_id группы."
+	 */
+	public static function Notify_Edit_MaxReceiverHint(...$argv): string { return ''; }
 
 	/**
 	 * Notify_Edit_MattermostDomain

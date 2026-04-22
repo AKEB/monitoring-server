@@ -171,6 +171,7 @@ Notify:
     Telegram: "Telegram"
     Mattermost: "Mattermost"
     Gotify: "Gottify"
+    Max: "Max"
   Table:
     Title: "Название"
     Status: "Статус"
@@ -189,6 +190,8 @@ Notify:
     Type: "Тип"
     Receiver: "Получатель"
     TelegramBotToken: "Токен бота Telegram"
+    MaxToken: "Токен доступа Max (Authorization)"
+    MaxReceiverHint: "В поле «Получатель»: положительный user_id личного чата или отрицательный chat_id группы."
     MattermostDomain: "Домен Mattermost сервера"
     MattermostToken: "Токен Mattermost"
     GotifyServer: "Gotify сервер"
