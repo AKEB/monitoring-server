@@ -8,6 +8,9 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 	private bool $can_write = false;
 	private bool $can_create = false;
 
+	/** Результат «получить из последнего сообщения Max» (один запрос POST) */
+	private ?array $maxFetchParsed = null;
+
 	public function Run($notify_id=0) {
 		$this->notify_id = intval($notify_id ?? 0);
 		$this->check_auth();
@@ -31,6 +34,15 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 	private function save_notify($data) {
 		if (!isset($data)) return;
 		if (!$data) return;
+
+		$this->maxFetchParsed = null;
+		if (isset($data['maxFetchLastMessage']) && $data['maxFetchLastMessage'] === 'true') {
+			$this->handleMaxFetchLastMessage($data);
+			foreach ($data as $key => $value) {
+				$this->notify[$key] = $value;
+			}
+			return;
+		}
 
 		$testNotify = false;
 		if (isset($data['testNotify']) && $data['testNotify'] == 'true') {
@@ -403,6 +415,80 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 		}
 	}
 
+	private function handleMaxFetchLastMessage(array $data): void {
+		$type = intval($data['type'] ?? 0);
+		if ($type !== \Notify::TYPE_MAX) {
+			$this->error = \T::Notify_Edit_MaxFetchWrongType();
+			return;
+		}
+		$token = '';
+		if (isset($data['json_data']['max_token']) && trim((string) $data['json_data']['max_token']) !== '') {
+			$token = trim((string) $data['json_data']['max_token']);
+		}
+		if ($token === '' && $this->notify_id) {
+			if (!\Sessions::checkPermission(\Notify::PERMISSION_SECRETS, $this->notify_id, READ)) {
+				$this->error = \T::Notify_Edit_MaxFetchNeedToken();
+				return;
+			}
+			$row = \Notify::get(['id' => $this->notify_id]);
+			if ($row && !empty($row['json_data'])) {
+				$jd = is_string($row['json_data']) ? json_decode($row['json_data'], true) : $row['json_data'];
+				if (is_array($jd) && !empty($jd['max_token'])) {
+					$token = trim((string) $jd['max_token']);
+				}
+			}
+		}
+		if ($token === '') {
+			$this->error = \T::Notify_Edit_MaxFetchNoToken();
+			return;
+		}
+		if ($this->notify_id) {
+			if (!\Sessions::checkPermission(\Notify::PERMISSION_ACCESS, $this->notify_id, READ)) {
+				$this->error = \T::Notify_Edit_PermissionDenied();
+				return;
+			}
+		} else {
+			if (!\Sessions::checkPermission(\Notify::PERMISSION_CREATE, 0, WRITE)) {
+				$this->error = \T::Notify_Create_PermissionDenied();
+				return;
+			}
+		}
+
+		$updatesRes = \MaxMessenger::fetchUpdates($token);
+		$parsed = null;
+		if ($updatesRes['ok'] && is_array($updatesRes['data'])) {
+			$parsed = \MaxMessenger::parseLastMessageFromUpdates($updatesRes['data']);
+		}
+
+		$chatsRes = \MaxMessenger::fetchChats($token);
+		$chats = [];
+		if ($chatsRes['ok'] && is_array($chatsRes['data']) && isset($chatsRes['data']['chats']) && is_array($chatsRes['data']['chats'])) {
+			$chats = $chatsRes['data']['chats'];
+		}
+
+		$hasData = ($parsed !== null || $chats !== []);
+		if ($hasData) {
+			$this->maxFetchParsed = [
+				'last_message' => $parsed,
+				'chats' => $chats,
+			];
+			return;
+		}
+		if (!$updatesRes['ok'] && !$chatsRes['ok']) {
+			$this->error = \T::Notify_Edit_MaxFetchHttp(max(intval($updatesRes['http_code']), intval($chatsRes['http_code'])));
+			return;
+		}
+		if (!$updatesRes['ok']) {
+			$this->error = \T::Notify_Edit_MaxFetchHttp(intval($updatesRes['http_code']));
+			return;
+		}
+		if (!$chatsRes['ok']) {
+			$this->error = \T::Notify_Edit_MaxFetchHttp(intval($chatsRes['http_code']));
+			return;
+		}
+		$this->error = \T::Notify_Edit_MaxFetchNoData();
+	}
+
 	private function print_header() {
 		?>
 		<div class="float-start"><h2><i class="bi bi-bell"></i> <?=\T::Notify_PageTitle();?></h2></div>
@@ -491,11 +577,68 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 						echo $this->template->html_input("update_date", $this->notify['update_date']??'', \T::Notify_Edit_UpdateTime(), false, ['readonly' => true]);
 					}
 					?>
-					<div class="d-flex flex-row-reverse">
+					<div class="d-flex flex-row-reverse flex-wrap gap-2">
 						<button type="submit" class="btn btn-primary me-2" name="<?=$this->notify['id'] ? 'editNotify' : 'createNotify';?>" value="true"><?=($this->notify['id'] ? \T::Notify_Edit_ChangeButton() : \T::Notify_Edit_CreateButton());?></button>
 						<button type="submit" class="btn btn-warning me-2" name="testNotify" value="true"><?=\T::Notify_Edit_TestButton();?></button>
+						<button type="submit" class="btn btn-secondary me-2 type-dependence type-<?=\Notify::TYPE_MAX;?>" name="maxFetchLastMessage" value="true" formnovalidate><?=\T::Notify_Edit_MaxFetchLastButton();?></button>
 					</div>
 				</form>
+				<?php
+				if ($this->maxFetchParsed !== null) {
+					$mf = $this->maxFetchParsed;
+					$lm = $mf['last_message'] ?? null;
+					$chats = isset($mf['chats']) && is_array($mf['chats']) ? $mf['chats'] : [];
+					$blocks = [];
+					if (is_array($lm)) {
+						$msgRaw = (string) ($lm['message'] ?? '');
+						$msgEmpty = !empty($lm['message_empty']);
+						$msgLine = $msgEmpty
+							? \T::Notify_Edit_MaxFetchNoMessageText()
+							: \T::Notify_Edit_MaxFetchLineMessage($msgRaw);
+						$prePlain = \T::Notify_Edit_MaxFetchLineChatId((string) ($lm['chat_id'] ?? ''))
+							."\n".\T::Notify_Edit_MaxFetchLineUserId((string) ($lm['user_id'] ?? ''))
+							."\n".$msgLine;
+						$blocks[] = '<strong>'.htmlspecialchars(\T::Notify_Edit_MaxFetchSectionLastMessage(), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8').'</strong>'
+							.'<pre class="mb-0 mt-1 small">'.htmlspecialchars($prePlain, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8').'</pre>';
+					}
+					if ($chats) {
+						$rows = '';
+						foreach ($chats as $c) {
+							if (!is_array($c)) {
+								continue;
+							}
+							$cid = htmlspecialchars((string) ($c['chat_id'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+							$ctype = htmlspecialchars((string) ($c['type'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+							$ctitle = htmlspecialchars((string) ($c['title'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+							$rows .= '<tr><td class="text-nowrap">'.$cid.'</td><td>'.$ctype.'</td><td>'.$ctitle.'</td></tr>';
+						}
+						$blocks[] = '<strong class="d-block mt-3">'.htmlspecialchars(\T::Notify_Edit_MaxFetchSectionChats(), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8').'</strong>'
+							.'<div class="table-responsive mt-1"><table class="table table-sm table-bordered mb-0">'
+							.'<thead><tr>'
+							.'<th>'.htmlspecialchars(\T::Notify_Edit_MaxFetchColChatId(), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8').'</th>'
+							.'<th>'.htmlspecialchars(\T::Notify_Edit_MaxFetchColType(), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8').'</th>'
+							.'<th>'.htmlspecialchars(\T::Notify_Edit_MaxFetchColTitle(), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8').'</th>'
+							.'</tr></thead><tbody>'.$rows.'</tbody></table></div>';
+					}
+					$modalInner = implode('', $blocks);
+					?>
+				<div class="modal fade" id="max-fetch-last-modal" tabindex="-1" aria-labelledby="max-fetch-last-modal-label" aria-hidden="true">
+					<div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
+						<div class="modal-content">
+							<div class="modal-header">
+								<h5 class="modal-title" id="max-fetch-last-modal-label"><?=\T::Notify_Edit_MaxFetchModalTitle();?></h5>
+								<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+							</div>
+							<div class="modal-body">
+								<?=$modalInner;?>
+							</div>
+							<div class="modal-footer">
+								<button type="button" class="btn btn-primary" data-bs-dismiss="modal"><?=\T::Notify_Edit_MaxFetchModalClose();?></button>
+							</div>
+						</div>
+					</div>
+				</div>
+				<?php } ?>
 			</div>
 		</div>
 		<?php
@@ -523,6 +666,12 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				$('form').on('submit', function(event) {
 					$('form').addClass("was-validated");
 				});
+				<?php if ($this->maxFetchParsed !== null) { ?>
+				var _m = document.getElementById('max-fetch-last-modal');
+				if (_m && window.bootstrap && bootstrap.Modal) {
+					bootstrap.Modal.getOrCreateInstance(_m).show();
+				}
+				<?php } ?>
 			});
 		</script>
 		<?php

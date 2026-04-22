@@ -1321,6 +1321,166 @@ class T {
 	public static function Notify_Edit_MaxReceiverHint(...$argv): string { return ''; }
 
 	/**
+	 * Notify_Edit_MaxFetchLastButton
+	 * 
+	 * @return string "Load from Max (last message + chat list)"
+	 * @return string "Получить из Max (последнее сообщение и список чатов)"
+	 */
+	public static function Notify_Edit_MaxFetchLastButton(...$argv): string { return ''; }
+
+	/**
+	 * Notify_Edit_MaxFetchWrongType
+	 * 
+	 * @return string "Select notification type «Max» first."
+	 * @return string "Сначала выберите тип уведомления «Max»."
+	 */
+	public static function Notify_Edit_MaxFetchWrongType(...$argv): string { return ''; }
+
+	/**
+	 * Notify_Edit_MaxFetchNeedToken
+	 * 
+	 * @return string "Enter the token in the form, or open this page with permission to view secrets."
+	 * @return string "Укажите токен в форме или откройте страницу с правом на просмотр секретов."
+	 */
+	public static function Notify_Edit_MaxFetchNeedToken(...$argv): string { return ''; }
+
+	/**
+	 * Notify_Edit_MaxFetchNoToken
+	 * 
+	 * @return string "Enter the Max access token."
+	 * @return string "Укажите токен доступа Max."
+	 */
+	public static function Notify_Edit_MaxFetchNoToken(...$argv): string { return ''; }
+
+	/**
+	 * Notify_Edit_MaxFetchHttp
+	 * 
+	 * @return string "Max API request failed (HTTP %d)."
+	 * @return string "Запрос к API Max не удался (HTTP %d)."
+	 */
+	public static function Notify_Edit_MaxFetchHttp(...$argv): string { return ''; }
+
+	/**
+	 * Notify_Edit_MaxFetchNoMessage
+	 * 
+	 * @return string "No incoming text messages in API updates. Write to the bot in DM or a group, then try again."
+	 * @return string "В ответе API нет входящих сообщений с текстом. Напишите боту в личку или в группу и нажмите снова."
+	 */
+	public static function Notify_Edit_MaxFetchNoMessage(...$argv): string { return ''; }
+
+	/**
+	 * Notify_Edit_MaxFetchNoData
+	 * 
+	 * @return string "No matching incoming message in /updates and GET /chats returned an empty list."
+	 * @return string "В /updates нет подходящего входящего сообщения, а GET /chats вернул пустой список."
+	 */
+	public static function Notify_Edit_MaxFetchNoData(...$argv): string { return ''; }
+
+	/**
+	 * Notify_Edit_MaxFetchSuccess
+	 * 
+	 * @return string "Loaded data from the last message."
+	 * @return string "Данные из последнего сообщения получены."
+	 */
+	public static function Notify_Edit_MaxFetchSuccess(...$argv): string { return ''; }
+
+	/**
+	 * Notify_Edit_MaxFetchNoMessageText
+	 * 
+	 * @return string "(no text — attachments only or empty body; IDs above are still valid)"
+	 * @return string "(текста нет — только вложения или пустое тело; id выше всё равно можно использовать)"
+	 */
+	public static function Notify_Edit_MaxFetchNoMessageText(...$argv): string { return ''; }
+
+	/**
+	 * Notify_Edit_MaxFetchResultTitle
+	 * 
+	 * @return string "Last incoming message (Max)"
+	 * @return string "Последнее входящее сообщение (Max)"
+	 */
+	public static function Notify_Edit_MaxFetchResultTitle(...$argv): string { return ''; }
+
+	/**
+	 * Notify_Edit_MaxFetchLineChatId
+	 * 
+	 * @return string "chat_id: %s"
+	 * @return string "chat_id: %s"
+	 */
+	public static function Notify_Edit_MaxFetchLineChatId(...$argv): string { return ''; }
+
+	/**
+	 * Notify_Edit_MaxFetchLineUserId
+	 * 
+	 * @return string "user_id (sender): %s"
+	 * @return string "user_id (отправитель): %s"
+	 */
+	public static function Notify_Edit_MaxFetchLineUserId(...$argv): string { return ''; }
+
+	/**
+	 * Notify_Edit_MaxFetchLineMessage
+	 * 
+	 * @return string "Message: %s"
+	 * @return string "Сообщение: %s"
+	 */
+	public static function Notify_Edit_MaxFetchLineMessage(...$argv): string { return ''; }
+
+	/**
+	 * Notify_Edit_MaxFetchModalTitle
+	 * 
+	 * @return string "Max: message and chats"
+	 * @return string "Max: сообщение и чаты"
+	 */
+	public static function Notify_Edit_MaxFetchModalTitle(...$argv): string { return ''; }
+
+	/**
+	 * Notify_Edit_MaxFetchModalClose
+	 * 
+	 * @return string "Close"
+	 * @return string "Закрыть"
+	 */
+	public static function Notify_Edit_MaxFetchModalClose(...$argv): string { return ''; }
+
+	/**
+	 * Notify_Edit_MaxFetchSectionLastMessage
+	 * 
+	 * @return string "Last incoming message (/updates)"
+	 * @return string "Последнее входящее сообщение (/updates)"
+	 */
+	public static function Notify_Edit_MaxFetchSectionLastMessage(...$argv): string { return ''; }
+
+	/**
+	 * Notify_Edit_MaxFetchSectionChats
+	 * 
+	 * @return string "Bot chats (GET /chats)"
+	 * @return string "Чаты бота (GET /chats)"
+	 */
+	public static function Notify_Edit_MaxFetchSectionChats(...$argv): string { return ''; }
+
+	/**
+	 * Notify_Edit_MaxFetchColChatId
+	 * 
+	 * @return string "chat_id"
+	 * @return string "chat_id"
+	 */
+	public static function Notify_Edit_MaxFetchColChatId(...$argv): string { return ''; }
+
+	/**
+	 * Notify_Edit_MaxFetchColType
+	 * 
+	 * @return string "Type"
+	 * @return string "Тип"
+	 */
+	public static function Notify_Edit_MaxFetchColType(...$argv): string { return ''; }
+
+	/**
+	 * Notify_Edit_MaxFetchColTitle
+	 * 
+	 * @return string "Title"
+	 * @return string "Название"
+	 */
+	public static function Notify_Edit_MaxFetchColTitle(...$argv): string { return ''; }
+
+	/**
 	 * Notify_Edit_MattermostDomain
 	 * 
 	 * @return string "Domain of mattermost server"
