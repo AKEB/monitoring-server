@@ -28,6 +28,7 @@ class MaxMessenger {
 		} else {
 			$query['user_id'] = $raw;
 		}
+		$query['disable_link_preview'] = false;
 		$url = self::API_BASE . '?' . http_build_query($query);
 		$body = ['text' => $text];
 		if ($format !== null && $format !== '') {
