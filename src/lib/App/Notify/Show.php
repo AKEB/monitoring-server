@@ -69,7 +69,7 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 
 		\Notify::delete(['id' => $notify_id]);
 		\Logs::delete_log(\Notify::LOGS_OBJECT, $notify_id, $notify);
-		common_redirect('/notify/');
+		common_redirect('/admin/notify/');
 	}
 
 	private function get_data() {
@@ -201,11 +201,11 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 				new DataTable('#Table');
 
 				$('.createActionButton').on('click', function() {
-					window.location.href = '/notify/edit/';
+					window.location.href = '/admin/notify/edit/';
 				});
 
 				$('.editActionButton').on('click', function() {
-					window.location.href = '/notify/edit/' + $(this).data('object-id') + '/';
+					window.location.href = '/admin/notify/edit/' + $(this).data('object-id') + '/';
 				});
 
 				$('.deleteActionButton').on('click', function() {
@@ -221,7 +221,7 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 				modalBody.textContent = '<?=\T::Notify_Delete_Confirmation();?>'.replace('{title}', objectTitle);
 
 				confirmBtn.onclick = function() {
-					window.location.href = '/notify/delete/' + objectId + '/';
+					window.location.href = '/admin/notify/delete/' + objectId + '/';
 				};
 
 				modal.show();

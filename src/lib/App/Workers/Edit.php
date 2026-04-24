@@ -265,9 +265,9 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				}
 			}
 			if ($worker_id) {
-				common_redirect('/workers/edit/' . $worker_id . '/');
+				common_redirect('/admin/workers/edit/' . $worker_id . '/');
 			} else {
-				common_redirect('/workers/');
+				common_redirect('/admin/workers/');
 			}
 		} while(false);
 		foreach($data as $key => $value) {
@@ -279,7 +279,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 		if ($this->worker_id) {
 			$this->worker = \Workers::get(['id' => $this->worker_id]);
 			if (!$this->worker) {
-				common_redirect('/workers/');
+				common_redirect('/admin/workers/');
 			}
 			$this->can_read = \Sessions::checkPermission(\Workers::PERMISSION_ACCESS, $this->worker_id, READ);
 			if (!$this->can_read) {

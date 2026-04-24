@@ -358,9 +358,9 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				}
 			}
 			if ($notify_id) {
-				common_redirect('/notify/edit/' . $notify_id . '/');
+				common_redirect('/admin/notify/edit/' . $notify_id . '/');
 			} else {
-				common_redirect('/notify/');
+				common_redirect('/admin/notify/');
 			}
 		} while(false);
 		foreach($data as $key => $value) {
@@ -372,7 +372,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 		if ($this->notify_id) {
 			$this->notify = \Notify::get(['id' => $this->notify_id]);
 			if (!$this->notify) {
-				common_redirect('/notify/');
+				common_redirect('/admin/notify/');
 			}
 			$this->can_read = \Sessions::checkPermission(\Notify::PERMISSION_ACCESS, $this->notify_id, READ);
 			$this->can_write = \Sessions::checkPermission(\Notify::PERMISSION_ACCESS, $this->notify_id, WRITE);

@@ -59,19 +59,19 @@ require_once("./autoload.php");
 
 \Template::addMenuItem(new \MenuItem('', \T::Menu_Home(), '/', null, null));
 \Template::addMenuItem(new \MenuItem('bi bi-hammer', \T::Maintenances_Menu(), '/maintenances/', null, null));
-\Template::addMenuAdminItem(new \MenuItem('bi bi-hdd-network', \T::Worker_Menu(), '/workers/', null, [
+\Template::addMenuAdminItem(new \MenuItem('bi bi-hdd-network', \T::Worker_Menu(), '/admin/workers/', null, [
 	new \MenuPermissionItem(\Workers::PERMISSION_ACCESS, -1, READ),
 	new \MenuPermissionItem(\Workers::PERMISSION_CREATE, 0, WRITE),
 ]));
-\Template::addMenuAdminItem(new \MenuItem('bi bi-question-octagon', \T::Monitor_Menu(), '/monitors/', null, [
+\Template::addMenuAdminItem(new \MenuItem('bi bi-question-octagon', \T::Monitor_Menu(), '/admin/monitors/', null, [
 	new \MenuPermissionItem(\Monitors::PERMISSION_ACCESS, -1, READ),
 	new \MenuPermissionItem(\Monitors::PERMISSION_CREATE, 0, WRITE),
 ]));
-\Template::addMenuAdminItem(new \MenuItem('bi bi-bell', \T::Notify_Menu(), '/notify/', null, [
+\Template::addMenuAdminItem(new \MenuItem('bi bi-bell', \T::Notify_Menu(), '/admin/notify/', null, [
 	new \MenuPermissionItem(\Notify::PERMISSION_ACCESS, -1, READ),
 	new \MenuPermissionItem(\Notify::PERMISSION_CREATE, 0, WRITE),
 ]));
-\Template::addMenuAdminItem(new \MenuItem('bi bi-box', \T::Docker_Menu(), '/dockers/', null, [
+\Template::addMenuAdminItem(new \MenuItem('bi bi-box', \T::Docker_Menu(), '/admin/dockers/', null, [
 	new \MenuPermissionItem(\Dockers::PERMISSION_ACCESS, -1, READ),
 	new \MenuPermissionItem(\Dockers::PERMISSION_CREATE, 0, WRITE),
 ]));
@@ -81,33 +81,33 @@ require_once("./autoload.php");
 \Websocket::addAction('monitor_show_data', '\\MonitorsWebsocket');
 
 // ADD Another Routes
-\Routes::addRoute('/workers/edit/(?P<worker_id>\d+)/', '\\App\\Workers\\Edit');
-\Routes::addRoute('/workers/edit/', '\\App\\Workers\\Edit');
-\Routes::addRoute('/workers/(?P<action>[^/]+)/(?P<worker_id>\d+)/', '\\App\\Workers\\Show');
-\Routes::addRoute('/workers/', '\\App\\Workers\\Show');
+\Routes::addRoute('/admin/workers/edit/(?P<worker_id>\d+)/', '\\App\\Workers\\Edit');
+\Routes::addRoute('/admin/workers/edit/', '\\App\\Workers\\Edit');
+\Routes::addRoute('/admin/workers/(?P<action>[^/]+)/(?P<worker_id>\d+)/', '\\App\\Workers\\Show');
+\Routes::addRoute('/admin/workers/', '\\App\\Workers\\Show');
 
-\Routes::addRoute('/monitors/(?P<parent_id>\d+)/edit/(?P<monitor_id>\d+)/', '\\App\\Monitors\\Edit');
-\Routes::addRoute('/monitors/(?P<parent_id>\d+)/edit/', '\\App\\Monitors\\Edit');
-\Routes::addRoute('/monitors/(?P<parent_id>\d+)/(?P<action>[^/]+)/(?P<monitor_id>\d+)/', '\\App\\Monitors\\Show');
-\Routes::addRoute('/monitors/(?P<parent_id>\d+)/', '\\App\\Monitors\\Show');
-\Routes::addRoute('/monitors/', '\\App\\Monitors\\Show');
+\Routes::addRoute('/admin/monitors/(?P<parent_id>\d+)/edit/(?P<monitor_id>\d+)/', '\\App\\Monitors\\Edit');
+\Routes::addRoute('/admin/monitors/(?P<parent_id>\d+)/edit/', '\\App\\Monitors\\Edit');
+\Routes::addRoute('/admin/monitors/(?P<parent_id>\d+)/(?P<action>[^/]+)/(?P<monitor_id>\d+)/', '\\App\\Monitors\\Show');
+\Routes::addRoute('/admin/monitors/(?P<parent_id>\d+)/', '\\App\\Monitors\\Show');
+\Routes::addRoute('/admin/monitors/', '\\App\\Monitors\\Show');
 
 \Routes::addRoute('/monitor/(?P<monitor_id>\d+)/', '\\App\\Main');
 
-\Routes::addRoute('/notify/edit/(?P<notify_id>\d+)/', '\\App\\Notify\\Edit');
-\Routes::addRoute('/notify/edit/', '\\App\\Notify\\Edit');
-\Routes::addRoute('/notify/(?P<action>[^/]+)/(?P<notify_id>\d+)/', '\\App\\Notify\\Show');
-\Routes::addRoute('/notify/', '\\App\\Notify\\Show');
+\Routes::addRoute('/admin/notify/edit/(?P<notify_id>\d+)/', '\\App\\Notify\\Edit');
+\Routes::addRoute('/admin/notify/edit/', '\\App\\Notify\\Edit');
+\Routes::addRoute('/admin/notify/(?P<action>[^/]+)/(?P<notify_id>\d+)/', '\\App\\Notify\\Show');
+\Routes::addRoute('/admin/notify/', '\\App\\Notify\\Show');
 
 \Routes::addRoute('/maintenances/edit/(?P<maintenance_id>\d+)/', '\\App\\Maintenances\\Edit');
 \Routes::addRoute('/maintenances/edit/', '\\App\\Maintenances\\Edit');
 \Routes::addRoute('/maintenances/(?P<action>[^/]+)/(?P<maintenance_id>\d+)/', '\\App\\Maintenances\\Show');
 \Routes::addRoute('/maintenances/', '\\App\\Maintenances\\Show');
 
-\Routes::addRoute('/dockers/edit/(?P<docker_id>\d+)/', '\\App\\Dockers\\Edit');
-\Routes::addRoute('/dockers/edit/', '\\App\\Dockers\\Edit');
-\Routes::addRoute('/dockers/(?P<action>[^/]+)/(?P<docker_id>\d+)/', '\\App\\Dockers\\Show');
-\Routes::addRoute('/dockers/', '\\App\\Dockers\\Show');
+\Routes::addRoute('/admin/dockers/edit/(?P<docker_id>\d+)/', '\\App\\Dockers\\Edit');
+\Routes::addRoute('/admin/dockers/edit/', '\\App\\Dockers\\Edit');
+\Routes::addRoute('/admin/dockers/(?P<action>[^/]+)/(?P<docker_id>\d+)/', '\\App\\Dockers\\Show');
+\Routes::addRoute('/admin/dockers/', '\\App\\Dockers\\Show');
 
 \MonitoringSubscribe::init();
 

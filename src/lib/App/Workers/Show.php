@@ -80,7 +80,7 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 		\MonitoringLogsAggregate::delete(['worker_id' => $workerId]);
 		\Workers::delete(['id' => $workerId]);
 		$log_id = \Logs::delete_log(\Workers::LOGS_OBJECT, $workerId, $worker);
-		common_redirect('/workers/');
+		common_redirect('/admin/workers/');
 	}
 
 	private function get_data() {
@@ -234,11 +234,11 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 				new DataTable('#Table');
 
 				$('.createActionButton').on('click', function() {
-					window.location.href = '/workers/edit/';
+					window.location.href = '/admin/workers/edit/';
 				});
 
 				$('.editActionButton').on('click', function() {
-					window.location.href = '/workers/edit/' + $(this).data('object-id') + '/';
+					window.location.href = '/admin/workers/edit/' + $(this).data('object-id') + '/';
 				});
 
 				$('.deleteActionButton').on('click', function() {
@@ -254,7 +254,7 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 				modalBody.textContent = '<?=\T::Worker_Delete_Confirmation();?>'.replace('{title}', objectTitle);
 
 				confirmBtn.onclick = function() {
-					window.location.href = '/workers/delete/' + objectId + '/';
+					window.location.href = '/admin/workers/delete/' + objectId + '/';
 				};
 
 				modal.show();

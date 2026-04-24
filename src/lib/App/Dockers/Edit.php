@@ -321,9 +321,9 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				}
 			}
 			if ($docker_id) {
-				common_redirect('/dockers/edit/' . $docker_id . '/');
+				common_redirect('/admin/dockers/edit/' . $docker_id . '/');
 			} else {
-				common_redirect('/dockers/');
+				common_redirect('/admin/dockers/');
 			}
 		} while(false);
 		foreach($data as $key => $value) {
@@ -335,7 +335,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 		if ($this->docker_id) {
 			$this->docker = \Dockers::get(['id' => $this->docker_id]);
 			if (!$this->docker) {
-				common_redirect('/dockers/');
+				common_redirect('/admin/dockers/');
 			}
 			$this->can_read = \Sessions::checkPermission(\Dockers::PERMISSION_ACCESS, $this->docker_id, READ);
 			$this->can_write = \Sessions::checkPermission(\Dockers::PERMISSION_ACCESS, $this->docker_id, WRITE);

@@ -9,7 +9,7 @@ Create a `docker-compose.yml` file
     services:
       worker:
         container_name: "monitoring-worker"
-        image: "akeb/monitoring-worker:latest"
+        image: "akeb/monitoring-worker-go:latest"
         restart: always
         cap_add:
           - NET_RAW

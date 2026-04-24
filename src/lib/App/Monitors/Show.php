@@ -17,7 +17,7 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 		$this->parent_id = intval($parent_id);
 		$this->check_permissions();
 		// if (!isset($parent_id)) {
-		// 	common_redirect('/monitors/0/');
+		// 	common_redirect('/admin/monitors/0/');
 		// }
 
 		if ($action == 'delete' && $monitor_id) {
@@ -117,7 +117,7 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 				$log_id = \Logs::create_log(\MonitoringJobs::LOGS_OBJECT, $job['id'], $job);
 				\Logs::add_tag($log_id, \Monitors::LOGS_OBJECT, $newMonitor['id']);
 			}
-			common_redirect('/monitors/'.($this->parent_id ? $this->parent_id.'/':'0/').'edit/'.$newMonitor['id'].'/');
+			common_redirect('/admin/monitors/'.($this->parent_id ? $this->parent_id.'/':'0/').'edit/'.$newMonitor['id'].'/');
 		}
 	}
 
@@ -190,7 +190,7 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 
 		\Monitors::delete(['id' => $monitorId]);
 		\Logs::delete_log(\Monitors::LOGS_OBJECT, $monitorId, $monitor);
-		common_redirect('/monitors/'.($this->parent_id ? $this->parent_id.'/':''));
+		common_redirect('/admin/monitors/'.($this->parent_id ? $this->parent_id.'/':''));
 	}
 
 	private function get_data() {
@@ -253,7 +253,7 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 				$last_index = count($this->breadcrumb) - 1;
 				if ($last_index > 0) {
 					foreach($this->breadcrumb as $k=>$item) {
-						echo '<li class="breadcrumb-item'.($k == $last_index ? ' active" aria-current="page':'').'">'.($k != $last_index ? '<a href="/monitors/'.($item['id'] ? $item['id'].'/':'').'">' : '').htmlspecialchars($item['title']).($k != $last_index ? '</a>' : '').'</li>';
+						echo '<li class="breadcrumb-item'.($k == $last_index ? ' active" aria-current="page':'').'">'.($k != $last_index ? '<a href="/admin/monitors/'.($item['id'] ? $item['id'].'/':'').'">' : '').htmlspecialchars($item['title']).($k != $last_index ? '</a>' : '').'</li>';
 					}
 				}
 				?>
@@ -385,19 +385,19 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 				new DataTable('#Table');
 
 				$('.createActionButton').on('click', function() {
-					window.location.href = '/monitors/<?=$this->parent_id;?>/edit/';
+					window.location.href = '/admin/monitors/<?=$this->parent_id;?>/edit/';
 				});
 
 				$('.folderActionButton').on('click', function() {
-					window.location.href = '/monitors/' + $(this).data('object-id') + '/';
+					window.location.href = '/admin/monitors/' + $(this).data('object-id') + '/';
 				});
 
 				$('.editActionButton').on('click', function() {
-					window.location.href = '/monitors/<?=$this->parent_id;?>/edit/' + $(this).data('object-id') + '/';
+					window.location.href = '/admin/monitors/<?=$this->parent_id;?>/edit/' + $(this).data('object-id') + '/';
 				});
 
 				$('.copyActionButton').on('click', function() {
-					window.location.href = '/monitors/<?=$this->parent_id;?>/copy/' + $(this).data('object-id') + '/';
+					window.location.href = '/admin/monitors/<?=$this->parent_id;?>/copy/' + $(this).data('object-id') + '/';
 				});
 
 				$('.deleteActionButton').on('click', function() {
@@ -413,7 +413,7 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 				modalBody.textContent = '<?=\T::Monitor_Delete_Confirmation();?>'.replace('{title}', objectTitle);
 
 				confirmBtn.onclick = function() {
-					window.location.href = '/monitors/<?=$this->parent_id;?>/delete/' + objectId + '/';
+					window.location.href = '/admin/monitors/<?=$this->parent_id;?>/delete/' + objectId + '/';
 				};
 
 				modal.show();

@@ -107,7 +107,7 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 		}
 		\Dockers::delete(['id' => $docker_id]);
 		\Logs::delete_log(\Dockers::LOGS_OBJECT, $docker_id, $docker);
-		common_redirect('/dockers/');
+		common_redirect('/admin/dockers/');
 	}
 
 	private function get_data() {
@@ -267,11 +267,11 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 				new DataTable('#Table');
 
 				$('.createActionButton').on('click', function() {
-					window.location.href = '/dockers/edit/';
+					window.location.href = '/admin/dockers/edit/';
 				});
 
 				$('.editActionButton').on('click', function() {
-					window.location.href = '/dockers/edit/' + $(this).data('object-id') + '/';
+					window.location.href = '/admin/dockers/edit/' + $(this).data('object-id') + '/';
 				});
 
 				$('.deleteActionButton').on('click', function() {
@@ -287,7 +287,7 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 				modalBody.textContent = '<?=\T::Docker_Delete_Confirmation();?>'.replace('{title}', objectTitle);
 
 				confirmBtn.onclick = function() {
-					window.location.href = '/dockers/delete/' + objectId + '/';
+					window.location.href = '/admin/dockers/delete/' + objectId + '/';
 				};
 
 				modal.show();

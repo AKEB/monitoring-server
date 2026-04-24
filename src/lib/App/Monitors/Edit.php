@@ -470,13 +470,13 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 			if ($monitor_id) {
 				$monitor = \Monitors::get(['id' => $monitor_id]);
 				if ($monitor['type'] == \Monitors::TYPE_FOLDER && !$old_monitor) {
-					common_redirect('/monitors/'.$monitor['id'].'/');
+					common_redirect('/admin/monitors/'.$monitor['id'].'/');
 				} else {
-					common_redirect('/monitors/'.$monitor['parent_id'].'/');
+					common_redirect('/admin/monitors/'.$monitor['parent_id'].'/');
 				}
-				// common_redirect('/monitors/'.$this->parent_id.'/edit/' . $monitor_id . '/');
+				// common_redirect('/admin/monitors/'.$this->parent_id.'/edit/' . $monitor_id . '/');
 			} else {
-				common_redirect('/monitors/'.$this->parent_id.'/');
+				common_redirect('/admin/monitors/'.$this->parent_id.'/');
 			}
 		} while(false);
 		foreach($data as $key => $value) {
@@ -488,7 +488,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 		if ($this->monitor_id) {
 			$this->monitor = \Monitors::get(['id' => $this->monitor_id]);
 			if (!$this->monitor) {
-				common_redirect('/monitors/'.$this->parent_id.'/');
+				common_redirect('/admin/monitors/'.$this->parent_id.'/');
 			}
 			$this->can_read = \Sessions::checkPermission(\Monitors::PERMISSION_ACCESS, $this->monitor_id, READ);
 			if (!$this->can_read) {
@@ -618,7 +618,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				$last_index = count($this->breadcrumb) - 1;
 				// if ($last_index > 0) {
 					foreach($this->breadcrumb as $k=>$item) {
-						echo '<li class="breadcrumb-item'.($k == $last_index ? ' active" aria-current="page':'').'"><a href="/monitors/'.($item['id'] ? $item['id'].'/':'').'">'.htmlspecialchars($item['title']).'</a></li>';
+						echo '<li class="breadcrumb-item'.($k == $last_index ? ' active" aria-current="page':'').'"><a href="/admin/monitors/'.($item['id'] ? $item['id'].'/':'').'">'.htmlspecialchars($item['title']).'</a></li>';
 					}
 				// }
 				?>
