@@ -17,6 +17,12 @@ class Get extends \Routing_Parent implements \Routing_Interface {
 			]);
 			return;
 		}
+		if (!$this->requiresProtocolV2()) {
+			$this->responseError([
+				'error' => 'protocol_version 2.0 or newer is required',
+			]);
+			return;
+		}
 		$this->updateWorker();
 
 		$this->responseSuccess([
@@ -29,8 +35,6 @@ class Get extends \Routing_Parent implements \Routing_Interface {
 	private function responseSuccess(array $response=[]) {
 		if (isset($response['error'])) unset($response['error']);
 		if (!isset($response['status'])) $response['status'] = 0;
-		if (!isset($response['server_time'])) $response['server_time'] = time();
-		if (!isset($response['server_microtime'])) $response['server_microtime'] = microtime(true);
 		header('Content-Encoding: UTF-8');
 		header('Content-Type: application/json;charset=utf-8');
 		echo json_encode($response);
@@ -40,8 +44,6 @@ class Get extends \Routing_Parent implements \Routing_Interface {
 	private function responseError(array $response=[]) {
 		if (!isset($response['error'])) $response['error'] = 'Error';
 		if (!isset($response['status'])) $response['status'] = 1;
-		if (!isset($response['server_time'])) $response['server_time'] = time();
-		if (!isset($response['server_microtime'])) $response['server_microtime'] = microtime(true);
 		header('Content-Encoding: UTF-8');
 		header('Content-Type: application/json;charset=utf-8');
 		echo json_encode($response);
@@ -84,12 +86,15 @@ class Get extends \Routing_Parent implements \Routing_Interface {
 		if ($this->worker && $this->worker['id']) {
 			$sql = sql_pholder(' AND M.`status` = ? ',\Monitors::STATUS_ENABLED);
 			$sql .= sql_pholder(' AND M.`type` NOT IN (?@)', [\Monitors::TYPE_FOLDER, \Monitors::TYPE_DOCKER]);
+			$fields = 't.`id` AS `job_id`, t.`update_time`, M.`id`, M.`type`, M.`url`, M.`method`, M.`host`, M.`port`, '
+				. 'M.`timeout`, M.`repeat_seconds`, M.`request_headers`, M.`proxy_host`, M.`ssl_verify`, M.`ssl_verify_host`, '
+				. 'M.`max_redirects`, M.`json_path`, M.`json_expected_value`, M.`json_expected_type`';
 			$jobs = \MonitoringJobs::data(
 				[
 					'worker_id' => $this->worker['id']
 				],
 				$sql,
-				't.`id` as `job_id`, t.`update_time`, M.*',
+				$fields,
 				false,
 				false,
 				[
@@ -101,8 +106,7 @@ class Get extends \Routing_Parent implements \Routing_Interface {
 				if (!\Monitors::is_enable($job['id'])) {
 					continue;
 				}
-
-				$enabled_jobs[] = $this->isProtocolV2() ? $this->slimMonitorJobRow($job) : $job;
+				$enabled_jobs[] = $job;
 			}
 		}
 		return $enabled_jobs;
@@ -112,28 +116,29 @@ class Get extends \Routing_Parent implements \Routing_Interface {
 		$jobs = [];
 		if ($this->worker && $this->worker['id']) {
 			$sql = sql_pholder(' AND D.`status` = ? ',\Dockers::STATUS_ENABLED);
+			$fields = 't.`id` AS `job_id`, t.`update_time`, D.`id`, D.`host`, D.`port`, D.`tls`, D.`timeout`, D.`repeat_seconds`, '
+				. 'D.`proxy_host`, D.`tls_ca_file`, D.`tls_certificate`, D.`tls_key`, D.`update_time` AS `docker_update_time`';
 			$jobs = \MonitoringDockers::data(
 				[
 					'worker_id' => $this->worker['id']
 				],
 				$sql,
-				't.`id` as `job_id`, t.`update_time`, D.*',
+				$fields,
 				false,
 				false,
 				[
 					'_join' => ' JOIN `'.\Dockers::getTable().'` D ON t.`docker_id` = D.`id`'
 				]
 			);
-			if ($this->isProtocolV2()) {
-				foreach ($jobs as $i => $job) {
-					$jobs[$i] = $this->slimDockerJobRow($job);
-				}
+			$tlsSync = $this->dockerTLSSyncFromRequest();
+			foreach ($jobs as $i => $job) {
+				$jobs[$i] = $this->slimDockerJobRow($job, $tlsSync);
 			}
 		}
 		return $jobs;
 	}
 
-	private function isProtocolV2(): bool {
+	private function requiresProtocolV2(): bool {
 		$v = isset($this->data['protocol_version']) ? (string)$this->data['protocol_version'] : '';
 		return $v !== '' && version_compare($v, '2.0', '>=');
 	}
@@ -148,31 +153,23 @@ class Get extends \Routing_Parent implements \Routing_Interface {
 		return $out;
 	}
 
-	private function slimMonitorJobRow(array $job): array {
-		return $this->pickRowFields($job, [
-			'job_id',
-			'update_time',
-			'id',
-			'type',
-			'url',
-			'method',
-			'host',
-			'port',
-			'timeout',
-			'repeat_seconds',
-			'request_headers',
-			'proxy_host',
-			'ssl_verify',
-			'ssl_verify_host',
-			'max_redirects',
-			'json_path',
-			'json_expected_value',
-			'json_expected_type',
-		]);
+	private function dockerTLSSyncFromRequest(): array {
+		$sync = [];
+		if (!isset($this->data['docker_tls_sync']) || !is_array($this->data['docker_tls_sync'])) {
+			return $sync;
+		}
+		foreach ($this->data['docker_tls_sync'] as $dockerID => $revision) {
+			$id = intval($dockerID);
+			if ($id <= 0) {
+				continue;
+			}
+			$sync[$id] = intval($revision);
+		}
+		return $sync;
 	}
 
-	private function slimDockerJobRow(array $job): array {
-		return $this->pickRowFields($job, [
+	private function slimDockerJobRow(array $job, array $tlsSync = []): array {
+		$keys = [
 			'job_id',
 			'update_time',
 			'id',
@@ -182,10 +179,15 @@ class Get extends \Routing_Parent implements \Routing_Interface {
 			'timeout',
 			'repeat_seconds',
 			'proxy_host',
-			'tls_ca_file',
-			'tls_certificate',
-			'tls_key',
-		]);
+			'docker_update_time',
+		];
+		$dockerID = intval($job['id'] ?? 0);
+		$dockerUpdate = intval($job['docker_update_time'] ?? 0);
+		$knownRevision = intval($tlsSync[$dockerID] ?? 0);
+		if ($dockerUpdate <= 0 || $knownRevision < $dockerUpdate) {
+			$keys = array_merge($keys, ['tls_ca_file', 'tls_certificate', 'tls_key']);
+		}
+		return $this->pickRowFields($job, $keys);
 	}
 
 	protected function handleBodyData(array $data) {

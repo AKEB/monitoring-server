@@ -17,6 +17,12 @@ class State extends \Routing_Parent implements \Routing_Interface {
 			]);
 			return;
 		}
+		if (!$this->requiresProtocolV2()) {
+			$this->responseError([
+				'error' => 'protocol_version 2.0 or newer is required',
+			]);
+			return;
+		}
 		$this->updateWorker();
 		if ($this->updateStates()) {
 			$this->responseSuccess();
@@ -30,8 +36,6 @@ class State extends \Routing_Parent implements \Routing_Interface {
 	private function responseSuccess(array $response=[]) {
 		if (isset($response['error'])) unset($response['error']);
 		if (!isset($response['status'])) $response['status'] = 0;
-		if (!isset($response['server_time'])) $response['server_time'] = time();
-		if (!isset($response['server_microtime'])) $response['server_microtime'] = microtime(true);
 		header('Content-Encoding: UTF-8');
 		header('Content-Type: application/json;charset=utf-8');
 		echo json_encode($response);
@@ -41,8 +45,6 @@ class State extends \Routing_Parent implements \Routing_Interface {
 	private function responseError(array $response=[]) {
 		if (!isset($response['error'])) $response['error'] = 'Error';
 		if (!isset($response['status'])) $response['status'] = 1;
-		if (!isset($response['server_time'])) $response['server_time'] = time();
-		if (!isset($response['server_microtime'])) $response['server_microtime'] = microtime(true);
 		header('Content-Encoding: UTF-8');
 		header('Content-Type: application/json;charset=utf-8');
 		echo json_encode($response);
@@ -304,29 +306,16 @@ class State extends \Routing_Parent implements \Routing_Interface {
 		}
 
 		$params = [
-			'monitor_id' => $job['monitor_id'],                        // int DEFAULT 0,
-			'worker_id' => $job['worker_id'],                          // int DEFAULT 0,
-			'job_id' => $job['id'],                                    // int DEFAULT 0,
-			'status' => $status,                                       // int DEFAULT 0,
-			'update_time' => $job_response['update_time'] ?? 0,        // int DEFAULT 0,
-
-			'status_code' => $job_response['response']['status_code'] ?? 0,        // int DEFAULT 0,
-			'response_error_num' => intval($job_response['response']['response_error_num'] ?? 0),        // int DEFAULT 0,
-			'response_error' => $job_response['response']['response_error'] ?? '',        // char(255) DEFAULT '',
-			'redirect_count' => intval($job_response['response']['redirect_count'] ?? 0),
-
+			'monitor_id' => $job['monitor_id'],
+			'worker_id' => $job['worker_id'],
+			'job_id' => $job['id'],
+			'status' => $status,
+			'update_time' => $job_response['update_time'] ?? 0,
+			'status_code' => $job_response['response']['status_code'] ?? 0,
+			'response_error_num' => intval($job_response['response']['response_error_num'] ?? 0),
+			'response_error' => $job_response['response']['response_error'] ?? '',
 			'total_time_us' => $job_response['response']['total_time_us'] ?? 0,
-
-			'effective_method' => $job_response['response']['effective_method'] ?? '',
-			'primary_ip' => $job_response['response']['primary_ip'] ?? '',
-
-			'primary_port' => $job_response['response']['primary_port'] ?? 0,
-			'http_version' => $job_response['response']['http_version'] ?? 0,
-			'protocol' => $job_response['response']['protocol'] ?? 0,
-			'ssl_verifyresult' => $job_response['response']['ssl_verifyresult'] ?? 0,
-
-			'scheme' => $job_response['response']['scheme'] ?? '',
-			'cert_expire' => $job_response['response']['cert_expire'] ?? 0,
+			'cert_expire' => intval($job_response['response']['cert_expire'] ?? 0),
 		];
 		$params['id'] = \MonitoringLogs::save($params);
 		if ($params['id']) {
@@ -336,63 +325,18 @@ class State extends \Routing_Parent implements \Routing_Interface {
 	}
 
 	/**
-	 * Compact container_states from worker protocol 2.0, or legacy Engine API body[].
-	 *
 	 * @return array<int, array<string, mixed>>|false
 	 */
 	private function resolveDockerContainerStates(array $response): array|false {
-		if (isset($response['container_states']) && is_array($response['container_states']) && $response['container_states']) {
-			return $response['container_states'];
-		}
-		$body = $response['body'] ?? null;
-		if (!$body || !is_array($body)) {
+		if (!isset($response['container_states']) || !is_array($response['container_states']) || !$response['container_states']) {
 			return false;
 		}
-		$container_states = [];
-		foreach ($body as $docker_container) {
-			if (!$docker_container || !is_array($docker_container)) continue;
-			$name = $docker_container['Names'][0] ?? '';
-			$name = substr($name, 1, strlen($name));
-			$state = $docker_container['State']??'';
-			$status = $docker_container['Status']??'';
-			$created = $docker_container['Created']??0;
-			$id = $docker_container['Id']??'';
-			$image = $docker_container['Image']??'';
-			$image_id = $docker_container['ImageID']??'';
-			$ports = [];
-			foreach($docker_container['Ports'] ?? [] as $port) {
-				if (!$port) continue;
-				if (!isset($port['IP']) || !$port['IP']) continue;
-				if (!isset($port['PublicPort']) || !$port['PublicPort']) continue;
-				$port_with_host = '';
-				if ($port['IP'] == '::' || $port['IP'] == '0.0.0.0') {
-					$port_with_host = $port['PublicPort'];
-				} else {
-					$port_with_host = $port['IP'] . ':' . $port['PublicPort'];
-				}
-				if (isset($port['Type']) && $port['Type']) {
-					$port_with_host = $port_with_host . '/' . $port['Type'];
+		return $response['container_states'];
+	}
 
-				}
-				$ports[$port_with_host] = $port_with_host;
-			}
-			$ports = implode(', ', $ports);
-			$container_states[] = [
-				'id' => $id,
-				'image' => $image,
-				'image_id' => $image_id,
-				'name' => $name,
-				'state' => $state,
-				'status' => $status,
-				'created' => $created,
-				'ports' => $ports,
-				'total_time_us' => $response['total_time_us'] ?? 0,
-			];
-		}
-		if (!$container_states) {
-			return false;
-		}
-		return $container_states;
+	private function requiresProtocolV2(): bool {
+		$v = isset($this->data['protocol_version']) ? (string)$this->data['protocol_version'] : '';
+		return $v !== '' && version_compare($v, '2.0', '>=');
 	}
 
 	protected function handleBodyData(array $data) {
