@@ -181,52 +181,11 @@ class State extends \Routing_Parent implements \Routing_Interface {
 		$response['status_code'] ??= 0;
 		$response['response_error_num'] ??= 0;
 		$response['response_error'] ??= '';
-		$response['body'] ??= [];
 		if (!$response['status']) return false;
 		if (!($response['status_code'] >= 200 && $response['status_code'] < 299)) return false;
 
-		if (!$response['body']) return false;
-		$container_states = [];
-		foreach ($response['body'] as $docker_container) {
-			if (!$docker_container) continue;
-			$name = $docker_container['Names'][0] ?? '';
-			$name = substr($name, 1, strlen($name));
-			$state = $docker_container['State']??'';
-			$status = $docker_container['Status']??'';
-			$created = $docker_container['Created']??0;
-			$id = $docker_container['Id']??'';
-			$image = $docker_container['Image']??'';
-			$image_id = $docker_container['ImageID']??'';
-			$ports = [];
-			foreach($docker_container['Ports'] as $port) {
-				if (!$port) continue;
-				if (!isset($port['IP']) || !$port['IP']) continue;
-				if (!isset($port['PublicPort']) || !$port['PublicPort']) continue;
-				$port_with_host = '';
-				if ($port['IP'] == '::' || $port['IP'] == '0.0.0.0') {
-					$port_with_host = $port['PublicPort'];
-				} else {
-					$port_with_host = $port['IP'] . ':' . $port['PublicPort'];
-				}
-				if (isset($port['Type']) && $port['Type']) {
-					$port_with_host = $port_with_host . '/' . $port['Type'];
-
-				}
-				$ports[$port_with_host] = $port_with_host;
-			}
-			$ports = implode(', ', $ports);
-			$container_states[] = [
-				'id' => $id,
-				'image' => $image,
-				'image_id' => $image_id,
-				'name' => $name,
-				'state' => $state,
-				'status' => $status,
-				'created' => $created,
-				'ports' => $ports,
-				'total_time_us' => $response['total_time_us'] ?? 0,
-			];
-		}
+		$container_states = $this->resolveDockerContainerStates($response);
+		if (!$container_states) return false;
 		$container_states = json_encode($container_states);
 
 		$params = [
@@ -374,6 +333,66 @@ class State extends \Routing_Parent implements \Routing_Interface {
 			return $params;
 		}
 		return false;
+	}
+
+	/**
+	 * Compact container_states from worker protocol 2.0, or legacy Engine API body[].
+	 *
+	 * @return array<int, array<string, mixed>>|false
+	 */
+	private function resolveDockerContainerStates(array $response): array|false {
+		if (isset($response['container_states']) && is_array($response['container_states']) && $response['container_states']) {
+			return $response['container_states'];
+		}
+		$body = $response['body'] ?? null;
+		if (!$body || !is_array($body)) {
+			return false;
+		}
+		$container_states = [];
+		foreach ($body as $docker_container) {
+			if (!$docker_container || !is_array($docker_container)) continue;
+			$name = $docker_container['Names'][0] ?? '';
+			$name = substr($name, 1, strlen($name));
+			$state = $docker_container['State']??'';
+			$status = $docker_container['Status']??'';
+			$created = $docker_container['Created']??0;
+			$id = $docker_container['Id']??'';
+			$image = $docker_container['Image']??'';
+			$image_id = $docker_container['ImageID']??'';
+			$ports = [];
+			foreach($docker_container['Ports'] ?? [] as $port) {
+				if (!$port) continue;
+				if (!isset($port['IP']) || !$port['IP']) continue;
+				if (!isset($port['PublicPort']) || !$port['PublicPort']) continue;
+				$port_with_host = '';
+				if ($port['IP'] == '::' || $port['IP'] == '0.0.0.0') {
+					$port_with_host = $port['PublicPort'];
+				} else {
+					$port_with_host = $port['IP'] . ':' . $port['PublicPort'];
+				}
+				if (isset($port['Type']) && $port['Type']) {
+					$port_with_host = $port_with_host . '/' . $port['Type'];
+
+				}
+				$ports[$port_with_host] = $port_with_host;
+			}
+			$ports = implode(', ', $ports);
+			$container_states[] = [
+				'id' => $id,
+				'image' => $image,
+				'image_id' => $image_id,
+				'name' => $name,
+				'state' => $state,
+				'status' => $status,
+				'created' => $created,
+				'ports' => $ports,
+				'total_time_us' => $response['total_time_us'] ?? 0,
+			];
+		}
+		if (!$container_states) {
+			return false;
+		}
+		return $container_states;
 	}
 
 	protected function handleBodyData(array $data) {

@@ -102,7 +102,7 @@ class Get extends \Routing_Parent implements \Routing_Interface {
 					continue;
 				}
 
-				$enabled_jobs[] = $job;
+				$enabled_jobs[] = $this->isProtocolV2() ? $this->slimMonitorJobRow($job) : $job;
 			}
 		}
 		return $enabled_jobs;
@@ -124,8 +124,68 @@ class Get extends \Routing_Parent implements \Routing_Interface {
 					'_join' => ' JOIN `'.\Dockers::getTable().'` D ON t.`docker_id` = D.`id`'
 				]
 			);
+			if ($this->isProtocolV2()) {
+				foreach ($jobs as $i => $job) {
+					$jobs[$i] = $this->slimDockerJobRow($job);
+				}
+			}
 		}
 		return $jobs;
+	}
+
+	private function isProtocolV2(): bool {
+		$v = isset($this->data['protocol_version']) ? (string)$this->data['protocol_version'] : '';
+		return $v !== '' && version_compare($v, '2.0', '>=');
+	}
+
+	private function pickRowFields(array $row, array $keys): array {
+		$out = [];
+		foreach ($keys as $key) {
+			if (array_key_exists($key, $row)) {
+				$out[$key] = $row[$key];
+			}
+		}
+		return $out;
+	}
+
+	private function slimMonitorJobRow(array $job): array {
+		return $this->pickRowFields($job, [
+			'job_id',
+			'update_time',
+			'id',
+			'type',
+			'url',
+			'method',
+			'host',
+			'port',
+			'timeout',
+			'repeat_seconds',
+			'request_headers',
+			'proxy_host',
+			'ssl_verify',
+			'ssl_verify_host',
+			'max_redirects',
+			'json_path',
+			'json_expected_value',
+			'json_expected_type',
+		]);
+	}
+
+	private function slimDockerJobRow(array $job): array {
+		return $this->pickRowFields($job, [
+			'job_id',
+			'update_time',
+			'id',
+			'host',
+			'port',
+			'tls',
+			'timeout',
+			'repeat_seconds',
+			'proxy_host',
+			'tls_ca_file',
+			'tls_certificate',
+			'tls_key',
+		]);
 	}
 
 	protected function handleBodyData(array $data) {
