@@ -1,0 +1,50 @@
+# Worker API (protocol 2.0+)
+
+Go worker `monitoring-worker-go` v2.1+ talks to monitoring-server v2.1+ only.
+
+## Endpoints
+
+| Method | Path | Purpose |
+|--------|------|---------|
+| POST | `/api/monitoring/get/` | Tasks + worker config |
+| POST | `/api/monitoring/state/` | Check results |
+
+Authentication: `worker_key_hash` in JSON body.
+
+## Protocol version
+
+- Required: `protocol_version` ≥ `2.0` (worker default `2.0`).
+- Older PHP worker and protocol `1.0` are not supported.
+
+## `get/` request
+
+```json
+{
+  "worker_key_hash": "...",
+  "protocol_version": "2.0",
+  "worker_version": "v2.1.0",
+  "docker_tls_sync": { "12": 1715000000 }
+}
+```
+
+`docker_tls_sync`: docker host id → `docker_update_time` last seen; server omits `tls_*` PEM when unchanged.
+
+## `get/` response
+
+- `data`: worker tuning + optional `"restart": "true"` (one-shot, from admin **Restart worker**).
+- `jobs[]`: monitor tasks (whitelist fields, includes `proxy_type`).
+- `dockers[]`: docker tasks (`docker_update_time`, conditional TLS PEM).
+
+No `server_time` / `server_microtime`.
+
+## `state/` request
+
+- Monitors: `jobs[]` with `response` (`status_code`, `json_valid`, `cert_expire`, …). No `response_body`.
+- Docker: `dockers[]` with `response.container_states` (not raw Engine API `body`).
+- Omit empty `jobs` / `dockers` keys when not sending that kind of result.
+
+## Deployment order
+
+1. Run DB migration `migration_0030` (restart flag + drop legacy log columns).
+2. Deploy monitoring-server.
+3. Deploy workers with matching protocol.

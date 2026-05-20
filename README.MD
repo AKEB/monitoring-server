@@ -4,6 +4,12 @@
 
 Default User Email: `admin@admin.com` and Password `Admin@123`
 
+## Worker API (Go)
+
+Monitoring workers use **protocol 2.0+** only (`monitoring-worker-go` v2.1+). See [docs/WORKER_API.md](docs/WORKER_API.md).
+
+After upgrade, run DB migrations (includes `migration_0030` for worker restart flag and legacy log column cleanup).
+
 ## Features
 
 - [x] Create/edit workers

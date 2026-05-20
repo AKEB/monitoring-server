@@ -24,6 +24,7 @@ class Get extends \Routing_Parent implements \Routing_Interface {
 			return;
 		}
 		$this->updateWorker();
+		$this->clearRestartRequested();
 
 		$this->responseSuccess([
 			'data' => $this->getWorkerData(),
@@ -71,7 +72,7 @@ class Get extends \Routing_Parent implements \Routing_Interface {
 	}
 
 	private function getWorkerData(): array {
-		return [
+		$data = [
 			'worker_id' => $this->worker['id'],
 			'worker_threads' => $this->worker['worker_threads'],
 			'jobs_get_timeout' => $this->worker['jobs_get_timeout'],
@@ -79,6 +80,22 @@ class Get extends \Routing_Parent implements \Routing_Interface {
 			'response_send_timeout' => $this->worker['response_send_timeout'],
 			'logs_write_timeout' => $this->worker['logs_write_timeout'],
 		];
+		if (!empty($this->worker['restart_requested'])) {
+			$data['restart'] = 'true';
+		}
+		return $data;
+	}
+
+	private function clearRestartRequested(): void {
+		if (empty($this->worker['restart_requested'])) {
+			return;
+		}
+		\Workers::save([
+			'id' => $this->worker['id'],
+			'restart_requested' => 0,
+			'_mode' => \DB\Common::CSMODE_UPDATE,
+		]);
+		$this->worker['restart_requested'] = 0;
 	}
 
 	private function getJobsData(): array {
@@ -87,7 +104,7 @@ class Get extends \Routing_Parent implements \Routing_Interface {
 			$sql = sql_pholder(' AND M.`status` = ? ',\Monitors::STATUS_ENABLED);
 			$sql .= sql_pholder(' AND M.`type` NOT IN (?@)', [\Monitors::TYPE_FOLDER, \Monitors::TYPE_DOCKER]);
 			$fields = 't.`id` AS `job_id`, t.`update_time`, M.`id`, M.`type`, M.`url`, M.`method`, M.`host`, M.`port`, '
-				. 'M.`timeout`, M.`repeat_seconds`, M.`request_headers`, M.`proxy_host`, M.`ssl_verify`, M.`ssl_verify_host`, '
+				. 'M.`timeout`, M.`repeat_seconds`, M.`request_headers`, M.`proxy_host`, M.`proxy_type`, M.`ssl_verify`, M.`ssl_verify_host`, '
 				. 'M.`max_redirects`, M.`json_path`, M.`json_expected_value`, M.`json_expected_type`';
 			$jobs = \MonitoringJobs::data(
 				[
@@ -117,7 +134,7 @@ class Get extends \Routing_Parent implements \Routing_Interface {
 		if ($this->worker && $this->worker['id']) {
 			$sql = sql_pholder(' AND D.`status` = ? ',\Dockers::STATUS_ENABLED);
 			$fields = 't.`id` AS `job_id`, t.`update_time`, D.`id`, D.`host`, D.`port`, D.`tls`, D.`timeout`, D.`repeat_seconds`, '
-				. 'D.`proxy_host`, D.`tls_ca_file`, D.`tls_certificate`, D.`tls_key`, D.`update_time` AS `docker_update_time`';
+				. 'D.`proxy_host`, D.`proxy_type`, D.`tls_ca_file`, D.`tls_certificate`, D.`tls_key`, D.`update_time` AS `docker_update_time`';
 			$jobs = \MonitoringDockers::data(
 				[
 					'worker_id' => $this->worker['id']
@@ -179,6 +196,7 @@ class Get extends \Routing_Parent implements \Routing_Interface {
 			'timeout',
 			'repeat_seconds',
 			'proxy_host',
+			'proxy_type',
 			'docker_update_time',
 		];
 		$dockerID = intval($job['id'] ?? 0);

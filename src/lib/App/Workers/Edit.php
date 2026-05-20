@@ -34,6 +34,26 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 		if (!isset($data)) return;
 		if (!$data) return;
 
+		if (!empty($data['restart_worker']) && !empty($data['id'])) {
+			$workerId = intval($data['id']);
+			if (!$workerId || $this->worker_id != $workerId) {
+				$this->error = \T::Worker_Edit_WorkerNotFound();
+				return;
+			}
+			if (!\Sessions::checkPermission(\Workers::PERMISSION_ACCESS, $workerId, WRITE)) {
+				$this->error = \T::Worker_Edit_PermissionDenied();
+				return;
+			}
+			\Workers::save([
+				'id' => $workerId,
+				'restart_requested' => 1,
+				'update_time' => time(),
+				'_mode' => \DB\Common::CSMODE_UPDATE,
+			]);
+			$this->worker = \Workers::get(['id' => $workerId]);
+			return;
+		}
+
 		$params = [];
 		do {
 			if (isset($data['id']) && $data['id'] && $data['id'] != '') {
@@ -435,8 +455,11 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					}
 					?>
 					<?php if ($this->can_write || $this->can_create) { ?>
-						<div class="d-flex flex-row-reverse">
+						<div class="d-flex flex-row-reverse gap-2">
 							<button type="submit" class="btn btn-primary" name="<?=$this->worker['id'] ? 'editWorker' : 'createWorker';?>" value="true"><?=($this->worker['id'] ? \T::Worker_Edit_ChangeButton() : \T::Worker_Edit_CreateButton());?></button>
+							<?php if ($this->worker['id'] && $this->can_write) { ?>
+								<button type="submit" class="btn btn-outline-warning" name="restart_worker" value="1"><?=\T::Worker_Edit_RestartButton();?></button>
+							<?php } ?>
 						</div>
 					<?php } ?>
 				</form>

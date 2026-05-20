@@ -329,6 +329,11 @@ class T {
 	public static function Worker_Edit_ChangeButton(...$argv): string { return ''; }
 
 	/**
+	 * Worker_Edit_RestartButton
+	 */
+	public static function Worker_Edit_RestartButton(...$argv): string { return 'Restart worker'; }
+
+	/**
 	 * Worker_Edit_CreateButton
 	 * 
 	 * @return string "Create"
