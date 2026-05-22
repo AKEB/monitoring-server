@@ -523,12 +523,10 @@ class MonitoringLogs extends \DB\MySQLObject {
 			$return['logs_chart'] = $logs_hash;
 
 			$start_time = microtime(true);
-			$uptime_30 = \MonitoringAvailabilityPercent::getAvailabilityPercent(30*86400, $monitor_id);
-			$return['mysql_time']['MonitoringAvailabilityPercent::getAvailabilityPercent_30'] = round(microtime(true) - $start_time,3);
-
-			$start_time = microtime(true);
-			$uptime_1 = \MonitoringAvailabilityPercent::getAvailabilityPercent(86400, $monitor_id);
-			$return['mysql_time']['MonitoringAvailabilityPercent::getAvailabilityPercent_1'] = round(microtime(true) - $start_time,3);
+			$availability = \MonitoringAvailabilityPercent::getMonitorAvailability($monitor_id);
+			$return['mysql_time']['MonitoringAvailabilityPercent::getMonitorAvailability'] = round(microtime(true) - $start_time, 3);
+			$uptime_30 = $availability['30d'];
+			$uptime_1 = $availability['1d'];
 
 			if ($uptime_1 && isset($uptime_1[0]) && $uptime_1[0]['avg_response_time']) {
 				$return['avg_response_time_1d'] = ceil($uptime_1[0]['avg_response_time']).' ms';

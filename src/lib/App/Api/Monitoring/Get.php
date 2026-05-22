@@ -100,6 +100,7 @@ class Get extends \Routing_Parent implements \Routing_Interface {
 
 	private function getJobsData(): array {
 		$jobs = [];
+		$enabled_jobs = [];
 		if ($this->worker && $this->worker['id']) {
 			$sql = sql_pholder(' AND M.`status` = ? ',\Monitors::STATUS_ENABLED);
 			$sql .= sql_pholder(' AND M.`type` NOT IN (?@)', [\Monitors::TYPE_FOLDER, \Monitors::TYPE_DOCKER]);

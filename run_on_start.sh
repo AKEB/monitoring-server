@@ -23,6 +23,7 @@ cd /app/crons/ && chmod +x *.sh && ./run_all.sh
 
 touch /var/log/php/fpm-php.www.log 
 touch /var/log/php/mngr_aggregate.log 
+touch /var/log/php/mngr_aggregate_today.log 
 touch /var/log/php/mngr_clear.log 
 touch /var/log/php/mngr_sessions.log 
 touch /var/log/php/mngr_ssl_notify.log 

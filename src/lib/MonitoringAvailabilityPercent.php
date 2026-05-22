@@ -2,9 +2,19 @@
 
 class MonitoringAvailabilityPercent {
 
+	private const CACHE_TTL_TODAY = 90;
+	private const CACHE_TTL_PERIOD = 120;
+
 	public static function getAvailabilityPercent(int $seconds = 86400, ?int $monitor_id = null): array {
 		if ($seconds <= 0) {
 			$seconds = 86400;
+		}
+
+		if ($monitor_id) {
+			$cached = self::getCachedPeriod($monitor_id, $seconds);
+			if ($cached !== null) {
+				return $cached;
+			}
 		}
 
 		$current_time = time();
@@ -12,11 +22,70 @@ class MonitoringAvailabilityPercent {
 
 		// Если период меньше или равен 1 дня, используем сырые данные
 		if ($seconds <= 86400) {
-			return self::getFromRawData($time_threshold, $monitor_id);
+			$result = self::getFromRawData($time_threshold, $monitor_id);
+		} else {
+			// Для периодов больше 1 дня комбинируем агрегаты и сырые данные
+			$result = self::getFromCombinedData($time_threshold, $monitor_id, $current_time);
 		}
 
-		// Для периодов больше 1 дня комбинируем агрегаты и сырые данные
-		return self::getFromCombinedData($time_threshold, $monitor_id, $current_time);
+		if ($monitor_id) {
+			self::setCachedPeriod($monitor_id, $seconds, $result);
+		}
+
+		return $result;
+	}
+
+	/**
+	 * Uptime 24h и 30d за один проход: «сегодня» из raw считается один раз.
+	 *
+	 * @return array{1d: array, 30d: array}
+	 */
+	public static function getMonitorAvailability(int $monitor_id): array {
+		$cached1 = self::getCachedPeriod($monitor_id, 86400);
+		$cached30 = self::getCachedPeriod($monitor_id, 30 * 86400);
+		if ($cached1 !== null && $cached30 !== null) {
+			return ['1d' => $cached1, '30d' => $cached30];
+		}
+
+		$current_time = time();
+		$today_start = strtotime('today', $current_time);
+		$thresh_30 = $current_time - 30 * 86400;
+		$thresh_1 = $current_time - 86400;
+
+		$today_end = $today_start + 86400;
+		if (\MonitoringLogsAggregate::isTodayFresh($monitor_id, $today_start)) {
+			$uptime_30 = self::getFromAggregates($thresh_30, $today_end, $monitor_id);
+		} else {
+			$aggregate_data = [];
+			if ($thresh_30 < $today_start) {
+				$aggregate_data = self::getFromAggregates($thresh_30, $today_start, $monitor_id);
+			}
+			$today_raw = self::getTodayRawData($monitor_id, $today_start);
+			$uptime_30 = self::mergeResults($aggregate_data, $today_raw);
+		}
+
+		$rolling_raw = self::getFromRawData($thresh_1, $monitor_id);
+		$uptime_1 = $rolling_raw;
+
+		self::setCachedPeriod($monitor_id, 30 * 86400, $uptime_30);
+		self::setCachedPeriod($monitor_id, 86400, $uptime_1);
+
+		return ['1d' => $uptime_1, '30d' => $uptime_30];
+	}
+
+	private static function getCachedPeriod(int $monitor_id, int $seconds): ?array {
+		$cache = new \Cache(self::cacheKeyPeriod($monitor_id, $seconds));
+		if (!$cache->isValid()) {
+			return null;
+		}
+		$data = json_decode($cache->get(), true);
+		return is_array($data) ? $data : null;
+	}
+
+	private static function setCachedPeriod(int $monitor_id, int $seconds, array $data): void {
+		$ttl = $seconds <= 86400 ? self::CACHE_TTL_TODAY : self::CACHE_TTL_PERIOD;
+		$cache = new \Cache(self::cacheKeyPeriod($monitor_id, $seconds));
+		$cache->update(json_encode($data), $ttl);
 	}
 
 	/**
@@ -45,23 +114,66 @@ class MonitoringAvailabilityPercent {
 	 * Получение данных из агрегатов + сырые данные за сегодня
 	 */
 	private static function getFromCombinedData(int $time_threshold, ?int $monitor_id, int $current_time): array {
-		// Определяем границу между агрегатами и сырыми данными
-		// (например, берем агрегаты до начала текущего дня, а сегодняшние данные из сырых)
 		$today_start = strtotime('today', $current_time);
+		$today_end = $today_start + 86400;
 
-		$result = [];
-
-		// 1. Данные из агрегатов (исторические данные)
-		if ($time_threshold < $today_start) {
-			$aggregate_data = self::getFromAggregates($time_threshold, $today_start, $monitor_id);
-			$result = $aggregate_data??[];
+		// Суточной агрегат за сегодня обновляет mngr_aggregate_today (raw не трогаем)
+		if (self::canUseTodayAggregate($monitor_id, $today_start)) {
+			return self::getFromAggregates($time_threshold, $today_end, $monitor_id);
 		}
 
-		// 2. Данные из сырых логов за сегодня
-		$raw_data = self::getFromRawData(max($time_threshold, $today_start), $monitor_id);
+		$result = [];
+		if ($time_threshold < $today_start) {
+			$aggregate_data = self::getFromAggregates($time_threshold, $today_start, $monitor_id);
+			$result = $aggregate_data ?? [];
+		}
 
-		// Объединяем результаты
-		return self::mergeResults($result, $raw_data);
+		return self::mergeResults($result, self::getTodayRawData($monitor_id, $today_start));
+	}
+
+	private static function canUseTodayAggregate(?int $monitor_id, int $today_start): bool {
+		if ($monitor_id) {
+			return \MonitoringLogsAggregate::isTodayFresh($monitor_id, $today_start);
+		}
+		return \MonitoringLogsAggregate::isTodayFresh(null, $today_start);
+	}
+
+	/**
+	 * Статистика за сегодня из monitoring_logs (узкое место getAvailabilityPercent_30).
+	 */
+	private static function getTodayRawData(?int $monitor_id, int $today_start): array {
+		if (!$monitor_id) {
+			return self::getFromRawData($today_start, null);
+		}
+		$cached = self::getCachedToday($monitor_id, $today_start);
+		if ($cached !== null) {
+			return $cached;
+		}
+		$data = self::getFromRawData($today_start, $monitor_id);
+		self::setCachedToday($monitor_id, $today_start, $data);
+		return $data;
+	}
+
+	private static function getCachedToday(int $monitor_id, int $today_start): ?array {
+		$cache = new \Cache(self::cacheKeyToday($monitor_id, $today_start));
+		if (!$cache->isValid()) {
+			return null;
+		}
+		$data = json_decode($cache->get(), true);
+		return is_array($data) ? $data : null;
+	}
+
+	private static function setCachedToday(int $monitor_id, int $today_start, array $data): void {
+		$cache = new \Cache(self::cacheKeyToday($monitor_id, $today_start));
+		$cache->update(json_encode($data), self::CACHE_TTL_TODAY);
+	}
+
+	private static function cacheKeyToday(int $monitor_id, int $today_start): string {
+		return 'MonitoringAvailabilityPercent_today_'.md5($monitor_id.'_'.$today_start);
+	}
+
+	private static function cacheKeyPeriod(int $monitor_id, int $seconds): string {
+		return 'MonitoringAvailabilityPercent_'.md5($monitor_id.'_'.$seconds);
 	}
 
 	/**
