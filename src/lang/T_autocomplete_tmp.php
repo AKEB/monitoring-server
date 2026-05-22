@@ -329,11 +329,6 @@ class T {
 	public static function Worker_Edit_ChangeButton(...$argv): string { return ''; }
 
 	/**
-	 * Worker_Edit_RestartButton
-	 */
-	public static function Worker_Edit_RestartButton(...$argv): string { return 'Restart worker'; }
-
-	/**
 	 * Worker_Edit_CreateButton
 	 * 
 	 * @return string "Create"
@@ -372,6 +367,14 @@ class T {
 	 * @return string "Ничего не изменилось"
 	 */
 	public static function Worker_Edit_NotingChanged(...$argv): string { return ''; }
+
+	/**
+	 * Worker_Edit_RestartButton
+	 * 
+	 * @return string "Restart"
+	 * @return string "Перезапустить"
+	 */
+	public static function Worker_Edit_RestartButton(...$argv): string { return ''; }
 
 	/**
 	 * Worker_Create_PermissionDenied

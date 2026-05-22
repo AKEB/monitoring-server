@@ -53,6 +53,8 @@ Worker:
     WorkerNotFound: "Обработчик не найден"
     PermissionDenied: "У вас нет прав на редактирование этого обработчика"
     NotingChanged: "Ничего не изменилось"
+    RestartButton: "Перезапустить"
+    
   Create:
     PermissionDenied: "У вас нет прав на создание обработчика"
 

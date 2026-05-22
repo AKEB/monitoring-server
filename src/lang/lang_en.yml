@@ -54,6 +54,8 @@ Worker:
     WorkerNotFound: "Worker not found"
     PermissionDenied: "You don't have permission to edit this worker"
     NotingChanged: "Nothing changed"
+    RestartButton: "Restart"
+    
   Create:
     PermissionDenied: "You don't have permission to create a worker"
 
