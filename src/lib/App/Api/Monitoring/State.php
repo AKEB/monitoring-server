@@ -146,6 +146,7 @@ class State extends \Routing_Parent implements \Routing_Interface {
 				'worker_id' => $this->worker['id'],
 				'job_id' => $job_id,
 				'status' => $status,
+				'status_code' => intval($param['status_code'] ?? 0),
 				'response_error' => $containers_hash[$monitor['container']]['status']??'',
 				'total_time_us' => $containers_hash[$monitor['container']]['total_time_us']??0,
 				'update_time' => $param['update_time']??time(),
@@ -190,6 +191,7 @@ class State extends \Routing_Parent implements \Routing_Interface {
 		if (!$container_states) return false;
 		$container_states = json_encode($container_states);
 
+		$apiStatusCode = intval($response['status_code'] ?? 0);
 		$params = [
 			'id' => $docker['id'],
 			'container_states' => $container_states,
@@ -199,6 +201,8 @@ class State extends \Routing_Parent implements \Routing_Interface {
 		$params['id'] = \Dockers::save($params);
 		if ($params['id']) {
 			$params['job_id'] = $dockerJob['id'];
+			// HTTP status from Docker Engine API (for container monitor logs / tooltips).
+			$params['status_code'] = $apiStatusCode;
 			return $params;
 		}
 
@@ -252,9 +256,10 @@ class State extends \Routing_Parent implements \Routing_Interface {
 			]);
 		}
 		if (!isset($job_response['response']) || !$job_response['response'] || !is_array($job_response['response'])) return false;
+		$this->normalizeJobResponse($job_response);
 		$status = \MonitoringLogs::STATUS_FAIL;
 
-		$monitor['response_code'] = explode(',', $monitor['response_code']??'');
+		$monitor['response_code'] = $this->parseMonitorResponseCodes($monitor['response_code'] ?? '');
 
 		if ($monitor['type'] == \Monitors::TYPE_HTTPS) {
 			if (
@@ -311,7 +316,7 @@ class State extends \Routing_Parent implements \Routing_Interface {
 			'job_id' => $job['id'],
 			'status' => $status,
 			'update_time' => $job_response['update_time'] ?? 0,
-			'status_code' => $job_response['response']['status_code'] ?? 0,
+			'status_code' => intval($job_response['response']['status_code'] ?? 0),
 			'response_error_num' => intval($job_response['response']['response_error_num'] ?? 0),
 			'response_error' => $job_response['response']['response_error'] ?? '',
 			'total_time_us' => $job_response['response']['total_time_us'] ?? 0,
@@ -332,6 +337,40 @@ class State extends \Routing_Parent implements \Routing_Interface {
 			return false;
 		}
 		return $response['container_states'];
+	}
+
+	private function normalizeJobResponse(array &$job_response): void {
+		if (!isset($job_response['response']) || !is_array($job_response['response'])) {
+			return;
+		}
+		$r = &$job_response['response'];
+		if (array_key_exists('status_code', $r)) {
+			$r['status_code'] = intval($r['status_code']);
+		}
+		if (array_key_exists('status', $r)) {
+			$r['status'] = intval($r['status']);
+		}
+		if (array_key_exists('json_valid', $r)) {
+			$r['json_valid'] = intval($r['json_valid']);
+		}
+		if (array_key_exists('response_error_num', $r)) {
+			$r['response_error_num'] = intval($r['response_error_num']);
+		}
+	}
+
+	/**
+	 * @return array<int, int>
+	 */
+	private function parseMonitorResponseCodes(string $raw): array {
+		$codes = [];
+		foreach (explode(',', $raw) as $part) {
+			$part = trim($part);
+			if ($part === '') {
+				continue;
+			}
+			$codes[] = intval($part);
+		}
+		return $codes;
 	}
 
 	private function requiresProtocolV2(): bool {

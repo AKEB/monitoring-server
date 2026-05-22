@@ -40,7 +40,7 @@ No `server_time` / `server_microtime`.
 ## `state/` request
 
 - Monitors: `jobs[]` with `response` (`status_code`, `json_valid`, `cert_expire`, …). No `response_body`.
-- Docker: `dockers[]` with `response.container_states` (not raw Engine API `body`).
+- Docker: `dockers[]` with `response.status_code` (HTTP status from Engine API) and `response.container_states` (not raw Engine API `body`). Container monitor logs store that HTTP code in `monitoring_logs.status_code` (UI tooltips).
 - Omit empty `jobs` / `dockers` keys when not sending that kind of result.
 
 ## Deployment order
