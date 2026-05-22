@@ -7,9 +7,8 @@ class Migration_0031 {
 	static function install() {
 		global $db;
 		// Redundant with idx_agg_day prefix and (monitor_id, worker_id, update_time).
-		$db->execSQL("ALTER TABLE `monitoring_logs` DROP INDEX IF EXISTS `idx_optimized`;");
-		$db->execSQL("ALTER TABLE `monitoring_logs` DROP INDEX IF EXISTS `update_time`;");
-		$db->execSQL("ALTER TABLE `monitoring_logs` DROP INDEX IF EXISTS `idx_agg_day`;");
+		$db->execSQL("ALTER TABLE `monitoring_logs` DROP INDEX `idx_optimized`;");
+		$db->execSQL("ALTER TABLE `monitoring_logs` DROP INDEX `update_time`;");
 		// Covering index for mngr_aggregate_today / refreshTodayFromRaw (GROUP BY monitor_id, worker_id).
 		$db->execSQL("
 			ALTER TABLE `monitoring_logs`
