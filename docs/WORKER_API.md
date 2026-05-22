@@ -32,8 +32,8 @@ Authentication: `worker_key_hash` in JSON body.
 ## `get/` response
 
 - `data`: worker tuning + optional `"restart": "true"` (one-shot, from admin **Restart worker**).
-- `jobs[]`: monitor tasks (whitelist fields, includes `proxy_type`).
-- `dockers[]`: docker tasks (`docker_update_time`, conditional TLS PEM).
+- `jobs[]`: monitor tasks (whitelist fields, includes `proxy_type`). Monitors in active maintenance are omitted.
+- `dockers[]`: docker tasks (`docker_update_time`, conditional TLS PEM). Omitted when every enabled container monitor on that host is in maintenance.
 
 No `server_time` / `server_microtime`.
 

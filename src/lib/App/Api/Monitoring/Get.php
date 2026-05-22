@@ -123,6 +123,9 @@ class Get extends \Routing_Parent implements \Routing_Interface {
 				if (!\Monitors::is_enable($job['id'])) {
 					continue;
 				}
+				if (\MonitoringMaintenances::getMaintenancesForMonitor(intval($job['id']))) {
+					continue;
+				}
 				$enabled_jobs[] = $job;
 			}
 		}
@@ -147,12 +150,62 @@ class Get extends \Routing_Parent implements \Routing_Interface {
 					'_join' => ' JOIN `'.\Dockers::getTable().'` D ON t.`docker_id` = D.`id`'
 				]
 			);
+			$dockerIdsWithMonitors = $this->dockerIdsWithCheckableMonitors($jobs);
 			$tlsSync = $this->dockerTLSSyncFromRequest();
-			foreach ($jobs as $i => $job) {
-				$jobs[$i] = $this->slimDockerJobRow($job, $tlsSync);
+			$filtered = [];
+			foreach ($jobs as $job) {
+				$dockerId = intval($job['id'] ?? 0);
+				if (!$dockerId || !isset($dockerIdsWithMonitors[$dockerId])) {
+					continue;
+				}
+				$filtered[] = $this->slimDockerJobRow($job, $tlsSync);
 			}
+			$jobs = $filtered;
 		}
 		return $jobs;
+	}
+
+	/**
+	 * Docker hosts that have at least one enabled monitor not in active maintenance.
+	 *
+	 * @param array<int, array<string, mixed>> $dockerJobs
+	 * @return array<int, true>
+	 */
+	private function dockerIdsWithCheckableMonitors(array $dockerJobs): array {
+		$dockerIds = [];
+		foreach ($dockerJobs as $job) {
+			$dockerId = intval($job['id'] ?? 0);
+			if ($dockerId > 0) {
+				$dockerIds[$dockerId] = true;
+			}
+		}
+		if (!$dockerIds) {
+			return [];
+		}
+		$monitors = \Monitors::data(
+			[
+				'type' => \Monitors::TYPE_DOCKER,
+				'status' => \Monitors::STATUS_ENABLED,
+			],
+			sql_pholder(' AND `docker` IN (?@)', array_keys($dockerIds)),
+			'`id`, `docker`'
+		);
+		$result = [];
+		foreach ($monitors as $monitor) {
+			$monitorId = intval($monitor['id'] ?? 0);
+			$dockerId = intval($monitor['docker'] ?? 0);
+			if ($monitorId < 1 || $dockerId < 1) {
+				continue;
+			}
+			if (!\Monitors::is_enable($monitorId)) {
+				continue;
+			}
+			if (\MonitoringMaintenances::getMaintenancesForMonitor($monitorId)) {
+				continue;
+			}
+			$result[$dockerId] = true;
+		}
+		return $result;
 	}
 
 	private function requiresProtocolV2(): bool {
