@@ -456,14 +456,10 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 
 		$updatesRes = \MaxMessenger::fetchUpdates($token);
 		$parsed = null;
+		$chats = [];
 		if ($updatesRes['ok'] && is_array($updatesRes['data'])) {
 			$parsed = \MaxMessenger::parseLastMessageFromUpdates($updatesRes['data']);
-		}
-
-		$chatsRes = \MaxMessenger::fetchChats($token);
-		$chats = [];
-		if ($chatsRes['ok'] && is_array($chatsRes['data']) && isset($chatsRes['data']['chats']) && is_array($chatsRes['data']['chats'])) {
-			$chats = $chatsRes['data']['chats'];
+			$chats = \MaxMessenger::parseChatsFromUpdates($updatesRes['data']);
 		}
 
 		$hasData = ($parsed !== null || $chats !== []);
@@ -474,16 +470,8 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 			];
 			return;
 		}
-		if (!$updatesRes['ok'] && !$chatsRes['ok']) {
-			$this->error = \T::Notify_Edit_MaxFetchHttp(max(intval($updatesRes['http_code']), intval($chatsRes['http_code'])));
-			return;
-		}
 		if (!$updatesRes['ok']) {
 			$this->error = \T::Notify_Edit_MaxFetchHttp(intval($updatesRes['http_code']));
-			return;
-		}
-		if (!$chatsRes['ok']) {
-			$this->error = \T::Notify_Edit_MaxFetchHttp(intval($chatsRes['http_code']));
 			return;
 		}
 		$this->error = \T::Notify_Edit_MaxFetchNoData();

@@ -2,11 +2,80 @@
 
 class MaxMessenger {
 
-	const API_BASE = 'https://platform-api.max.ru/messages';
+	private const API_HOST = 'https://platform-api2.max.ru';
 
-	const UPDATES_URL = 'https://platform-api.max.ru/updates';
+	private static ?string $caBundlePath = null;
 
-	const CHATS_URL = 'https://platform-api.max.ru/chats';
+	private static function apiUrl(string $path): string {
+		return self::API_HOST . $path;
+	}
+
+	private static function caBundlePath(): string {
+		if (self::$caBundlePath !== null) {
+			return self::$caBundlePath;
+		}
+		$candidates = [
+			'/etc/ssl/certs/ca-certificates.crt',
+			'/etc/pki/tls/certs/ca-bundle.crt',
+			dirname(__DIR__) . '/certs/russian_trusted_ca.pem',
+			dirname(__DIR__) . '/vendor/akeb/curlget/src/cacert.pem',
+		];
+		foreach ($candidates as $path) {
+			if (is_readable($path)) {
+				self::$caBundlePath = $path;
+				return $path;
+			}
+		}
+		self::$caBundlePath = dirname(__DIR__) . '/vendor/akeb/curlget/src/cacert.pem';
+		return self::$caBundlePath;
+	}
+
+	private static function configureCurl(\AKEB\CurlGet $curl): void {
+		$curl->setSslCert(self::caBundlePath());
+	}
+
+	/**
+	 * @return array{ok: bool, http_code: int, data: array|null, raw_body: string}
+	 */
+	private static function request(
+		string $method,
+		string $path,
+		array $query = [],
+		?string $accessToken = null,
+		?array $body = null
+	): array {
+		$headers = [];
+		if ($accessToken !== null && $accessToken !== '') {
+			$headers[] = 'Authorization: ' . $accessToken;
+		}
+		if ($body !== null) {
+			$headers[] = 'Content-Type: application/json;charset=utf-8';
+		}
+
+		$curl = new \AKEB\CurlGet(self::apiUrl($path), $query, [], $headers);
+		self::configureCurl($curl);
+		if ($method !== 'GET') {
+			$curl->setMethod($method);
+		}
+		if ($body !== null) {
+			$curl->setBody(json_encode($body, JSON_UNESCAPED_UNICODE));
+		}
+		$curl->exec();
+
+		$code = intval($curl->responseCode ?? 0);
+		$responseBody = $curl->responseBody;
+		if (is_array($responseBody)) {
+			return ['ok' => $code >= 200 && $code < 300, 'http_code' => $code, 'data' => $responseBody, 'raw_body' => ''];
+		}
+		$rawBody = is_string($responseBody) ? $responseBody : '';
+		$decoded = $rawBody !== '' ? json_decode($rawBody, true) : null;
+		return [
+			'ok' => $code >= 200 && $code < 300,
+			'http_code' => $code,
+			'data' => is_array($decoded) ? $decoded : null,
+			'raw_body' => $rawBody,
+		];
+	}
 
 	/**
 	 * @param string $accessToken заголовок Authorization (токен из кабинета бота)
@@ -22,26 +91,17 @@ class MaxMessenger {
 		if ($raw === '0' || $raw === '-0' || $raw === '+0') {
 			return false;
 		}
-		$query = [];
+		$query = ['disable_link_preview' => false];
 		if ($raw[0] === '-') {
 			$query['chat_id'] = $raw;
 		} else {
 			$query['user_id'] = $raw;
 		}
-		$query['disable_link_preview'] = false;
-		$url = self::API_BASE . '?' . http_build_query($query);
 		$body = ['text' => $text];
 		if ($format !== null && $format !== '') {
 			$body['format'] = $format;
 		}
-		$curl = new \AKEB\CurlGet($url, [], [], [
-			'Authorization: ' . $accessToken,
-			'Content-Type: application/json;charset=utf-8',
-		]);
-		$curl->setBody(json_encode($body, JSON_UNESCAPED_UNICODE));
-		$curl->exec();
-		$code = $curl->responseCode ?? 0;
-		return $code >= 200 && $code < 300;
+		return self::request('POST', '/messages', $query, $accessToken, $body)['ok'];
 	}
 
 	/**
@@ -50,49 +110,74 @@ class MaxMessenger {
 	 * @return array{ok: bool, http_code: int, data: array|null, raw_body: string}
 	 */
 	public static function fetchUpdates(string $accessToken): array {
-		$curl = new \AKEB\CurlGet(self::UPDATES_URL, [
+		return self::request('GET', '/updates', [
 			'limit' => 100,
 			'timeout' => 5,
-		], [], [
-			'Authorization: ' . $accessToken,
-		]);
-		$curl->exec();
-		$code = intval($curl->responseCode ?? 0);
-		$body = $curl->responseBody;
-		if (is_array($body)) {
-			return ['ok' => $code >= 200 && $code < 300, 'http_code' => $code, 'data' => $body, 'raw_body' => ''];
-		}
-		$decoded = is_string($body) ? json_decode($body, true) : null;
-		return [
-			'ok' => $code >= 200 && $code < 300,
-			'http_code' => $code,
-			'data' => is_array($decoded) ? $decoded : null,
-			'raw_body' => is_string($body) ? $body : '',
-		];
+		], $accessToken);
 	}
 
 	/**
-	 * GET /chats — групповые и прочие чаты, где состоит бот.
+	 * Уникальные чаты из истории /updates (GET /chats с июня 2026 не поддерживается).
 	 *
-	 * @return array{ok: bool, http_code: int, data: array|null, raw_body: string}
+	 * @return array<int, array{chat_id: string, type: string, title: string}>
 	 */
-	public static function fetchChats(string $accessToken): array {
-		$curl = new \AKEB\CurlGet(self::CHATS_URL, [], [], [
-			'Authorization: ' . $accessToken,
-		]);
-		$curl->exec();
-		$code = intval($curl->responseCode ?? 0);
-		$body = $curl->responseBody;
-		if (is_array($body)) {
-			return ['ok' => $code >= 200 && $code < 300, 'http_code' => $code, 'data' => $body, 'raw_body' => ''];
+	public static function parseChatsFromUpdates(array $decoded): array {
+		$updates = $decoded['updates'] ?? null;
+		if (!is_array($updates) || !$updates) {
+			return [];
 		}
-		$decoded = is_string($body) ? json_decode($body, true) : null;
-		return [
-			'ok' => $code >= 200 && $code < 300,
-			'http_code' => $code,
-			'data' => is_array($decoded) ? $decoded : null,
-			'raw_body' => is_string($body) ? $body : '',
-		];
+
+		$chats = [];
+		foreach ($updates as $u) {
+			if (!is_array($u)) {
+				continue;
+			}
+
+			$chatId = '';
+			$type = '';
+			$title = '';
+
+			if (isset($u['chat_id']) && (string) $u['chat_id'] !== '' && (string) $u['chat_id'] !== '0') {
+				$chatId = (string) $u['chat_id'];
+			}
+			if (isset($u['is_channel'])) {
+				$type = !empty($u['is_channel']) ? 'channel' : 'chat';
+			}
+			if (($u['update_type'] ?? '') === 'chat_title_changed' && isset($u['title'])) {
+				$title = (string) $u['title'];
+			}
+
+			if (isset($u['message']) && is_array($u['message'])) {
+				$msg = $u['message'];
+				$recipient = isset($msg['recipient']) && is_array($msg['recipient']) ? $msg['recipient'] : [];
+				if ($chatId === '' && isset($recipient['chat_id'])) {
+					$chatId = (string) $recipient['chat_id'];
+				}
+				if ($chatId === '' && isset($msg['chat_id'])) {
+					$chatId = (string) $msg['chat_id'];
+				}
+				if ($type === '' && isset($recipient['chat_type'])) {
+					$type = (string) $recipient['chat_type'];
+				}
+			}
+
+			if ($chatId === '' || $chatId === '0') {
+				continue;
+			}
+
+			if (!isset($chats[$chatId])) {
+				$chats[$chatId] = ['chat_id' => $chatId, 'type' => $type, 'title' => $title];
+				continue;
+			}
+			if ($type !== '') {
+				$chats[$chatId]['type'] = $type;
+			}
+			if ($title !== '') {
+				$chats[$chatId]['title'] = $title;
+			}
+		}
+
+		return array_values($chats);
 	}
 
 	/**
