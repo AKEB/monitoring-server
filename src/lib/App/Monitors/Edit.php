@@ -105,6 +105,13 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 			} else {
 				$params['status'] = 0;
 			}
+			if (isset($data['type']) && intval($data['type']) == \Monitors::TYPE_FOLDER) {
+				$params['api_enabled'] = 0;
+			} elseif (isset($data['api_enabled']) && $data['api_enabled'] == 'true') {
+				$params['api_enabled'] = 1;
+			} else {
+				$params['api_enabled'] = 0;
+			}
 
 			if (isset($data['send_repeat_minute'])) {
 				$data['send_repeat_minute'] = trim($data['send_repeat_minute']);
@@ -535,6 +542,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 
 		} else {
 			$this->monitor['status'] ??= \Monitors::STATUS_ENABLED;
+			$this->monitor['api_enabled'] ??= 0;
 			$this->monitor['type'] ??= \Monitors::TYPE_FOLDER;
 			$this->monitor['method'] ??= 'GET';
 			$this->monitor['url'] ??= 'https://';
@@ -652,6 +660,10 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					]);
 					echo $this->template->html_switch("status", intval($this->monitor['status']??0), \T::Monitor_Edit_Status(), false,[
 						'readonly' => !($this->can_write || $this->can_create),
+					]);
+					echo $this->template->html_switch("api_enabled", intval($this->monitor['api_enabled']??0), \T::Monitor_Edit_ApiEnabled(), false,[
+						'readonly' => !($this->can_write || $this->can_create),
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_HTTP_JSON.' type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_PING.' type-'.\Monitors::TYPE_DOCKER.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU,
 					]);
 
 					echo $this->template->html_input("url", $this->monitor['url']??'https://', \T::Monitor_Edit_Url(), false, [

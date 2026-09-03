@@ -31,7 +31,12 @@ require_once("./autoload.php");
 \Sessions::session_init(true); // This need to check Permissions and user language
 
 \Logs::add_params_hash_for_print('worker_key_hash', \Logs::PARAM_HASH_SECRET);
+\Logs::add_params_hash_for_print('token_hash', \Logs::PARAM_HASH_SECRET);
+\Logs::add_params_hash_for_print('plaintext', \Logs::PARAM_HASH_SECRET);
+\Logs::add_params_hash_for_print('Authorization', \Logs::PARAM_HASH_SECRET);
+\Logs::add_params_hash_for_print('X-Api-Token', \Logs::PARAM_HASH_SECRET);
 \Logs::add_object(\Workers::LOGS_OBJECT, \Workers::LOGS_OBJECT);
+\Logs::add_object(\UserApiTokens::LOGS_OBJECT, \UserApiTokens::LOGS_OBJECT);
 \Logs::add_object(\Monitors::LOGS_OBJECT, \Monitors::LOGS_OBJECT);
 \Logs::add_object(\MonitoringJobs::LOGS_OBJECT, \MonitoringJobs::LOGS_OBJECT);
 \Logs::add_object(\MonitoringSubscribe::LOGS_OBJECT, \MonitoringSubscribe::LOGS_OBJECT);
@@ -58,6 +63,7 @@ require_once("./autoload.php");
 \Template::addJSFile('/js/main.js');
 
 \Template::addMenuItem(new \MenuItem('', \T::Menu_Home(), '/', null, null));
+\Template::addMenuItem(new \MenuItem('bi bi-key', \T::Menu_ApiTokens(), '/settings/api/', null, null));
 \Template::addMenuItem(new \MenuItem('bi bi-hammer', \T::Maintenances_Menu(), '/maintenances/', null, null));
 \Template::addMenuAdminItem(new \MenuItem('bi bi-hdd-network', \T::Worker_Menu(), '/admin/workers/', null, [
 	new \MenuPermissionItem(\Workers::PERMISSION_ACCESS, -1, READ),
@@ -103,6 +109,9 @@ require_once("./autoload.php");
 \Routes::addRoute('/maintenances/edit/', '\\App\\Maintenances\\Edit');
 \Routes::addRoute('/maintenances/(?P<action>[^/]+)/(?P<maintenance_id>\d+)/', '\\App\\Maintenances\\Show');
 \Routes::addRoute('/maintenances/', '\\App\\Maintenances\\Show');
+
+\Routes::addRoute('/api/v1/status/', '\\App\\Api\\V1\\Status');
+\Routes::addRoute('/settings/api/', '\\App\\Settings\\ApiTokens');
 
 \Routes::addRoute('/admin/dockers/edit/(?P<docker_id>\d+)/', '\\App\\Dockers\\Edit');
 \Routes::addRoute('/admin/dockers/edit/', '\\App\\Dockers\\Edit');

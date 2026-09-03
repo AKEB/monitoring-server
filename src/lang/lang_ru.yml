@@ -10,6 +10,7 @@ Status:
 
 Menu:
   Home: "Главная"
+  ApiTokens: "API"
 
 Worker:
   Menu: "Обработчики"
@@ -98,6 +99,7 @@ Monitor:
     Title: "Название"
     Type: "Тип"
     Status: "Статус"
+    ApiEnabled: "Отдавать в API"
     CreateTime: "Время создания"
     UpdateTime: "Время обновления"
     Url: "Ссылка"
@@ -328,3 +330,28 @@ Maintenances:
     PermissionDenied: "У вас нет прав на редактирование этой технической работы"
     NotingChanged: "Ничего не изменилось"
     TimeError: "Ошибка времени"
+
+Api:
+  Menu: "API"
+  Settings:
+    PageTitle: "API-токены"
+    CreateTitle: "Создать токен"
+    Title: "Название"
+    Token: "Токен"
+    Prefix: "Префикс"
+    LastUsedTime: "Последнее использование"
+    CreateTime: "Создан"
+    Actions: "Действия"
+    Revoke: "Отозвать"
+    CreateButton: "Создать"
+    CreatedOnce: "Скопируйте токен сейчас. Повторно он показан не будет."
+    Copy: "Копировать"
+    Copied: "Скопировано"
+    NameLengthError: "Название должно быть от 2 до 255 символов"
+    CreateError: "Не удалось создать токен"
+    CreateSuccess: "Токен создан"
+    RevokeSuccess: "Токен отозван"
+    RevokeConfirmation: "Отозвать токен {title}?"
+    NotFound: "Токен не найден"
+    DocsHint: "GET /api/v1/status/ с заголовком Authorization: Bearer &lt;token&gt;. В ответе только мониторы с правом чтения и включённым флагом «Отдавать в API»."
+

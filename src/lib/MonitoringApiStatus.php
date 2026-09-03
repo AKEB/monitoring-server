@@ -1,0 +1,338 @@
+<?php
+
+class MonitoringApiStatus {
+
+	const STATUS_UP = 'up';
+	const STATUS_DOWN = 'down';
+	const STATUS_MAINTENANCE = 'maintenance';
+	const STATUS_UNKNOWN = 'unknown';
+
+	static public function buildForUser(array $user): array {
+		$monitors = static::visibleMonitors($user);
+		if (!$monitors) {
+			return [];
+		}
+
+		$monitor_ids = array_map(static fn($m) => intval($m['id']), $monitors);
+		$workers_hash = static::workersHash();
+		$dockers_hash = static::dockersHash();
+		$assigned = static::assignedWorkers($monitors);
+		$last_logs = static::lastLogs($monitors);
+		$availability = \MonitoringAvailabilityPercent::getWindowsByWorker($monitor_ids);
+		$now = time();
+
+		$resources = [];
+		foreach ($monitors as $monitor) {
+			$monitor_id = intval($monitor['id']);
+			$in_maintenance = (bool)\MonitoringMaintenances::getMaintenancesForMonitor($monitor_id);
+			$repeat = static::repeatSeconds($monitor, $dockers_hash);
+			$worker_ids = $assigned[$monitor_id] ?? [];
+			$worker_rows = [];
+			$worker_statuses = [];
+			foreach ($worker_ids as $worker_id) {
+				$last = $last_logs[$monitor_id][$worker_id] ?? null;
+				$worker_status = static::workerStatusFromLog($in_maintenance, $last, $now, $repeat);
+				$worker_statuses[] = $worker_status;
+				$worker_avail = $availability[$monitor_id][$worker_id]['percent'] ?? \MonitoringAvailabilityPercent::emptyWindows();
+				$worker_title = strval($workers_hash[$worker_id] ?? '');
+				if ($worker_title === '') {
+					$worker_title = '#'.$worker_id;
+				}
+				$worker_rows[] = [
+					'id' => $worker_id,
+					'title' => $worker_title,
+					'status' => $worker_status,
+					'availability' => $worker_avail,
+				];
+			}
+			usort($worker_rows, static fn($a, $b) => strcasecmp($a['title'], $b['title']));
+
+			$by_worker = $availability[$monitor_id] ?? [];
+			$resources[] = [
+				'id' => $monitor_id,
+				'title' => strval($monitor['title'] ?? ''),
+				'check_url' => static::checkUrl($monitor, $dockers_hash),
+				'status' => static::aggregateResourceStatus($in_maintenance, $worker_statuses),
+				'availability' => \MonitoringAvailabilityPercent::rollupWindows($by_worker),
+				'workers' => $worker_rows,
+			];
+		}
+
+		usort($resources, static fn($a, $b) => strcasecmp($a['title'], $b['title']));
+		return $resources;
+	}
+
+	/**
+	 * @return list<array>
+	 */
+	static public function visibleMonitors(array $user): array {
+		$sql = sql_pholder(' AND `type` <> ? ORDER BY `title` ASC', \Monitors::TYPE_FOLDER);
+		$rows = \Monitors::data(
+			['api_enabled' => 1],
+			$sql,
+			'`id`, `title`, `type`, `url`, `host`, `port`, `docker`, `container`, `status`, `parent_id`, `repeat_seconds`'
+		);
+		if (!$rows || !is_array($rows)) {
+			return [];
+		}
+
+		$dockers_hash = static::dockersHash();
+		$visible = [];
+		foreach ($rows as $monitor) {
+			$monitor_id = intval($monitor['id'] ?? 0);
+			if ($monitor_id < 1) {
+				continue;
+			}
+			if (!\Monitors::is_enable($monitor_id)) {
+				continue;
+			}
+			if (!\Sessions::checkPermission(\Monitors::PERMISSION_ACCESS, $monitor_id, READ, $user)) {
+				continue;
+			}
+			if (intval($monitor['type']) === \Monitors::TYPE_DOCKER) {
+				$docker_id = intval($monitor['docker'] ?? 0);
+				if ($docker_id < 1 || !isset($dockers_hash[$docker_id])) {
+					continue;
+				}
+				if (intval($dockers_hash[$docker_id]['status'] ?? 0) !== \Dockers::STATUS_ENABLED) {
+					continue;
+				}
+			}
+			$visible[] = $monitor;
+		}
+		return $visible;
+	}
+
+	static public function checkUrl(array $monitor, array $dockers_hash = []): string {
+		$type = intval($monitor['type'] ?? 0);
+		$url = trim(strval($monitor['url'] ?? ''));
+		$host = trim(strval($monitor['host'] ?? ''));
+		$port = intval($monitor['port'] ?? 0);
+		switch ($type) {
+			case \Monitors::TYPE_HTTPS:
+			case \Monitors::TYPE_HTTP_JSON:
+				return $url;
+			case \Monitors::TYPE_TCP:
+				return $port > 0 ? 'tcp://'.$host.':'.$port : 'tcp://'.$host;
+			case \Monitors::TYPE_PING:
+				return 'icmp://'.$host;
+			case \Monitors::TYPE_DOCKER:
+				$docker_id = intval($monitor['docker'] ?? 0);
+				$docker_title = strval($dockers_hash[$docker_id]['title'] ?? $docker_id);
+				$container = trim(strval($monitor['container'] ?? ''));
+				return 'docker://'.$docker_title.($container !== '' ? '/'.$container : '');
+			case \Monitors::TYPE_EXPORTER_DISK:
+			case \Monitors::TYPE_EXPORTER_MEMORY:
+			case \Monitors::TYPE_EXPORTER_CPU:
+				if ($url !== '') {
+					return $url;
+				}
+				return $port > 0 ? $host.':'.$port : $host;
+			default:
+				return $url !== '' ? $url : $host;
+		}
+	}
+
+	static public function aggregateResourceStatus(bool $in_maintenance, array $worker_statuses): string {
+		if ($in_maintenance) {
+			return self::STATUS_MAINTENANCE;
+		}
+		$has_down = false;
+		$has_up = false;
+		foreach ($worker_statuses as $status) {
+			if ($status === self::STATUS_DOWN) {
+				$has_down = true;
+			} elseif ($status === self::STATUS_UP) {
+				$has_up = true;
+			}
+		}
+		if ($has_down) {
+			return self::STATUS_DOWN;
+		}
+		if ($has_up) {
+			return self::STATUS_UP;
+		}
+		return self::STATUS_UNKNOWN;
+	}
+
+	static public function workerStatusFromLog(bool $in_maintenance, ?array $last_log, int $now, int $repeat_seconds): string {
+		if ($in_maintenance) {
+			return self::STATUS_MAINTENANCE;
+		}
+		if ($repeat_seconds < 1) {
+			$repeat_seconds = 60;
+		}
+		if (!$last_log || !isset($last_log['update_time'])) {
+			return self::STATUS_UNKNOWN;
+		}
+		$fresh_after = $now - (2 * $repeat_seconds);
+		if (intval($last_log['update_time']) < $fresh_after) {
+			return self::STATUS_UNKNOWN;
+		}
+		if (intval($last_log['status']) === \MonitoringLogs::STATUS_FAIL) {
+			return self::STATUS_DOWN;
+		}
+		if (intval($last_log['status']) === \MonitoringLogs::STATUS_GOOD) {
+			return self::STATUS_UP;
+		}
+		return self::STATUS_UNKNOWN;
+	}
+
+	/**
+	 * @return array<int, array>
+	 */
+	static private function workersHash(): array {
+		$rows = \Workers::data(false, ' ORDER BY NULL', '`id`, `title`');
+		$hash = [];
+		if ($rows) {
+			foreach ($rows as $row) {
+				$hash[intval($row['id'])] = strval($row['title'] ?? '');
+			}
+		}
+		return $hash;
+	}
+
+	/**
+	 * @return array<int, array>
+	 */
+	static private function dockersHash(): array {
+		static $hash = null;
+		if ($hash !== null) {
+			return $hash;
+		}
+		$hash = [];
+		$rows = \Dockers::data(false, ' ORDER BY NULL', '`id`, `title`, `status`, `repeat_seconds`');
+		if ($rows) {
+			foreach ($rows as $row) {
+				$hash[intval($row['id'])] = $row;
+			}
+		}
+		return $hash;
+	}
+
+	/**
+	 * @param list<array> $monitors
+	 * @return array<int, list<int>>
+	 */
+	static private function assignedWorkers(array $monitors): array {
+		$monitor_ids = [];
+		$docker_monitor_ids = [];
+		$docker_ids = [];
+		foreach ($monitors as $monitor) {
+			$id = intval($monitor['id']);
+			$monitor_ids[$id] = $id;
+			if (intval($monitor['type']) === \Monitors::TYPE_DOCKER) {
+				$docker_id = intval($monitor['docker'] ?? 0);
+				if ($docker_id > 0) {
+					$docker_monitor_ids[$id] = $docker_id;
+					$docker_ids[$docker_id] = $docker_id;
+				}
+			}
+		}
+
+		$assigned = [];
+		foreach ($monitor_ids as $id) {
+			$assigned[$id] = [];
+		}
+
+		if ($monitor_ids) {
+			$jobs = \MonitoringJobs::data(
+				false,
+				sql_pholder(' AND `monitor_id` IN (?@) ORDER BY NULL', array_values($monitor_ids)),
+				'`monitor_id`, `worker_id`'
+			);
+			if ($jobs) {
+				foreach ($jobs as $job) {
+					$monitor_id = intval($job['monitor_id']);
+					$worker_id = intval($job['worker_id']);
+					if ($monitor_id < 1 || $worker_id < 1) {
+						continue;
+					}
+					if (isset($docker_monitor_ids[$monitor_id])) {
+						continue;
+					}
+					$assigned[$monitor_id][$worker_id] = $worker_id;
+				}
+			}
+		}
+
+		$docker_workers = [];
+		if ($docker_ids) {
+			$djobs = \MonitoringDockers::data(
+				false,
+				sql_pholder(' AND `docker_id` IN (?@) ORDER BY NULL', array_values($docker_ids)),
+				'`docker_id`, `worker_id`'
+			);
+			if ($djobs) {
+				foreach ($djobs as $job) {
+					$docker_id = intval($job['docker_id']);
+					$worker_id = intval($job['worker_id']);
+					if ($docker_id < 1 || $worker_id < 1) {
+						continue;
+					}
+					$docker_workers[$docker_id][$worker_id] = $worker_id;
+				}
+			}
+		}
+		foreach ($docker_monitor_ids as $monitor_id => $docker_id) {
+			$assigned[$monitor_id] = $docker_workers[$docker_id] ?? [];
+		}
+
+		foreach ($assigned as $monitor_id => $workers) {
+			$assigned[$monitor_id] = array_values($workers);
+		}
+		return $assigned;
+	}
+
+	/**
+	 * @param list<array> $monitors
+	 * @return array<int, array<int, array{status:int, update_time:int}>>
+	 */
+	static private function lastLogs(array $monitors): array {
+		if (!$monitors) {
+			return [];
+		}
+		$monitor_ids = [];
+		$max_lookback = 120;
+		$dockers_hash = static::dockersHash();
+		foreach ($monitors as $monitor) {
+			$monitor_ids[] = intval($monitor['id']);
+			$repeat = static::repeatSeconds($monitor, $dockers_hash);
+			$max_lookback = max($max_lookback, 2 * $repeat);
+		}
+		$sql = sql_pholder(
+			' AND `monitor_id` IN (?@) AND `update_time` >= ? ORDER BY `update_time` DESC',
+			$monitor_ids,
+			time() - $max_lookback
+		);
+		$rows = \MonitoringLogs::data(false, $sql, '`monitor_id`, `worker_id`, `status`, `update_time`');
+		$result = [];
+		if ($rows) {
+			foreach ($rows as $row) {
+				$monitor_id = intval($row['monitor_id']);
+				$worker_id = intval($row['worker_id']);
+				if ($monitor_id < 1 || $worker_id < 1) {
+					continue;
+				}
+				if (isset($result[$monitor_id][$worker_id])) {
+					continue;
+				}
+				$result[$monitor_id][$worker_id] = [
+					'status' => intval($row['status']),
+					'update_time' => intval($row['update_time']),
+				];
+			}
+		}
+		return $result;
+	}
+
+	static private function repeatSeconds(array $monitor, array $dockers_hash): int {
+		if (intval($monitor['type'] ?? 0) === \Monitors::TYPE_DOCKER) {
+			$docker_id = intval($monitor['docker'] ?? 0);
+			$repeat = intval($dockers_hash[$docker_id]['repeat_seconds'] ?? 0);
+			return $repeat > 0 ? $repeat : 60;
+		}
+		$repeat = intval($monitor['repeat_seconds'] ?? 0);
+		return $repeat > 0 ? $repeat : 60;
+	}
+}

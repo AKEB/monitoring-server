@@ -5,6 +5,15 @@ class MonitoringAvailabilityPercent {
 	private const CACHE_TTL_TODAY = 90;
 	private const CACHE_TTL_PERIOD = 120;
 
+	public const WINDOWS = [
+		'1m' => 60,
+		'5m' => 300,
+		'10m' => 600,
+		'1h' => 3600,
+		'4h' => 14400,
+		'8h' => 28800,
+	];
+
 	public static function getAvailabilityPercent(int $seconds = 86400, ?int $monitor_id = null): array {
 		if ($seconds <= 0) {
 			$seconds = 86400;
@@ -86,6 +95,104 @@ class MonitoringAvailabilityPercent {
 		$ttl = $seconds <= 86400 ? self::CACHE_TTL_TODAY : self::CACHE_TTL_PERIOD;
 		$cache = new \Cache(self::cacheKeyPeriod($monitor_id, $seconds));
 		$cache->update(json_encode($data), $ttl);
+	}
+
+	public static function percent(int $good, int $total): ?float {
+		if ($total <= 0) {
+			return null;
+		}
+		$percent = round(($good / $total) * 100, 2);
+		if ($percent > 100) {
+			$percent = 100.0;
+		}
+		return $percent;
+	}
+
+	public static function emptyWindows(): array {
+		$windows = [];
+		foreach (array_keys(self::WINDOWS) as $key) {
+			$windows[$key] = null;
+		}
+		return $windows;
+	}
+
+	/**
+	 * Availability for 1m/5m/10m/1h/4h/8h grouped by monitor and worker.
+	 *
+	 * @param int[] $monitor_ids
+	 * @return array<int, array<int, array{good: array<string,int>, total: array<string,int>, percent: array<string,?float>}>>
+	 */
+	public static function getWindowsByWorker(array $monitor_ids): array {
+		$monitor_ids = array_values(array_unique(array_filter(array_map('intval', $monitor_ids))));
+		if (!$monitor_ids) {
+			return [];
+		}
+
+		$now = time();
+		$max_seconds = max(self::WINDOWS);
+		$fields = ['`monitor_id`', '`worker_id`'];
+		foreach (self::WINDOWS as $key => $seconds) {
+			$threshold = $now - $seconds;
+			$fields[] = sql_pholder('SUM(`status` = 1 AND `update_time` >= ?) AS `good_'.$key.'`', $threshold);
+			$fields[] = sql_pholder('SUM(`update_time` >= ?) AS `total_'.$key.'`', $threshold);
+		}
+
+		$sql = sql_pholder(' AND `update_time` >= ? AND `monitor_id` IN (?@)', $now - $max_seconds, $monitor_ids);
+		$sql .= ' GROUP BY `monitor_id`, `worker_id` ORDER BY NULL';
+
+		$rows = \MonitoringLogs::data(false, $sql, implode(",\n", $fields));
+		if (!$rows || !is_array($rows)) {
+			return [];
+		}
+
+		$result = [];
+		foreach ($rows as $row) {
+			$monitor_id = intval($row['monitor_id'] ?? 0);
+			$worker_id = intval($row['worker_id'] ?? 0);
+			if ($monitor_id < 1 || $worker_id < 1) {
+				continue;
+			}
+			$good = [];
+			$total = [];
+			$percent = [];
+			foreach (array_keys(self::WINDOWS) as $key) {
+				$good[$key] = intval($row['good_'.$key] ?? 0);
+				$total[$key] = intval($row['total_'.$key] ?? 0);
+				$percent[$key] = self::percent($good[$key], $total[$key]);
+			}
+			$result[$monitor_id][$worker_id] = [
+				'good' => $good,
+				'total' => $total,
+				'percent' => $percent,
+			];
+		}
+		return $result;
+	}
+
+	/**
+	 * Roll worker-window counts up to monitor level (sum of checks, not average of percents).
+	 *
+	 * @param array<int, array{good: array<string,int>, total: array<string,int>, percent: array<string,?float>}> $by_worker
+	 * @return array<string, float|null>
+	 */
+	public static function rollupWindows(array $by_worker): array {
+		$good = [];
+		$total = [];
+		foreach (array_keys(self::WINDOWS) as $key) {
+			$good[$key] = 0;
+			$total[$key] = 0;
+		}
+		foreach ($by_worker as $row) {
+			foreach (array_keys(self::WINDOWS) as $key) {
+				$good[$key] += intval($row['good'][$key] ?? 0);
+				$total[$key] += intval($row['total'][$key] ?? 0);
+			}
+		}
+		$percent = [];
+		foreach (array_keys(self::WINDOWS) as $key) {
+			$percent[$key] = self::percent($good[$key], $total[$key]);
+		}
+		return $percent;
 	}
 
 	/**

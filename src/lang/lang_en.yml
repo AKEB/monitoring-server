@@ -10,6 +10,7 @@ Status:
 
 Menu:
   Home: "Home"
+  ApiTokens: "API"
   Maintenances: "Maintenances"
 
 Worker:
@@ -99,6 +100,7 @@ Monitor:
     Title: "Title"
     Type: "Type"
     Status: "Status"
+    ApiEnabled: "Expose in API"
     CreateTime: "Create time"
     UpdateTime: "Update time"
     Url: "URL"
@@ -333,3 +335,27 @@ Maintenances:
     PermissionDenied: "You don't have permission to edit this maintenance"
     NotingChanged: "Nothing changed"
     TimeError: "Time error"
+
+Api:
+  Menu: "API"
+  Settings:
+    PageTitle: "API tokens"
+    CreateTitle: "Create token"
+    Title: "Name"
+    Token: "Token"
+    Prefix: "Prefix"
+    LastUsedTime: "Last used"
+    CreateTime: "Created"
+    Actions: "Actions"
+    Revoke: "Revoke"
+    CreateButton: "Create"
+    CreatedOnce: "Copy this token now. It will not be shown again."
+    Copy: "Copy"
+    Copied: "Copied"
+    NameLengthError: "Name length must be between 2 and 255 characters"
+    CreateError: "Unable to create token"
+    CreateSuccess: "Token created"
+    RevokeSuccess: "Token revoked"
+    RevokeConfirmation: "Revoke token {title}?"
+    NotFound: "Token not found"
+    DocsHint: "GET /api/v1/status/ with Authorization: Bearer &lt;token&gt;. The response includes only monitors you can read that have “Expose in API” enabled."

@@ -65,6 +65,14 @@ class T {
 	public static function Menu_Home(...$argv): string { return ''; }
 
 	/**
+	 * Menu_ApiTokens
+	 * 
+	 * @return string "API"
+	 * @return string "API"
+	 */
+	public static function Menu_ApiTokens(...$argv): string { return ''; }
+
+	/**
 	 * Menu_Maintenances
 	 * 
 	 * @return string "Maintenances"
@@ -647,6 +655,14 @@ class T {
 	 * @return string "Статус"
 	 */
 	public static function Monitor_Edit_Status(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_ApiEnabled
+	 * 
+	 * @return string "Expose in API"
+	 * @return string "Отдавать в API"
+	 */
+	public static function Monitor_Edit_ApiEnabled(...$argv): string { return ''; }
 
 	/**
 	 * Monitor_Edit_CreateTime
@@ -1379,8 +1395,8 @@ class T {
 	/**
 	 * Notify_Edit_MaxFetchNoData
 	 * 
-	 * @return string "No matching incoming message in /updates and GET /chats returned an empty list."
-	 * @return string "В /updates нет подходящего входящего сообщения, а GET /chats вернул пустой список."
+	 * @return string "No matching incoming message or chat_id in /updates. Write to the bot or add it to a chat, then try again."
+	 * @return string "В /updates нет подходящего входящего сообщения и chat_id. Напишите боту или добавьте его в чат и нажмите снова."
 	 */
 	public static function Notify_Edit_MaxFetchNoData(...$argv): string { return ''; }
 
@@ -1459,8 +1475,8 @@ class T {
 	/**
 	 * Notify_Edit_MaxFetchSectionChats
 	 * 
-	 * @return string "Bot chats (GET /chats)"
-	 * @return string "Чаты бота (GET /chats)"
+	 * @return string "Chats from /updates history"
+	 * @return string "Чаты из истории /updates"
 	 */
 	public static function Notify_Edit_MaxFetchSectionChats(...$argv): string { return ''; }
 
@@ -2295,6 +2311,174 @@ class T {
 	 * @return string "Ошибка времени"
 	 */
 	public static function Maintenances_Edit_TimeError(...$argv): string { return ''; }
+
+	/**
+	 * Api_Menu
+	 * 
+	 * @return string "API"
+	 * @return string "API"
+	 */
+	public static function Api_Menu(...$argv): string { return ''; }
+
+	/**
+	 * Api_Settings_PageTitle
+	 * 
+	 * @return string "API tokens"
+	 * @return string "API-токены"
+	 */
+	public static function Api_Settings_PageTitle(...$argv): string { return ''; }
+
+	/**
+	 * Api_Settings_CreateTitle
+	 * 
+	 * @return string "Create token"
+	 * @return string "Создать токен"
+	 */
+	public static function Api_Settings_CreateTitle(...$argv): string { return ''; }
+
+	/**
+	 * Api_Settings_Title
+	 * 
+	 * @return string "Name"
+	 * @return string "Название"
+	 */
+	public static function Api_Settings_Title(...$argv): string { return ''; }
+
+	/**
+	 * Api_Settings_Token
+	 * 
+	 * @return string "Token"
+	 * @return string "Токен"
+	 */
+	public static function Api_Settings_Token(...$argv): string { return ''; }
+
+	/**
+	 * Api_Settings_Prefix
+	 * 
+	 * @return string "Prefix"
+	 * @return string "Префикс"
+	 */
+	public static function Api_Settings_Prefix(...$argv): string { return ''; }
+
+	/**
+	 * Api_Settings_LastUsedTime
+	 * 
+	 * @return string "Last used"
+	 * @return string "Последнее использование"
+	 */
+	public static function Api_Settings_LastUsedTime(...$argv): string { return ''; }
+
+	/**
+	 * Api_Settings_CreateTime
+	 * 
+	 * @return string "Created"
+	 * @return string "Создан"
+	 */
+	public static function Api_Settings_CreateTime(...$argv): string { return ''; }
+
+	/**
+	 * Api_Settings_Actions
+	 * 
+	 * @return string "Actions"
+	 * @return string "Действия"
+	 */
+	public static function Api_Settings_Actions(...$argv): string { return ''; }
+
+	/**
+	 * Api_Settings_Revoke
+	 * 
+	 * @return string "Revoke"
+	 * @return string "Отозвать"
+	 */
+	public static function Api_Settings_Revoke(...$argv): string { return ''; }
+
+	/**
+	 * Api_Settings_CreateButton
+	 * 
+	 * @return string "Create"
+	 * @return string "Создать"
+	 */
+	public static function Api_Settings_CreateButton(...$argv): string { return ''; }
+
+	/**
+	 * Api_Settings_CreatedOnce
+	 * 
+	 * @return string "Copy this token now. It will not be shown again."
+	 * @return string "Скопируйте токен сейчас. Повторно он показан не будет."
+	 */
+	public static function Api_Settings_CreatedOnce(...$argv): string { return ''; }
+
+	/**
+	 * Api_Settings_Copy
+	 * 
+	 * @return string "Copy"
+	 * @return string "Копировать"
+	 */
+	public static function Api_Settings_Copy(...$argv): string { return ''; }
+
+	/**
+	 * Api_Settings_Copied
+	 * 
+	 * @return string "Copied"
+	 * @return string "Скопировано"
+	 */
+	public static function Api_Settings_Copied(...$argv): string { return ''; }
+
+	/**
+	 * Api_Settings_NameLengthError
+	 * 
+	 * @return string "Name length must be between 2 and 255 characters"
+	 * @return string "Название должно быть от 2 до 255 символов"
+	 */
+	public static function Api_Settings_NameLengthError(...$argv): string { return ''; }
+
+	/**
+	 * Api_Settings_CreateError
+	 * 
+	 * @return string "Unable to create token"
+	 * @return string "Не удалось создать токен"
+	 */
+	public static function Api_Settings_CreateError(...$argv): string { return ''; }
+
+	/**
+	 * Api_Settings_CreateSuccess
+	 * 
+	 * @return string "Token created"
+	 * @return string "Токен создан"
+	 */
+	public static function Api_Settings_CreateSuccess(...$argv): string { return ''; }
+
+	/**
+	 * Api_Settings_RevokeSuccess
+	 * 
+	 * @return string "Token revoked"
+	 * @return string "Токен отозван"
+	 */
+	public static function Api_Settings_RevokeSuccess(...$argv): string { return ''; }
+
+	/**
+	 * Api_Settings_RevokeConfirmation
+	 * 
+	 * @return string "Revoke token {title}?"
+	 * @return string "Отозвать токен {title}?"
+	 */
+	public static function Api_Settings_RevokeConfirmation(...$argv): string { return ''; }
+
+	/**
+	 * Api_Settings_NotFound
+	 * 
+	 * @return string "Token not found"
+	 * @return string "Токен не найден"
+	 */
+	public static function Api_Settings_NotFound(...$argv): string { return ''; }
+
+	/**
+	 * Api_Settings_DocsHint
+	 * 
+	 * @return string "GET /api/v1/status/ with Authorization: Bearer &lt;token&gt;. The response includes only monitors you can read that have “Expose in API” enabled."
+	 * @return string "GET /api/v1/status/ с заголовком Authorization: Bearer &lt;token&gt;. В ответе только мониторы с правом чтения и включённым флагом «Отдавать в API»."
+	 */
+	public static function Api_Settings_DocsHint(...$argv): string { return ''; }
 
 	/**
 	 * Framework_ServerVersion
