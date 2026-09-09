@@ -24,10 +24,12 @@ class Status extends \Routing_Parent implements \Routing_Interface {
 			return;
 		}
 
+		$data = \MonitoringApiStatus::buildForUser($auth['user']);
 		$payload = json_encode([
 			'status' => 0,
 			'generated_at' => time(),
-			'resources' => \MonitoringApiStatus::buildForUser($auth['user']),
+			'resources' => $data['resources'] ?? [],
+			'maintenances' => $data['maintenances'] ?? [],
 		], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 		if (!is_string($payload) || $payload === '') {
 			$this->responseError('Unable to encode response', 500);

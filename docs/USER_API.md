@@ -85,6 +85,31 @@ curl -sS -H "Authorization: Bearer mnt_YOUR_TOKEN" https://monitoring.example/ap
             "8h": 99.92
           }
         }
+      ],
+      "maintenances": [
+        {
+          "id": 8,
+          "title": "DC upgrade",
+          "start_time": 1756890000,
+          "finish_time": 1756893600,
+          "start_at": "2026-09-03 12:00:00",
+          "finish_at": "2026-09-03 13:00:00",
+          "active": true
+        }
+      ]
+    }
+  ],
+  "maintenances": [
+    {
+      "id": 8,
+      "title": "DC upgrade",
+      "start_time": 1756890000,
+      "finish_time": 1756893600,
+      "start_at": "2026-09-03 12:00:00",
+      "finish_at": "2026-09-03 13:00:00",
+      "active": true,
+      "monitors": [
+        { "id": 12, "title": "example.com" }
       ]
     }
   ]
@@ -92,6 +117,8 @@ curl -sS -H "Authorization: Bearer mnt_YOUR_TOKEN" https://monitoring.example/ap
 ```
 
 `availability` windows with no checks are `null` (common for `1m` when `repeat_seconds` is 60 or more). Percentages are `good / total` over raw `monitoring_logs` in that window, rolled up across workers as a sum of checks.
+
+`maintenances` lists current and upcoming planned work (`finish_time` still in the future) that affect API-visible monitors. A window on a parent folder includes the child monitors. Each resource also has a compact `maintenances` array (without nested `monitors`). `active` is true while `start_time <= now <= finish_time`.
 
 Errors:
 

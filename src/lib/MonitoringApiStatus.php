@@ -7,8 +7,25 @@ class MonitoringApiStatus {
 	const STATUS_MAINTENANCE = 'maintenance';
 	const STATUS_UNKNOWN = 'unknown';
 
+	/**
+	 * @return array{resources: list<array>, maintenances: list<array>}
+	 */
 	static public function buildForUser(array $user): array {
 		$monitors = static::visibleMonitors($user);
+		$resources = static::buildResources($monitors);
+		$maintenances = static::buildMaintenances($monitors);
+		static::attachMaintenancesToResources($resources, $maintenances);
+		return [
+			'resources' => $resources,
+			'maintenances' => $maintenances,
+		];
+	}
+
+	/**
+	 * @param list<array> $monitors
+	 * @return list<array>
+	 */
+	static private function buildResources(array $monitors): array {
 		if (!$monitors) {
 			return [];
 		}
@@ -57,11 +74,138 @@ class MonitoringApiStatus {
 				'status' => static::aggregateResourceStatus($in_maintenance, $worker_statuses),
 				'availability' => \MonitoringAvailabilityPercent::rollupWindows($by_worker),
 				'workers' => $worker_rows,
+				'maintenances' => [],
 			];
 		}
 
 		usort($resources, static fn($a, $b) => strcasecmp($a['title'], $b['title']));
 		return $resources;
+	}
+
+	/**
+	 * Current and upcoming maintenances that affect API-visible monitors.
+	 *
+	 * @param list<array> $visible_monitors
+	 * @return list<array>
+	 */
+	static public function buildMaintenances(array $visible_monitors): array {
+		if (!$visible_monitors) {
+			return [];
+		}
+
+		$now = time();
+		$rows = \Maintenances::data(
+			false,
+			sql_pholder(' AND `finish_time` >= ? ORDER BY `start_time` ASC, `id` ASC', $now),
+			'`id`, `title`, `start_time`, `finish_time`'
+		);
+		if (!$rows || !is_array($rows)) {
+			return [];
+		}
+
+		$links = \MonitoringMaintenances::data(false, ' ORDER BY NULL', '`maintenance_id`, `monitor_id`');
+		$targets = [];
+		if ($links) {
+			foreach ($links as $link) {
+				$maintenance_id = intval($link['maintenance_id'] ?? 0);
+				$monitor_id = intval($link['monitor_id'] ?? 0);
+				if ($maintenance_id < 1 || $monitor_id < 1) {
+					continue;
+				}
+				$targets[$maintenance_id][$monitor_id] = true;
+			}
+		}
+
+		$monitors_hash = \Monitors::get_hash();
+		$out = [];
+		foreach ($rows as $row) {
+			$maintenance_id = intval($row['id'] ?? 0);
+			if ($maintenance_id < 1) {
+				continue;
+			}
+			$affected = [];
+			$target_ids = $targets[$maintenance_id] ?? [];
+			foreach ($visible_monitors as $monitor) {
+				$monitor_id = intval($monitor['id'] ?? 0);
+				if ($monitor_id < 1) {
+					continue;
+				}
+				if (!static::monitorIsUnderTargets($monitor_id, $target_ids, $monitors_hash)) {
+					continue;
+				}
+				$affected[] = [
+					'id' => $monitor_id,
+					'title' => strval($monitor['title'] ?? ''),
+				];
+			}
+			if (!$affected) {
+				continue;
+			}
+			usort($affected, static fn($a, $b) => strcasecmp($a['title'], $b['title']));
+			$start = intval($row['start_time'] ?? 0);
+			$finish = intval($row['finish_time'] ?? 0);
+			$out[] = [
+				'id' => $maintenance_id,
+				'title' => strval($row['title'] ?? ''),
+				'start_time' => $start,
+				'finish_time' => $finish,
+				'start_at' => $start > 0 ? date('Y-m-d H:i:s', $start) : '',
+				'finish_at' => $finish > 0 ? date('Y-m-d H:i:s', $finish) : '',
+				'active' => $start <= $now && $finish >= $now,
+				'monitors' => $affected,
+			];
+		}
+		return $out;
+	}
+
+	/**
+	 * True if the monitor itself or any parent folder is in $target_ids.
+	 *
+	 * @param array<int, true> $target_ids
+	 * @param array<int, array> $monitors_hash
+	 */
+	static public function monitorIsUnderTargets(int $monitor_id, array $target_ids, array $monitors_hash): bool {
+		if (!$target_ids) {
+			return false;
+		}
+		$id = $monitor_id;
+		$guard = 0;
+		while ($id > 0 && $guard++ < 100) {
+			if (isset($target_ids[$id])) {
+				return true;
+			}
+			$id = intval($monitors_hash[$id]['parent_id'] ?? 0);
+		}
+		return false;
+	}
+
+	/**
+	 * @param list<array> $resources
+	 * @param list<array> $maintenances
+	 */
+	static private function attachMaintenancesToResources(array &$resources, array $maintenances): void {
+		if (!$resources || !$maintenances) {
+			return;
+		}
+		$by_monitor = [];
+		foreach ($maintenances as $item) {
+			$compact = [
+				'id' => $item['id'],
+				'title' => $item['title'],
+				'start_time' => $item['start_time'],
+				'finish_time' => $item['finish_time'],
+				'start_at' => $item['start_at'],
+				'finish_at' => $item['finish_at'],
+				'active' => $item['active'],
+			];
+			foreach ($item['monitors'] as $monitor) {
+				$by_monitor[intval($monitor['id'])][] = $compact;
+			}
+		}
+		foreach ($resources as &$resource) {
+			$resource['maintenances'] = $by_monitor[intval($resource['id'])] ?? [];
+		}
+		unset($resource);
 	}
 
 	/**

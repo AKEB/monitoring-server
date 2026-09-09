@@ -83,6 +83,19 @@ class MonitoringApiStatusTest extends PHPUnit\Framework\TestCase {
 		$this->assertSame(\MonitoringApiStatus::STATUS_UNKNOWN, \MonitoringApiStatus::workerStatusFromLog(false, null, $now, 60));
 	}
 
+	function test_monitor_is_under_targets_walks_parents() {
+		$hash = [
+			1 => ['id' => 1, 'parent_id' => 0],
+			2 => ['id' => 2, 'parent_id' => 1],
+			3 => ['id' => 3, 'parent_id' => 2],
+			4 => ['id' => 4, 'parent_id' => 0],
+		];
+		$this->assertTrue(\MonitoringApiStatus::monitorIsUnderTargets(3, [1 => true], $hash));
+		$this->assertTrue(\MonitoringApiStatus::monitorIsUnderTargets(3, [3 => true], $hash));
+		$this->assertFalse(\MonitoringApiStatus::monitorIsUnderTargets(3, [4 => true], $hash));
+		$this->assertFalse(\MonitoringApiStatus::monitorIsUnderTargets(3, [], $hash));
+	}
+
 	function test_token_hash_and_prefix() {
 		$plain = \UserApiTokens::generatePlaintext();
 		$this->assertStringStartsWith('mnt_', $plain);
