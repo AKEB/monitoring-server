@@ -665,6 +665,22 @@ class T {
 	public static function Monitor_Edit_ApiEnabled(...$argv): string { return ''; }
 
 	/**
+	 * Monitor_Edit_ApiDescriptionRu
+	 * 
+	 * @return string "Description (Russian)"
+	 * @return string "Описание (русский)"
+	 */
+	public static function Monitor_Edit_ApiDescriptionRu(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_ApiDescriptionEn
+	 * 
+	 * @return string "Description (English)"
+	 * @return string "Описание (английский)"
+	 */
+	public static function Monitor_Edit_ApiDescriptionEn(...$argv): string { return ''; }
+
+	/**
 	 * Monitor_Edit_CreateTime
 	 * 
 	 * @return string "Create time"

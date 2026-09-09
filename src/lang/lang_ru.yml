@@ -100,6 +100,8 @@ Monitor:
     Type: "Тип"
     Status: "Статус"
     ApiEnabled: "Отдавать в API"
+    ApiDescriptionRu: "Описание (русский)"
+    ApiDescriptionEn: "Описание (английский)"
     CreateTime: "Время создания"
     UpdateTime: "Время обновления"
     Url: "Ссылка"

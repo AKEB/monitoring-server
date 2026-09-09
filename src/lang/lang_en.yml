@@ -101,6 +101,8 @@ Monitor:
     Type: "Type"
     Status: "Status"
     ApiEnabled: "Expose in API"
+    ApiDescriptionRu: "Description (Russian)"
+    ApiDescriptionEn: "Description (English)"
     CreateTime: "Create time"
     UpdateTime: "Update time"
     Url: "URL"

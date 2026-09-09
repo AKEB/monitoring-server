@@ -112,6 +112,8 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 			} else {
 				$params['api_enabled'] = 0;
 			}
+			$params['api_description_ru'] = isset($data['api_description_ru']) ? trim($data['api_description_ru']) : '';
+			$params['api_description_en'] = isset($data['api_description_en']) ? trim($data['api_description_en']) : '';
 
 			if (isset($data['send_repeat_minute'])) {
 				$data['send_repeat_minute'] = trim($data['send_repeat_minute']);
@@ -543,6 +545,8 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 		} else {
 			$this->monitor['status'] ??= \Monitors::STATUS_ENABLED;
 			$this->monitor['api_enabled'] ??= 0;
+			$this->monitor['api_description_ru'] ??= '';
+			$this->monitor['api_description_en'] ??= '';
 			$this->monitor['type'] ??= \Monitors::TYPE_FOLDER;
 			$this->monitor['method'] ??= 'GET';
 			$this->monitor['url'] ??= 'https://';
@@ -664,6 +668,23 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					echo $this->template->html_switch("api_enabled", intval($this->monitor['api_enabled']??0), \T::Monitor_Edit_ApiEnabled(), false,[
 						'readonly' => !($this->can_write || $this->can_create),
 						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_HTTP_JSON.' type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_PING.' type-'.\Monitors::TYPE_DOCKER.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU,
+					]);
+					$api_description_class = 'api-description-dependence';
+					echo $this->template->html_input("api_description_ru", htmlspecialchars(strval($this->monitor['api_description_ru']??''), ENT_QUOTES, 'UTF-8'), \T::Monitor_Edit_ApiDescriptionRu(), false, [
+						'type' => 'textarea',
+						'rows' => '4',
+						'cols' => '60',
+						'global-class' => $api_description_class,
+						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+						'readonly' => !($this->can_write || $this->can_create),
+					]);
+					echo $this->template->html_input("api_description_en", htmlspecialchars(strval($this->monitor['api_description_en']??''), ENT_QUOTES, 'UTF-8'), \T::Monitor_Edit_ApiDescriptionEn(), false, [
+						'type' => 'textarea',
+						'rows' => '4',
+						'cols' => '60',
+						'global-class' => $api_description_class,
+						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+						'readonly' => !($this->can_write || $this->can_create),
 					]);
 
 					echo $this->template->html_input("url", $this->monitor['url']??'https://', \T::Monitor_Edit_Url(), false, [
@@ -843,6 +864,13 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				$('.type-' + selected_type).each(function(){
 					$(this).show();
 				});
+				monitor_api_fields_toggle();
+			}
+
+			function monitor_api_fields_toggle() {
+				const enabled = $('#api_enabled').is(':checked');
+				const isFolder = $('#type').val() == '<?=intval(\Monitors::TYPE_FOLDER);?>';
+				$('.api-description-dependence').toggle(enabled && !isFolder);
 			}
 
 			function monitor_docker_select() {
@@ -867,6 +895,9 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				monitor_type_select();
 				$('#type').change(function(){
 					monitor_type_select();
+				});
+				$('#api_enabled').on('change', function(){
+					monitor_api_fields_toggle();
 				});
 
 				monitor_docker_select();

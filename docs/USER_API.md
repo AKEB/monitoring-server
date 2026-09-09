@@ -32,6 +32,7 @@ The token acts as the user who created it:
 
 - only monitors with **read** permission (same ACL as the UI, including folder inheritance)
 - only monitors with **Expose in API** enabled (opt-in, default off)
+- `description_ru` / `description_en` come from the monitor edit form (shown when the flag is on)
 - folders, disabled monitors, and disabled parent folders are omitted
 - administrators still need the expose flag; they are not shown every monitor
 
@@ -58,6 +59,8 @@ curl -sS -H "Authorization: Bearer mnt_YOUR_TOKEN" https://monitoring.example/ap
     {
       "id": 12,
       "title": "example.com",
+      "description_ru": "Проверка главной страницы",
+      "description_en": "Homepage health check",
       "check_url": "https://example.com/health",
       "status": "up",
       "availability": {

@@ -51,6 +51,8 @@ class MonitoringApiStatus {
 			$resources[] = [
 				'id' => $monitor_id,
 				'title' => strval($monitor['title'] ?? ''),
+				'description_ru' => strval($monitor['api_description_ru'] ?? ''),
+				'description_en' => strval($monitor['api_description_en'] ?? ''),
 				'check_url' => static::checkUrl($monitor, $dockers_hash),
 				'status' => static::aggregateResourceStatus($in_maintenance, $worker_statuses),
 				'availability' => \MonitoringAvailabilityPercent::rollupWindows($by_worker),
@@ -70,7 +72,7 @@ class MonitoringApiStatus {
 		$rows = \Monitors::data(
 			['api_enabled' => 1],
 			$sql,
-			'`id`, `title`, `type`, `url`, `host`, `port`, `docker`, `container`, `status`, `parent_id`, `repeat_seconds`'
+			'`id`, `title`, `type`, `url`, `host`, `port`, `docker`, `container`, `status`, `parent_id`, `repeat_seconds`, `api_description_ru`, `api_description_en`'
 		);
 		if (!$rows || !is_array($rows)) {
 			return [];
