@@ -63,6 +63,9 @@ curl -sS -H "Authorization: Bearer mnt_YOUR_TOKEN" https://monitoring.example/ap
       "description_en": "Homepage health check",
       "check_url": "https://example.com/health",
       "status": "up",
+      "avg_response_time_ms": 142,
+      "ssl_expire_time": 1798761600,
+      "ssl_expire_at": "2026-12-31",
       "availability": {
         "1m": 100,
         "5m": 100,
@@ -117,6 +120,10 @@ curl -sS -H "Authorization: Bearer mnt_YOUR_TOKEN" https://monitoring.example/ap
 ```
 
 `availability` windows with no checks are `null` (common for `1m` when `repeat_seconds` is 60 or more). Percentages are `good / total` over raw `monitoring_logs` in that window, rolled up across workers as a sum of checks.
+
+`avg_response_time_ms` is the mean check duration over the last 24 hours, in milliseconds (same formula as the dashboard 1-day average). `null` if there were no checks in that window.
+
+`ssl_expire_time` / `ssl_expire_at` come from recent HTTPS checks (`cert_expire` in logs). `ssl_expire_at` is `Y-m-d`. Both are `null` for monitors without a certificate (TCP, ping, failed TLS handshake). If workers saw different certificates, the soonest expiry is returned. Expired certificates are still included.
 
 `maintenances` lists current and upcoming planned work (`finish_time` still in the future) that affect API-visible monitors. A window on a parent folder includes the child monitors. Each resource also has a compact `maintenances` array (without nested `monitors`). `active` is true while `start_time <= now <= finish_time`.
 

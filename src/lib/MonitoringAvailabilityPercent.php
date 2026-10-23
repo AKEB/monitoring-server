@@ -170,6 +170,44 @@ class MonitoringAvailabilityPercent {
 	}
 
 	/**
+	 * Average response time in milliseconds over the last $seconds, keyed by monitor_id.
+	 * Same formula as the dashboard 24h average: mean of all checks, including failures.
+	 *
+	 * @param int[] $monitor_ids
+	 * @return array<int, int>
+	 */
+	public static function avgResponseTimeMsByMonitor(array $monitor_ids, int $seconds = 86400): array {
+		$monitor_ids = array_values(array_unique(array_filter(array_map('intval', $monitor_ids))));
+		if (!$monitor_ids) {
+			return [];
+		}
+		if ($seconds < 1) {
+			$seconds = 86400;
+		}
+
+		$fields = '`monitor_id`, ROUND((SUM(`total_time_us`) / COUNT(*)) / 1000, 0) AS `avg_response_time`';
+		$sql = sql_pholder(
+			' AND `update_time` >= ? AND `monitor_id` IN (?@) GROUP BY `monitor_id` ORDER BY NULL',
+			time() - $seconds,
+			$monitor_ids
+		);
+		$rows = \MonitoringLogs::data(false, $sql, $fields);
+		if (!$rows || !is_array($rows)) {
+			return [];
+		}
+
+		$out = [];
+		foreach ($rows as $row) {
+			$monitor_id = intval($row['monitor_id'] ?? 0);
+			if ($monitor_id < 1) {
+				continue;
+			}
+			$out[$monitor_id] = intval($row['avg_response_time'] ?? 0);
+		}
+		return $out;
+	}
+
+	/**
 	 * Roll worker-window counts up to monitor level (sum of checks, not average of percents).
 	 *
 	 * @param array<int, array{good: array<string,int>, total: array<string,int>, percent: array<string,?float>}> $by_worker

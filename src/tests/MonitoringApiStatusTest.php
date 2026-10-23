@@ -83,6 +83,21 @@ class MonitoringApiStatusTest extends PHPUnit\Framework\TestCase {
 		$this->assertSame(\MonitoringApiStatus::STATUS_UNKNOWN, \MonitoringApiStatus::workerStatusFromLog(false, null, $now, 60));
 	}
 
+	function test_ssl_expire_fields() {
+		$this->assertSame(
+			['ssl_expire_time' => null, 'ssl_expire_at' => null],
+			\MonitoringApiStatus::sslExpireFields(null)
+		);
+		$this->assertSame(
+			['ssl_expire_time' => null, 'ssl_expire_at' => null],
+			\MonitoringApiStatus::sslExpireFields(0)
+		);
+		$ts = mktime(12, 0, 0, 12, 31, 2026);
+		$fields = \MonitoringApiStatus::sslExpireFields($ts);
+		$this->assertSame($ts, $fields['ssl_expire_time']);
+		$this->assertSame('2026-12-31', $fields['ssl_expire_at']);
+	}
+
 	function test_monitor_is_under_targets_walks_parents() {
 		$hash = [
 			1 => ['id' => 1, 'parent_id' => 0],

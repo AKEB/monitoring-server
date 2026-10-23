@@ -36,6 +36,8 @@ class MonitoringApiStatus {
 		$assigned = static::assignedWorkers($monitors);
 		$last_logs = static::lastLogs($monitors);
 		$availability = \MonitoringAvailabilityPercent::getWindowsByWorker($monitor_ids);
+		$avg_response = \MonitoringAvailabilityPercent::avgResponseTimeMsByMonitor($monitor_ids);
+		$ssl_expire = static::certExpireByMonitor($monitors);
 		$now = time();
 
 		$resources = [];
@@ -65,6 +67,7 @@ class MonitoringApiStatus {
 			usort($worker_rows, static fn($a, $b) => strcasecmp($a['title'], $b['title']));
 
 			$by_worker = $availability[$monitor_id] ?? [];
+			$ssl = static::sslExpireFields($ssl_expire[$monitor_id] ?? null);
 			$resources[] = [
 				'id' => $monitor_id,
 				'title' => strval($monitor['title'] ?? ''),
@@ -72,6 +75,9 @@ class MonitoringApiStatus {
 				'description_en' => strval($monitor['api_description_en'] ?? ''),
 				'check_url' => static::checkUrl($monitor, $dockers_hash),
 				'status' => static::aggregateResourceStatus($in_maintenance, $worker_statuses),
+				'avg_response_time_ms' => array_key_exists($monitor_id, $avg_response) ? $avg_response[$monitor_id] : null,
+				'ssl_expire_time' => $ssl['ssl_expire_time'],
+				'ssl_expire_at' => $ssl['ssl_expire_at'],
 				'availability' => \MonitoringAvailabilityPercent::rollupWindows($by_worker),
 				'workers' => $worker_rows,
 				'maintenances' => [],
@@ -301,6 +307,22 @@ class MonitoringApiStatus {
 		return self::STATUS_UNKNOWN;
 	}
 
+	/**
+	 * @return array{ssl_expire_time: int|null, ssl_expire_at: string|null}
+	 */
+	static public function sslExpireFields(?int $cert_expire): array {
+		if ($cert_expire === null || $cert_expire < 1) {
+			return [
+				'ssl_expire_time' => null,
+				'ssl_expire_at' => null,
+			];
+		}
+		return [
+			'ssl_expire_time' => $cert_expire,
+			'ssl_expire_at' => date('Y-m-d', $cert_expire),
+		];
+	}
+
 	static public function workerStatusFromLog(bool $in_maintenance, ?array $last_log, int $now, int $repeat_seconds): string {
 		if ($in_maintenance) {
 			return self::STATUS_MAINTENANCE;
@@ -428,6 +450,44 @@ class MonitoringApiStatus {
 			$assigned[$monitor_id] = array_values($workers);
 		}
 		return $assigned;
+	}
+
+	/**
+	 * Soonest SSL expiry seen in recent checks, keyed by monitor_id.
+	 * Ignores rows with no certificate (TCP/ping/failed handshake).
+	 *
+	 * @param list<array> $monitors
+	 * @return array<int, int>
+	 */
+	static private function certExpireByMonitor(array $monitors): array {
+		if (!$monitors) {
+			return [];
+		}
+		$monitor_ids = [];
+		$lookback = 3600;
+		$dockers_hash = static::dockersHash();
+		foreach ($monitors as $monitor) {
+			$monitor_ids[] = intval($monitor['id']);
+			$lookback = max($lookback, 2 * static::repeatSeconds($monitor, $dockers_hash));
+		}
+		$sql = sql_pholder(
+			' AND `monitor_id` IN (?@) AND `update_time` >= ? AND `cert_expire` > 0 GROUP BY `monitor_id` ORDER BY NULL',
+			$monitor_ids,
+			time() - $lookback
+		);
+		$rows = \MonitoringLogs::data(false, $sql, '`monitor_id`, MIN(`cert_expire`) AS `cert_expire`');
+		$result = [];
+		if ($rows) {
+			foreach ($rows as $row) {
+				$monitor_id = intval($row['monitor_id'] ?? 0);
+				$cert_expire = intval($row['cert_expire'] ?? 0);
+				if ($monitor_id < 1 || $cert_expire < 1) {
+					continue;
+				}
+				$result[$monitor_id] = $cert_expire;
+			}
+		}
+		return $result;
 	}
 
 	/**
