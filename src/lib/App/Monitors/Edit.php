@@ -746,21 +746,28 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					]);
 
 					$external_urls = \ExternalMonitors::urlsForMonitor($this->monitor ?? []);
-					echo '<div class="type-dependence type-'.\Monitors::TYPE_EXTERNAL.' mb-3">';
 					if (!empty($this->monitor['id']) && !empty($external_urls['ok'])) {
+						echo '<div class="type-dependence type-'.\Monitors::TYPE_EXTERNAL.' mb-3">';
 						echo '<p class="text-muted">'.\T::Monitor_Edit_ExternalUrlsHint().'</p>';
-						echo $this->template->html_input("external_ok_url", $external_urls['ok'], \T::Monitor_Edit_ExternalOkUrl(), false, [
-							'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+						$copy_btn = '<button class="btn btn-outline-secondary copy-external-url" type="button" tabindex="-1" title="Copy"><i class="bi bi-clipboard"></i></button>';
+						echo $this->template->html_input("external_ok_url", htmlspecialchars($external_urls['ok'], ENT_QUOTES, 'UTF-8'), \T::Monitor_Edit_ExternalOkUrl(), false, [
+							'type' => 'textarea',
+							'rows' => '3',
+							'class1' => 'col-12',
+							'class2' => 'col-12',
 							'readonly' => true,
+							'add_after' => $copy_btn,
 						]);
-						echo $this->template->html_input("external_fail_url", $external_urls['fail'], \T::Monitor_Edit_ExternalFailUrl(), false, [
-							'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+						echo $this->template->html_input("external_fail_url", htmlspecialchars($external_urls['fail'], ENT_QUOTES, 'UTF-8'), \T::Monitor_Edit_ExternalFailUrl(), false, [
+							'type' => 'textarea',
+							'rows' => '3',
+							'class1' => 'col-12',
+							'class2' => 'col-12',
 							'readonly' => true,
+							'add_after' => $copy_btn,
 						]);
-					} else {
-						echo '<p class="text-muted">'.\T::Monitor_Edit_ExternalUrlsHint().'</p>';
+						echo '</div>';
 					}
-					echo '</div>';
 
 					echo $this->template?->html_select('docker', \Dockers::subject_hash(), $this->monitor['docker']??0, \T::Monitor_Edit_Docker(), false,[
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
@@ -976,6 +983,30 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 
 				$('form').on('submit', function(event) {
 					$('form').addClass("was-validated");
+				});
+
+				$('body').on('click', '.copy-external-url', function() {
+					const $field = $(this).closest('.input-group').find('textarea, input');
+					const text = ($field.val() || '').toString();
+					if (!text) return;
+					const done = function() {
+						const $icon = $(this).find('i');
+						$icon.removeClass('bi-clipboard').addClass('bi-clipboard-check');
+						setTimeout(() => {
+							$icon.removeClass('bi-clipboard-check').addClass('bi-clipboard');
+						}, 1500);
+					}.bind(this);
+					if (navigator.clipboard && navigator.clipboard.writeText) {
+						navigator.clipboard.writeText(text).then(done).catch(function() {
+							$field.trigger('select');
+							document.execCommand('copy');
+							done();
+						});
+					} else {
+						$field.trigger('select');
+						document.execCommand('copy');
+						done();
+					}
 				});
 			});
 		</script>

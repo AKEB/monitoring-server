@@ -5,6 +5,13 @@ let monitorSearchTimeout;
 let selectedMonitorId;
 let monitorChart;
 
+/** Matches Monitors::TYPE_EXTERNAL — no response-time metrics/chart. */
+const MONITOR_TYPE_EXTERNAL = 9;
+
+function isExternalMonitor(monitor) {
+	return monitor && Number(monitor.type) === MONITOR_TYPE_EXTERNAL;
+}
+
 /**
  * Рекурсивно генерирует HTML-представление списка мониторов.
  * @param {Object} data - Данные мониторов для отображения.
@@ -335,20 +342,23 @@ function updateMonitorWorkersLogs(data) {
  */
 function updateMonitorLastInfo(data) {
 	const container = $('#monitor-last-info');
+	const external = isExternalMonitor(data.monitor);
 	HTML = '';
 	HTML += '<div class="card monitor-info mb-3">';
 	HTML += '<div class="card-body row">';
-		HTML += '<div class="center col-4 col-lg mb-3">';
-			HTML += Dashboard_Response+'<br/>';
-			HTML += '<span class="text-secondary fs-7">('+Dashboard_Last+')</span><br/>';
-			HTML += (data['avg_response_time'] ? data['avg_response_time'] : '');
-		HTML += '</div>';
+		if (!external) {
+			HTML += '<div class="center col-4 col-lg mb-3">';
+				HTML += Dashboard_Response+'<br/>';
+				HTML += '<span class="text-secondary fs-7">('+Dashboard_Last+')</span><br/>';
+				HTML += (data['avg_response_time'] ? data['avg_response_time'] : '');
+			HTML += '</div>';
 
-		HTML += '<div class="center col-4 col-lg mb-3">';
-			HTML += Dashboard_AVGResponse+'<br/>';
-			HTML += '<span class="text-secondary fs-7">('+Dashboard_24Hours+')</span><br/>';
-			HTML += (data['avg_response_time_1d'] ? data['avg_response_time_1d'] : '');
-		HTML += '</div>';
+			HTML += '<div class="center col-4 col-lg mb-3">';
+				HTML += Dashboard_AVGResponse+'<br/>';
+				HTML += '<span class="text-secondary fs-7">('+Dashboard_24Hours+')</span><br/>';
+				HTML += (data['avg_response_time_1d'] ? data['avg_response_time_1d'] : '');
+			HTML += '</div>';
+		}
 
 		HTML += '<div class="center col-4 col-lg mb-3">';
 			HTML += Dashboard_Uptime+'<br/>';
@@ -361,7 +371,7 @@ function updateMonitorLastInfo(data) {
 			HTML += (data['uptime_30'] ? data['uptime_30']+'%' : '');
 		HTML += '</div>';
 
-		if (data['cert_expire']) {
+		if (!external && data['cert_expire']) {
 			HTML += '<div class="center col-4 col-lg mb-3">'+Dashboard_CertExpire+'<br/>';
 			HTML += '<span class="text-secondary fs-7">('+(data['cert_expire'] ? data['cert_expire'] : '')+')</span><br/>';
 			HTML += (data['cert_expire_days'] ? data['cert_expire_days'] : '')+'</div>';
@@ -475,28 +485,30 @@ function printMonitorData(data, period) {
 		if (data.monitor.id) {
 			HTML += '<div id="monitor-workers-logs"></div>';
 			HTML += '<div id="monitor-last-info"></div>';
-			HTML += '<div id="monitor-charts">';
-				HTML += '<div class="card chart mb-3">';
-					HTML += '<div class="card-body">';
-						HTML += '<div class="float-end"><select data-width="fit" data-container="body" data-style-base="btn btn-sm" name="period" class="selectpicker" id="chart-period">';
-						HTML += '<option value="0.5" '+(period == "0.5" ? 'selected':'')+'>'+Dashboard_Charts_30Minutes+'</option>';
-						HTML += '<option value="1" '+(period == "1" ? 'selected':'')+'>'+Dashboard_Charts_1Hour+'</option>';
-						HTML += '<option value="4" '+(period == "4" ? 'selected':'')+'>'+Dashboard_Charts_4Hours+'</option>';
-						HTML += '<option value="6" '+(period == "6" ? 'selected':'')+'>'+Dashboard_Charts_6Hours+'</option>';
-						HTML += '<option value="24" '+(period == "24" ? 'selected':'')+'>'+Dashboard_Charts_24Hours+'</option>';
-						HTML += '</select></div>';
-						HTML += '<div class="clearfix"></div>';
-						HTML += '<div id="MonitorEChart" class="MonitorEChart"></div>';
+			if (!isExternalMonitor(data.monitor)) {
+				HTML += '<div id="monitor-charts">';
+					HTML += '<div class="card chart mb-3">';
+						HTML += '<div class="card-body">';
+							HTML += '<div class="float-end"><select data-width="fit" data-container="body" data-style-base="btn btn-sm" name="period" class="selectpicker" id="chart-period">';
+							HTML += '<option value="0.5" '+(period == "0.5" ? 'selected':'')+'>'+Dashboard_Charts_30Minutes+'</option>';
+							HTML += '<option value="1" '+(period == "1" ? 'selected':'')+'>'+Dashboard_Charts_1Hour+'</option>';
+							HTML += '<option value="4" '+(period == "4" ? 'selected':'')+'>'+Dashboard_Charts_4Hours+'</option>';
+							HTML += '<option value="6" '+(period == "6" ? 'selected':'')+'>'+Dashboard_Charts_6Hours+'</option>';
+							HTML += '<option value="24" '+(period == "24" ? 'selected':'')+'>'+Dashboard_Charts_24Hours+'</option>';
+							HTML += '</select></div>';
+							HTML += '<div class="clearfix"></div>';
+							HTML += '<div id="MonitorEChart" class="MonitorEChart"></div>';
+						HTML += '</div>';
 					HTML += '</div>';
 				HTML += '</div>';
-			HTML += '</div>';
+			}
 		}
 		HTML += '<div id="monitor-events"></div>';
 		HTML += '</div>';
 		HTML += '</div>';
 		$('div.monitor-dashboard').html(HTML);
 		
-		if (data.monitor.id) {
+		if (data.monitor.id && !isExternalMonitor(data.monitor)) {
 			$('#chart-period').selectpicker('render');
 			initECharts();
 		}
@@ -505,7 +517,9 @@ function printMonitorData(data, period) {
 	if (data.monitor.id) {
 		updateMonitorWorkersLogs(data);
 		updateMonitorLastInfo(data);
-		updateECharts(data);
+		if (!isExternalMonitor(data.monitor)) {
+			updateECharts(data);
+		}
 	}
 	updateMonitorEvents(data);
 }
@@ -520,6 +534,10 @@ function initECharts() {
 	// Проверяем и уничтожаем предыдущий экземпляр графика, чтобы избежать утечек памяти
 	if (monitorChart && !monitorChart.isDisposed()) {
 		monitorChart.dispose();
+	}
+	monitorChart = null;
+	if (!chartDom) {
+		return;
 	}
 	monitorChart = echarts.init(chartDom, isDark ? 'dark' : 'light');
 	
@@ -649,6 +667,9 @@ function initECharts() {
  * @param {Object} data - Новые данные для отображения.
  */
 function updateECharts(data) {
+	if (!monitorChart || monitorChart.isDisposed()) {
+		return;
+	}
 	let series = [];
 	let xAxisData = [];
 

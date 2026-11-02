@@ -208,3 +208,14 @@ div.text-success>input {
 .ml-padding-12 {
 	margin-left: calc(var(--mon-list-padding) * 12);
 }
+
+#external_ok_url,
+#external_fail_url {
+	word-break: break-all;
+	overflow-wrap: anywhere;
+	white-space: pre-wrap;
+	font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+	font-size: 0.875rem;
+	min-height: 4.5rem;
+	resize: vertical;
+}
