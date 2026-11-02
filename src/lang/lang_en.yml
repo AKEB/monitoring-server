@@ -140,7 +140,7 @@ Monitor:
     SendRepeatMinute: "Resending error notifications in minutes"
     AlertFailMode: "Send error notification when"
     AlertFailModeAll: "All workers failed"
-    AlertFailModeMajority: "At least 50% of workers failed"
+    AlertFailModeMajority: "At least 50%% of workers failed"
     AlertFailModeAny: "Any worker failed"
     ExternalOkUrl: "OK callback URL (resource is up)"
     ExternalFailUrl: "Fail callback URL (resource is down)"

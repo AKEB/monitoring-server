@@ -979,8 +979,8 @@ class T {
 	/**
 	 * Monitor_Edit_AlertFailModeMajority
 	 * 
-	 * @return string "At least 50% of workers failed"
-	 * @return string "Не меньше 50% обработчиков вернули ошибку"
+	 * @return string "At least 50%% of workers failed"
+	 * @return string "Не меньше 50%% обработчиков вернули ошибку"
 	 */
 	public static function Monitor_Edit_AlertFailModeMajority(...$argv): string { return ''; }
 

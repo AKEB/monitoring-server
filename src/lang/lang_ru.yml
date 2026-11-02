@@ -139,7 +139,7 @@ Monitor:
     SendRepeatMinute: "Повторная отправка уведомлений об ошибках в минутах"
     AlertFailMode: "Отправлять уведомление об ошибке когда"
     AlertFailModeAll: "Все обработчики вернули ошибку"
-    AlertFailModeMajority: "Не меньше 50% обработчиков вернули ошибку"
+    AlertFailModeMajority: "Не меньше 50%% обработчиков вернули ошибку"
     AlertFailModeAny: "Хотя бы один обработчик вернул ошибку"
     ExternalOkUrl: "Ссылка OK (ресурс работает)"
     ExternalFailUrl: "Ссылка Fail (ресурс поломан)"
