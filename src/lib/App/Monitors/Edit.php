@@ -74,7 +74,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 		$this->save_monitor($data);
 	}
 
-	private function save_monitor($data) {
+	private function save_monitor(array $data) {
 		if (!isset($data)) return;
 		if (!$data) return;
 
@@ -512,7 +512,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				if (!\Sessions::in_group(\Groups::ADMIN_GROUP_ID, intval(\Sessions::currentUser()['id']))) {
 					$permissions = \Monitors::permissions_hash();
 					foreach($permissions as $permission => $_) {
-						$ObjectPermissions = [
+						$object_permission = [
 							'object' => 'user',
 							'object_id' => intval(\Sessions::currentUser()['id']),
 							'subject' => $permission,
@@ -527,8 +527,8 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 							'update_time' => time(),
 							'_mode' => \DB\Common::CSMODE_INSERT,
 						];
-						$ObjectPermissions['id'] = \ObjectPermissions::save($ObjectPermissions);
-						$log_id = \Logs::create_log(\ObjectPermissions::LOGS_OBJECT, $ObjectPermissions['id'], $ObjectPermissions);
+						$object_permission['id'] = \ObjectPermissions::save($object_permission);
+						$log_id = \Logs::create_log(\ObjectPermissions::LOGS_OBJECT, $object_permission['id'], $object_permission);
 						\Logs::add_tag($log_id, \Monitors::LOGS_OBJECT, $monitor_id);
 					}
 				}
@@ -737,7 +737,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				<div class="card-header bg-transparent"><h3>
 					<?php
 					if ($this->monitor['id']) {
-						echo \T::Monitor_Edit_EditTitle($this->monitor['title'], $this->monitor['id']);
+						echo \T::Monitor_Edit_EditTitle(htmlspecialchars($this->monitor['title'] ?? '', ENT_QUOTES, 'UTF-8'), $this->monitor['id']);
 					} else {
 						echo \T::Monitor_Edit_CreateTitle();
 					}
@@ -746,7 +746,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				<form class="card-body needs-validation" method="post" novalidate>
 					<input type="hidden" name="id" value="<?=$this->monitor['id'];?>"/>
 					<?php
-					echo $this->template->html_input("title", $this->monitor['title']??'', \T::Monitor_Edit_Title(), true, [
+					echo $this->template->html_input("title", htmlspecialchars($this->monitor['title'] ?? '', ENT_QUOTES, 'UTF-8'), \T::Monitor_Edit_Title(), true, [
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
 						'readonly' => !($this->can_write || $this->can_create),
 					]);

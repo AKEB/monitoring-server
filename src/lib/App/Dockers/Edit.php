@@ -43,7 +43,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 		return base64_encode($data);
 	}
 
-	private function save_docker($data) {
+	private function save_docker(array $data) {
 		if (!isset($data)) return;
 		if (!$data) return;
 
@@ -301,7 +301,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				if (!\Sessions::in_group(\Groups::ADMIN_GROUP_ID, intval(\Sessions::currentUser()['id']))) {
 					$permissions = \Dockers::permissions_hash();
 					foreach($permissions as $permission => $_) {
-						$ObjectPermissions = [
+						$object_permission = [
 							'object' => 'user',
 							'object_id' => intval(\Sessions::currentUser()['id']),
 							'subject' => $permission,
@@ -316,8 +316,8 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 							'update_time' => time(),
 							'_mode' => \DB\Common::CSMODE_INSERT,
 						];
-						$ObjectPermissions['id'] = \ObjectPermissions::save($ObjectPermissions);
-						$log_id = \Logs::create_log(\ObjectPermissions::LOGS_OBJECT, $ObjectPermissions['id'], $ObjectPermissions);
+						$object_permission['id'] = \ObjectPermissions::save($object_permission);
+						$log_id = \Logs::create_log(\ObjectPermissions::LOGS_OBJECT, $object_permission['id'], $object_permission);
 						\Logs::add_tag($log_id, \Dockers::LOGS_OBJECT, $docker_id);
 					}
 				}
@@ -429,7 +429,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				<div class="card-header bg-transparent"><h3>
 					<?php
 					if ($this->docker['id']) {
-						echo \T::Docker_Edit_EditTitle($this->docker['title'], $this->docker['id']);
+						echo \T::Docker_Edit_EditTitle(htmlspecialchars($this->docker['title'] ?? '', ENT_QUOTES, 'UTF-8'), $this->docker['id']);
 					} else {
 						echo \T::Docker_Edit_CreateTitle();
 					}
@@ -438,7 +438,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				<form class="card-body needs-validation" enctype="multipart/form-data" method="post" novalidate>
 					<input type="hidden" name="id" value="<?=$this->docker['id'];?>"/>
 					<?php
-					echo $this->template->html_input("title", $this->docker['title']??'', \T::Docker_Edit_Title(), true, [
+					echo $this->template->html_input("title", htmlspecialchars($this->docker['title'] ?? '', ENT_QUOTES, 'UTF-8'), \T::Docker_Edit_Title(), true, [
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
@@ -741,7 +741,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 			}
 
 			$(document).ready(function(){
-				new DataTable('#Table');
+				$('#Table').DataTable();
 
 				docker_tls_change();
 				$('#tls').change(function(){

@@ -28,7 +28,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 		$this->save_maintenance($data);
 	}
 
-	private function save_maintenance($data) {
+	private function save_maintenance(array $data) {
 		if (!isset($data)) return;
 		if (!$data) return;
 
@@ -195,7 +195,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				if (!\Sessions::in_group(\Groups::ADMIN_GROUP_ID, intval(\Sessions::currentUser()['id']))) {
 					$permissions = \Maintenances::permissions_hash();
 					foreach($permissions as $permission => $_) {
-						$ObjectPermissions = [
+						$object_permission = [
 							'object' => 'user',
 							'object_id' => intval(\Sessions::currentUser()['id']),
 							'subject' => $permission,
@@ -210,8 +210,8 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 							'update_time' => time(),
 							'_mode' => \DB\Common::CSMODE_INSERT,
 						];
-						$ObjectPermissions['id'] = \ObjectPermissions::save($ObjectPermissions);
-						$log_id = \Logs::create_log(\ObjectPermissions::LOGS_OBJECT, $ObjectPermissions['id'], $ObjectPermissions);
+						$object_permission['id'] = \ObjectPermissions::save($object_permission);
+						$log_id = \Logs::create_log(\ObjectPermissions::LOGS_OBJECT, $object_permission['id'], $object_permission);
 						\Logs::add_tag($log_id, \Maintenances::LOGS_OBJECT, $maintenance_id);
 					}
 				}
@@ -288,7 +288,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				<div class="card-header bg-transparent"><h3>
 					<?php
 					if ($this->maintenance['id']) {
-						echo \T::Maintenances_Edit_EditTitle($this->maintenance['title'], $this->maintenance['id']);
+						echo \T::Maintenances_Edit_EditTitle(htmlspecialchars($this->maintenance['title'] ?? '', ENT_QUOTES, 'UTF-8'), $this->maintenance['id']);
 					} else {
 						echo \T::Maintenances_Edit_CreateTitle();
 					}
@@ -297,7 +297,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				<form class="card-body needs-validation" method="post" novalidate>
 					<input type="hidden" name="id" value="<?=$this->maintenance['id'];?>"/>
 					<?php
-					echo $this->template?->html_input("title", $this->maintenance['title']??'', \T::Maintenances_Edit_Title(), true, [
+					echo $this->template?->html_input("title", htmlspecialchars($this->maintenance['title'] ?? '', ENT_QUOTES, 'UTF-8'), \T::Maintenances_Edit_Title(), true, [
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
@@ -506,12 +506,12 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				});
 
 				pickerStart.dates.clear();
-				const startDate = pickerStart.dates.parseInput(new Date(<?=($this->maintenance['start_time']??0)*1000;?>));
+				const startDate = pickerStart.dates.parseInput(new window.Date(<?=($this->maintenance['start_time']??0)*1000;?>));
 				pickerStart.dates.setValue(startDate, 0);
 
 				pickerFinish.dates.clear();
 				<?php if ($this->maintenance['finish_time']??0) { ?>
-					const finishDate = pickerFinish.dates.parseInput(new Date(<?=($this->maintenance['finish_time']??0)*1000;?>));
+					const finishDate = pickerFinish.dates.parseInput(new window.Date(<?=($this->maintenance['finish_time']??0)*1000;?>));
 					pickerFinish.dates.setValue(finishDate, 0);
 				<?php } ?>
 

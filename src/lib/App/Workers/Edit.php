@@ -382,7 +382,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				<div class="card-header bg-transparent"><h3>
 					<?php
 					if ($this->worker['id']) {
-						echo \T::Worker_Edit_EditTitle($this->worker['title'], $this->worker['id']);
+						echo \T::Worker_Edit_EditTitle(htmlspecialchars($this->worker['title'] ?? '', ENT_QUOTES, 'UTF-8'), $this->worker['id']);
 					} else {
 						echo \T::Worker_Edit_CreateTitle();
 					}
@@ -391,7 +391,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				<form class="card-body needs-validation" method="post" novalidate>
 					<input type="hidden" name="id" value="<?=$this->worker['id'];?>"/>
 					<?php
-					echo $this->template->html_input("title", $this->worker['title']??'', \T::Worker_Edit_Title(), true, [
+					echo $this->template->html_input("title", htmlspecialchars($this->worker['title'] ?? '', ENT_QUOTES, 'UTF-8'), \T::Worker_Edit_Title(), true, [
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6'
 					]);
 

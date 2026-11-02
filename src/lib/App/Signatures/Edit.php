@@ -27,7 +27,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 		$this->save_signature($data);
 	}
 
-	private function save_signature($data) {
+	private function save_signature(array $data) {
 		if (!isset($data)) return;
 		if (!$data) return;
 
@@ -211,7 +211,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				<div class="card-header bg-transparent"><h3>
 					<?php
 					if ($this->signature['id']) {
-						echo \T::Signature_Edit_EditTitle($this->signature['title'], $this->signature['id']);
+						echo \T::Signature_Edit_EditTitle(htmlspecialchars($this->signature['title'] ?? '', ENT_QUOTES, 'UTF-8'), $this->signature['id']);
 					} else {
 						echo \T::Signature_Edit_CreateTitle();
 					}
@@ -232,7 +232,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 						<?php } ?>
 					</datalist>
 					<?php
-					echo $this->template->html_input("title", $this->signature['title']??'', \T::Signature_Edit_Title(), true, [
+					echo $this->template->html_input("title", htmlspecialchars($this->signature['title'] ?? '', ENT_QUOTES, 'UTF-8'), \T::Signature_Edit_Title(), true, [
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
