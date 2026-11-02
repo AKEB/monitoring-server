@@ -116,23 +116,37 @@ class AlertActionHandler {
 
 		$targetNotify = \AlertActions::resolveNotifyForCallback($webhookNotify, $parsed);
 		$bot = \MonitoringNotify::telegramBot(strval(($targetNotify ?? $webhookNotify)['json_data']['telegram_bot_token'] ?? ''));
+
+		// Dedup: Telegram (and our poller) can redeliver the same callback_query.
+		// Without this, one click becomes an endless "взял/позвонил/всё ок" loop.
+		if ($callbackQueryId !== '' && static::isCallbackAlreadyProcessed($callbackQueryId)) {
+			if ($bot) {
+				static::answerTelegramCallback($bot, $callbackQueryId, 'OK');
+			}
+			return;
+		}
+		if ($callbackQueryId !== '') {
+			static::markCallbackProcessed($callbackQueryId);
+		}
+
 		if ($targetNotify === null) {
 			if ($bot && $callbackQueryId !== '') {
-				try {
-					@$bot->answerCallbackQuery($callbackQueryId, 'Notify mismatch', false);
-				} catch (\Exception $e) {
-				}
+				static::answerTelegramCallback($bot, $callbackQueryId, 'Notify mismatch');
 			}
 			return;
 		}
 
-		$result = static::apply($targetNotify, $parsed, $author, \AlertActions::CHANNEL_TELEGRAM, $chatId, $messageId, $currentText);
+		// Answer before DB/edit work — late answers make Telegram clients resend the click.
+		$toast = $parsed
+			? (($parsed['action'] === \AlertActions::ACTION_MUTE)
+				? 'Mute'
+				: \AlertActions::actionButtonText($parsed['action']))
+			: 'OK';
 		if ($bot && $callbackQueryId !== '') {
-			try {
-				@$bot->answerCallbackQuery($callbackQueryId, $result['toast'] ?? 'OK', false);
-			} catch (\Exception $e) {
-			}
+			static::answerTelegramCallback($bot, $callbackQueryId, $toast);
 		}
+
+		$result = static::apply($targetNotify, $parsed, $author, \AlertActions::CHANNEL_TELEGRAM, $chatId, $messageId, $currentText);
 		if ($bot && !empty($result['ok']) && !empty($result['new_text']) && $chatId !== '' && $messageId !== '') {
 			try {
 				$keyboard = \AlertActions::telegramKeyboard(intval($result['monitor_id']), intval($targetNotify['id']));
@@ -181,8 +195,10 @@ class AlertActionHandler {
 			if (!$bot) {
 				continue;
 			}
+			// Force file cache: memcache lock failures used to drop the offset and
+			// getUpdates(0) re-delivered the same callbacks forever.
 			$cacheKey = 'tg_alert_update_offset_'.md5($botToken);
-			$cache = new \Cache($cacheKey);
+			$cache = new \Cache($cacheKey, 'default', true);
 			$offset = 0;
 			if ($cache->isValid()) {
 				$offset = intval($cache->get());
@@ -193,10 +209,11 @@ class AlertActionHandler {
 				error_log('AlertActionHandler pollTelegram getUpdates: '.$e->getMessage());
 				continue;
 			}
-			if (!is_array($updates)) {
+			if (!is_array($updates) && !($updates instanceof \Traversable)) {
 				continue;
 			}
 			$maxUpdateId = $offset > 0 ? $offset - 1 : 0;
+			$callbacks = [];
 			foreach ($updates as $update) {
 				$updateId = 0;
 				$cq = null;
@@ -217,14 +234,51 @@ class AlertActionHandler {
 					$maxUpdateId = $updateId;
 				}
 				if (is_array($cq)) {
-					static::processTelegramCallbackQuery($notify, $cq);
-					$processed++;
+					$callbacks[] = $cq;
 				}
 			}
+
+			// Confirm with Telegram BEFORE processing. Local cache alone is not enough:
+			// if offset is lost, Telegram keeps returning the same updates every poll (~2s).
 			if ($maxUpdateId > 0) {
-				$cache->update(strval($maxUpdateId + 1), 7 * 24 * 3600);
+				$nextOffset = $maxUpdateId + 1;
+				try {
+					$bot->getUpdates($nextOffset, 1, 0);
+				} catch (\Exception $e) {
+					error_log('AlertActionHandler pollTelegram confirm offset: '.$e->getMessage());
+				}
+				$cache->update(strval($nextOffset), 7 * 24 * 3600);
+			}
+
+			foreach ($callbacks as $cq) {
+				static::processTelegramCallbackQuery($notify, $cq);
+				$processed++;
 			}
 		}
 		return $processed;
+	}
+
+	static private function answerTelegramCallback(\TelegramBot\Api\BotApi $bot, string $callbackQueryId, string $toast): void {
+		if ($callbackQueryId === '') {
+			return;
+		}
+		try {
+			@$bot->answerCallbackQuery($callbackQueryId, $toast, false);
+		} catch (\Exception $e) {
+		}
+	}
+
+	static private function callbackDedupCache(string $callbackQueryId): \Cache {
+		return new \Cache('tg_cq_seen_'.md5($callbackQueryId), 'default', true);
+	}
+
+	static private function isCallbackAlreadyProcessed(string $callbackQueryId): bool {
+		$cache = static::callbackDedupCache($callbackQueryId);
+		return $cache->isValid();
+	}
+
+	static private function markCallbackProcessed(string $callbackQueryId): void {
+		$cache = static::callbackDedupCache($callbackQueryId);
+		$cache->update('1', 24 * 3600);
 	}
 }
