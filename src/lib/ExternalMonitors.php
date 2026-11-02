@@ -141,6 +141,58 @@ class ExternalMonitors {
 		return 'Log: '.htmlspecialchars($log, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 	}
 
+	/**
+	 * Parse "Log: …" body from worker response_error (HTTP(s) Log response header).
+	 * null = this check had no Log header (keep previous external_log).
+	 */
+	static public function parseLogBodyFromResponseError(string $responseError): ?string {
+		$responseError = trim($responseError);
+		if ($responseError === '') {
+			return null;
+		}
+		if (preg_match('/^Log:\s*(.*)$/us', $responseError, $m)) {
+			return static::sanitizeLog(strval($m[1]));
+		}
+		return null;
+	}
+
+	/**
+	 * Persist optional Log text on the monitor (External + HTTP(s)).
+	 * Cleared on GOOD; updated when a new Log arrives on FAIL; kept if this check has no Log.
+	 */
+	static public function persistMonitorLog(int $monitorId, string $previousLog, int $status, ?string $logFromCheck): void {
+		if ($monitorId < 1) {
+			return;
+		}
+		$previousLog = strval($previousLog);
+		if ($status === \MonitoringLogs::STATUS_GOOD) {
+			if ($previousLog !== '') {
+				\Monitors::save([
+					'id' => $monitorId,
+					'external_log' => '',
+					'update_time' => time(),
+					'_mode' => \DB\Common::CSMODE_UPDATE,
+				]);
+			}
+			return;
+		}
+		if ($status !== \MonitoringLogs::STATUS_FAIL) {
+			return;
+		}
+		if ($logFromCheck === null) {
+			return;
+		}
+		if ($logFromCheck === $previousLog) {
+			return;
+		}
+		\Monitors::save([
+			'id' => $monitorId,
+			'external_log' => $logFromCheck,
+			'update_time' => time(),
+			'_mode' => \DB\Common::CSMODE_UPDATE,
+		]);
+	}
+
 	static public function baseUrl(): string {
 		$https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
 			|| (isset($_SERVER['SERVER_PORT']) && intval($_SERVER['SERVER_PORT']) === 443)

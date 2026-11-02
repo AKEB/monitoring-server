@@ -79,10 +79,10 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 		$newMonitor['title'] .= ' (copy)';
 		$newMonitor['create_time'] = time();
 		$newMonitor['update_time'] = time();
+		$newMonitor['external_log'] = '';
 		if (intval($newMonitor['type'] ?? 0) == \Monitors::TYPE_EXTERNAL) {
 			$newMonitor['external_hash'] = \ExternalMonitors::generateHash();
 			$newMonitor['external_status'] = \ExternalMonitors::STATUS_UNSET;
-			$newMonitor['external_log'] = '';
 			$newMonitor['repeat_seconds'] = 60;
 			$newMonitor['timeout'] = 60;
 		}

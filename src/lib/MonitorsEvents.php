@@ -253,13 +253,19 @@ class MonitorsEvents extends \DB\MySQLObject {
 	}
 
 	/**
-	 * Error body for fail alerts. External monitors prefer full external_log as "Log: …"
-	 * (same label style as "Alert:" in notification footers).
+	 * Error body for fail alerts. Prefer persisted external_log as "Log: …"
+	 * (External callback + HTTP(s) response header; same label style as "Alert:").
 	 *
 	 * @param array<int|string,string> $descriptions
 	 */
 	static private function failDescriptionHtml(array $monitor, array $descriptions): string {
-		if (intval($monitor['type'] ?? 0) === \Monitors::TYPE_EXTERNAL) {
+		$type = intval($monitor['type'] ?? 0);
+		$useStoredLog = (
+			$type === \Monitors::TYPE_EXTERNAL
+			|| $type === \Monitors::TYPE_HTTPS
+			|| $type === \Monitors::TYPE_HTTP_JSON
+		);
+		if ($useStoredLog) {
 			$log = trim(strval($monitor['external_log'] ?? ''));
 			if ($log !== '') {
 				return "\n\n<i>Log: ".htmlspecialchars($log, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8').'</i>';
@@ -268,6 +274,18 @@ class MonitorsEvents extends \DB\MySQLObject {
 		if (!$descriptions) {
 			return '';
 		}
-		return "\n\n<i>".implode("\n", $descriptions).'</i>';
+		// Avoid duplicating "Log: …" already shown from response_error when stored log empty.
+		$lines = [];
+		foreach ($descriptions as $desc) {
+			$desc = strval($desc);
+			if ($desc === '') {
+				continue;
+			}
+			$lines[] = $desc;
+		}
+		if (!$lines) {
+			return '';
+		}
+		return "\n\n<i>".implode("\n", $lines).'</i>';
 	}
 }

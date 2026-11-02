@@ -343,6 +343,23 @@ class State extends \Routing_Parent implements \Routing_Interface {
 			return false;
 		}
 
+		// HTTP(s): persist response header Log on the monitor (like External).
+		// Kept across checks without Log until green; next send_repeat_minute alert uses it.
+		if (
+			intval($monitor['type']) === \Monitors::TYPE_HTTPS
+			|| intval($monitor['type']) === \Monitors::TYPE_HTTP_JSON
+		) {
+			$logFromCheck = \ExternalMonitors::parseLogBodyFromResponseError(
+				strval($job_response['response']['response_error'] ?? '')
+			);
+			\ExternalMonitors::persistMonitorLog(
+				intval($monitor['id']),
+				strval($monitor['external_log'] ?? ''),
+				$status,
+				$logFromCheck
+			);
+		}
+
 		$params = [
 			'monitor_id' => $job['monitor_id'],
 			'worker_id' => $job['worker_id'],
