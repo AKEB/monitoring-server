@@ -8,13 +8,14 @@ SELECT monitor_id, cert_expire, FROM_UNIXTIME(cert_expire) FROM (
 ) as sub WHERE sub.rn=1 AND cert_expire > 0 AND cert_expire < UNIX_TIMESTAMP()+60*86400;
 */
 
-$alert_send_days = [14, 7, 5, 4, 3, 2, 1];
+$alert_send_days_default = \Monitors::ssl_cert_expire_alert_days_list();
+$max_alert_days = max($alert_send_days_default);
 
 $fields = '`monitor_id`, `cert_expire`';
 $sub_sql = sql_pholder(' AND `update_time` >= ? ', time() - 3600);
 $sub_query_sql = "SELECT ".$fields.", ROW_NUMBER() OVER (PARTITION BY `monitor_id` ORDER BY `update_time` DESC) as rn FROM ".\MonitoringLogs::$table." WHERE 1 $sub_sql";
 $sql_query = "SELECT ".$fields." FROM ($sub_query_sql) as sub WHERE sub.rn = 1 ";
-$sql_query .= sql_pholder(' AND `cert_expire` > 0 AND `cert_expire` <= ? ', time() + (max($alert_send_days)+1) * 86400);
+$sql_query .= sql_pholder(' AND `cert_expire` > 0 AND `cert_expire` <= ? ', time() + ($max_alert_days + 1) * 86400);
 $logs = [];
 \MonitoringLogs::getDatabase()->db_GetQueryArray($sql_query, $logs);
 foreach($logs as $log) {
@@ -23,7 +24,6 @@ foreach($logs as $log) {
 	if (!$monitor_id || !$cert_expire) continue;
 
 	$days = intval(($cert_expire - time()) / 86400);
-	if (!in_array($days, $alert_send_days) && $days > 0) continue;
 
 	$monitor = \Monitors::get($monitor_id);
 	if (!$monitor) continue;
@@ -35,6 +35,10 @@ foreach($logs as $log) {
 
 	if ($monitor['type'] != \Monitors::TYPE_HTTPS) continue;
 	if (!$monitor['ssl_cert_expire_alert']) continue;
+
+	$alert_send_days = \Monitors::parse_ssl_cert_expire_alert_days($monitor['ssl_cert_expire_alert_days'] ?? null);
+	if (!in_array($days, $alert_send_days, true) && $days > 0) continue;
+
 	if (date("Y-m-d",$monitor['last_send_ssl_cert_expire_alert']) == date("Y-m-d", time())) continue;
 
 	$title = \T::Monitor_Expire_Title();

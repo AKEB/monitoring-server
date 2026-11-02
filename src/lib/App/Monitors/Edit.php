@@ -166,6 +166,17 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					$params['ssl_cert_expire_alert'] = 0;
 				}
 
+				$allowed_ssl_days = \Monitors::ssl_cert_expire_alert_days_list();
+				if (isset($data['ssl_cert_expire_alert_days']) && is_array($data['ssl_cert_expire_alert_days'])) {
+					$ssl_days = array_map('intval', array_map('trim', $data['ssl_cert_expire_alert_days']));
+					$ssl_days = array_values(array_intersect($ssl_days, $allowed_ssl_days));
+					$params['ssl_cert_expire_alert_days'] = $ssl_days
+						? implode(',', $ssl_days)
+						: \Monitors::ssl_cert_expire_alert_days_default();
+				} else {
+					$params['ssl_cert_expire_alert_days'] = \Monitors::ssl_cert_expire_alert_days_default();
+				}
+
 				if (isset($data['response_code'])) {
 					$data['response_code'] = array_map('intval',array_map('trim',$data['response_code']));
 					$params['response_code'] = implode(',', $data['response_code']);
@@ -593,6 +604,13 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 			if (isset($this->monitor['response_code']) && !is_array($this->monitor['response_code'])) {
 				$this->monitor['response_code'] = explode(',', $this->monitor['response_code']??'');
 			}
+			if (!isset($this->monitor['ssl_cert_expire_alert_days']) || !is_array($this->monitor['ssl_cert_expire_alert_days'])) {
+				$this->monitor['ssl_cert_expire_alert_days'] = \Monitors::parse_ssl_cert_expire_alert_days(
+					is_string($this->monitor['ssl_cert_expire_alert_days'] ?? null)
+						? $this->monitor['ssl_cert_expire_alert_days']
+						: null
+				);
+			}
 
 		} else {
 			$this->monitor['status'] ??= \Monitors::STATUS_ENABLED;
@@ -609,6 +627,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 			$this->monitor['ssl_verify'] ??= 1;
 			$this->monitor['ssl_verify_host'] ??= 1;
 			$this->monitor['ssl_cert_expire_alert'] ??= 1;
+			$this->monitor['ssl_cert_expire_alert_days'] ??= \Monitors::ssl_cert_expire_alert_days_list();
 			$this->monitor['proxy_type'] ??= 0;
 			$this->monitor['workers'] ??= [];
 			$this->monitor['notify'] ??= [];
@@ -856,6 +875,12 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 					echo $this->template->html_switch("ssl_cert_expire_alert", intval($this->monitor['ssl_cert_expire_alert']??0), \T::Monitor_Edit_SSLCertExpireAlert(), false,[
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_HTTP_JSON,
+						'readonly' => !($this->can_write || $this->can_create),
+					]);
+					echo $this->template?->html_select('ssl_cert_expire_alert_days[]', \Monitors::ssl_cert_expire_alert_days_hash(), $this->monitor['ssl_cert_expire_alert_days']??[], \T::Monitor_Edit_SSLCertExpireAlertDays(), false,[
+						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+						'multiple' => 'multiple',
 						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_HTTP_JSON,
 						'readonly' => !($this->can_write || $this->can_create),
 					]);

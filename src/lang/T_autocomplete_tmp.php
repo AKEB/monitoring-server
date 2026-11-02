@@ -785,6 +785,14 @@ class T {
 	public static function Monitor_Edit_SSLCertExpireAlert(...$argv): string { return ''; }
 
 	/**
+	 * Monitor_Edit_SSLCertExpireAlertDays
+	 * 
+	 * @return string "Notify how many days before expiry"
+	 * @return string "За сколько дней до истечения уведомлять"
+	 */
+	public static function Monitor_Edit_SSLCertExpireAlertDays(...$argv): string { return ''; }
+
+	/**
 	 * Monitor_Edit_ResponseCode
 	 * 
 	 * @return string "Allowed status codes"

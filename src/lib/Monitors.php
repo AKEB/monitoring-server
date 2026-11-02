@@ -83,6 +83,33 @@ class Monitors extends \DB\MySQLObject implements \PermissionSubject_Interface {
 		return $return;
 	}
 
+	static public function ssl_cert_expire_alert_days_list(): array {
+		return [15, 7, 6, 5, 4, 3, 2, 1];
+	}
+
+	static public function ssl_cert_expire_alert_days_hash(): array {
+		$return = [];
+		foreach (static::ssl_cert_expire_alert_days_list() as $day) {
+			$return[$day] = (string)$day;
+		}
+		return $return;
+	}
+
+	static public function ssl_cert_expire_alert_days_default(): string {
+		return implode(',', static::ssl_cert_expire_alert_days_list());
+	}
+
+	/** @return int[] */
+	static public function parse_ssl_cert_expire_alert_days(?string $value): array {
+		$allowed = static::ssl_cert_expire_alert_days_list();
+		if ($value === null || trim($value) === '') {
+			return $allowed;
+		}
+		$days = array_map('intval', array_map('trim', explode(',', $value)));
+		$days = array_values(array_intersect($days, $allowed));
+		return $days ?: $allowed;
+	}
+
 	static private function setAccessForChild(&$data) {
 		// vardump($data);
 		if (!isset($data) || !$data) return;
