@@ -175,7 +175,7 @@ class MonitorsEvents extends \DB\MySQLObject {
 			$success = 1;
 			$clear_alert_start = false;
 			$workers_total = count($jobs_hash[$monitor_id]);
-			$alert_fail_mode = intval($monitor['alert_fail_mode'] ?? \Monitors::ALERT_FAIL_MODE_ALL);
+			$alert_fail_mode = intval($monitor['alert_fail_mode'] ?? \Monitors::ALERT_FAIL_MODE_MAJORITY);
 			if ($global_good == $workers_total) {
 				// Все обработчики вернули успех
 				if ($monitor['last_send_status'] != \MonitoringLogs::STATUS_GOOD) {

@@ -25,9 +25,9 @@ class Monitors extends \DB\MySQLObject implements \PermissionSubject_Interface {
 	/** Virtual worker_id for push-based External monitors (never a real Workers row). */
 	const EXTERNAL_WORKER_ID = -1;
 
-	/** Alert when every assigned worker failed (current default). */
+	/** Alert when every assigned worker failed. */
 	const ALERT_FAIL_MODE_ALL = 0;
-	/** Alert when at least half of assigned workers failed. */
+	/** Alert when at least half of assigned workers failed (default). */
 	const ALERT_FAIL_MODE_MAJORITY = 1;
 	/** Alert when at least one assigned worker failed. */
 	const ALERT_FAIL_MODE_ANY = 2;
@@ -78,8 +78,8 @@ class Monitors extends \DB\MySQLObject implements \PermissionSubject_Interface {
 
 	static public function alert_fail_mode_hash(): array {
 		return [
-			static::ALERT_FAIL_MODE_ALL => \T::Monitor_Edit_AlertFailModeAll(),
 			static::ALERT_FAIL_MODE_MAJORITY => \T::Monitor_Edit_AlertFailModeMajority(),
+			static::ALERT_FAIL_MODE_ALL => \T::Monitor_Edit_AlertFailModeAll(),
 			static::ALERT_FAIL_MODE_ANY => \T::Monitor_Edit_AlertFailModeAny(),
 		];
 	}
