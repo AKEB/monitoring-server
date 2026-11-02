@@ -27,7 +27,8 @@ touch /var/log/php/mngr_aggregate_today.log
 touch /var/log/php/mngr_clear.log 
 touch /var/log/php/mngr_sessions.log 
 touch /var/log/php/mngr_ssl_notify.log 
-touch /var/log/php/mngr_external.log 
+touch /var/log/php/mngr_external.log
+touch /var/log/php/mngr_alert_actions.log 
 touch /var/log/php/php-fpm.log
 
 touch /var/log/nginx/access.log

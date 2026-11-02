@@ -40,60 +40,8 @@ class AlertAction extends \Routing_Parent implements \Routing_Interface {
 			return;
 		}
 		$cq = $data['callback_query'] ?? null;
-		if (!is_array($cq)) {
-			http_response_code(200);
-			echo 'ok';
-			exit(0);
-		}
-		$callbackData = strval($cq['data'] ?? '');
-		$parsed = \AlertActions::parseCallbackData($callbackData);
-		$user = is_array($cq['from'] ?? null) ? $cq['from'] : [];
-		$author = '';
-		if (!empty($user['username'])) {
-			$author = '@'.strval($user['username']);
-		} elseif (!empty($user['first_name'])) {
-			$author = strval($user['first_name']);
-			if (!empty($user['last_name'])) {
-				$author .= ' '.strval($user['last_name']);
-			}
-		} else {
-			$author = 'user'.strval($user['id'] ?? '');
-		}
-		$callbackQueryId = strval($cq['id'] ?? '');
-		$message = is_array($cq['message'] ?? null) ? $cq['message'] : [];
-		$chatId = strval($message['chat']['id'] ?? '');
-		$messageId = strval($message['message_id'] ?? '');
-
-		$targetNotify = \AlertActions::resolveNotifyForCallback($notify, $parsed);
-		if ($targetNotify === null) {
-			$bot = \MonitoringNotify::telegramBot(strval($notify['json_data']['telegram_bot_token'] ?? ''));
-			if ($bot && $callbackQueryId !== '') {
-				try {
-					@$bot->answerCallbackQuery($callbackQueryId, 'Notify mismatch', false);
-				} catch (\Exception $e) {
-				}
-			}
-			http_response_code(200);
-			echo 'ok';
-			exit(0);
-		}
-
-		$currentText = strval($message['text'] ?? ($message['caption'] ?? ''));
-		$result = $this->applyAction($targetNotify, $parsed, $author, \AlertActions::CHANNEL_TELEGRAM, $chatId, $messageId, $currentText);
-
-		$bot = \MonitoringNotify::telegramBot(strval($targetNotify['json_data']['telegram_bot_token'] ?? ''));
-		if ($bot && $callbackQueryId !== '') {
-			try {
-				@$bot->answerCallbackQuery($callbackQueryId, $result['toast'] ?? 'OK', false);
-			} catch (\Exception $e) {
-			}
-		}
-		if ($bot && !empty($result['ok']) && !empty($result['new_text']) && $chatId !== '' && $messageId !== '') {
-			try {
-				$keyboard = \AlertActions::telegramKeyboard(intval($result['monitor_id']), intval($targetNotify['id']));
-				@$bot->editMessageText($chatId, intval($messageId), $result['new_text'], 'HTML', true, $keyboard);
-			} catch (\Exception $e) {
-			}
+		if (is_array($cq)) {
+			\AlertActionHandler::processTelegramCallbackQuery($notify, $cq);
 		}
 		http_response_code(200);
 		echo 'ok';
@@ -104,7 +52,6 @@ class AlertAction extends \Routing_Parent implements \Routing_Interface {
 		$raw = file_get_contents('php://input');
 		$data = json_decode($raw ?: '', true);
 		if (!is_array($data)) {
-			// Mattermost may send form-encoded
 			$data = $_POST;
 		}
 		$context = [];
@@ -119,17 +66,13 @@ class AlertAction extends \Routing_Parent implements \Routing_Interface {
 		$action = strval($context['action'] ?? ($data['action'] ?? ''));
 		$monitorId = intval($context['monitor_id'] ?? 0);
 		$notifyId = intval($context['notify_id'] ?? ($notify['id'] ?? 0));
-		if ($action !== '' && $monitorId > 0) {
+		$parsed = null;
+		if ($action !== '' && $monitorId > 0 && \AlertActions::isValidAction($action)) {
 			$parsed = [
 				'action' => $action,
 				'monitor_id' => $monitorId,
 				'notify_id' => $notifyId,
 			];
-			if (!\AlertActions::isValidAction($action)) {
-				$parsed = null;
-			}
-		} else {
-			$parsed = null;
 		}
 
 		$userName = strval($data['user_name'] ?? '');
@@ -143,7 +86,7 @@ class AlertAction extends \Routing_Parent implements \Routing_Interface {
 
 		$currentText = '';
 		$mm = null;
-		if ($postId !== '') {
+		if (\AlertActionHandler::isValidMessageId(\AlertActions::CHANNEL_MATTERMOST, $postId)) {
 			try {
 				$mm = new \Mattermost(
 					strval($notify['json_data']['mattermost_url'] ?? ''),
@@ -156,9 +99,20 @@ class AlertAction extends \Routing_Parent implements \Routing_Interface {
 			} catch (\Exception $e) {
 			}
 		}
-		$result = $this->applyAction($notify, $parsed, $author, \AlertActions::CHANNEL_MATTERMOST, $channelId, $postId, $currentText);
+		$targetNotify = \AlertActions::resolveNotifyForCallback($notify, $parsed) ?? $notify;
+		$result = \AlertActionHandler::apply(
+			$targetNotify,
+			$parsed,
+			$author,
+			\AlertActions::CHANNEL_MATTERMOST,
+			$channelId,
+			$postId,
+			$currentText
+		);
 
-		if (!empty($result['ok']) && !empty($result['new_text']) && $postId !== '' && $mm) {
+		if (!empty($result['ok']) && !empty($result['new_text']) && $mm
+			&& \AlertActionHandler::isValidMessageId(\AlertActions::CHANNEL_MATTERMOST, $postId)
+		) {
 			try {
 				$post = \MattermostPosts::getPost($mm, $postId);
 				$props = is_array($post) && isset($post['props']) && is_array($post['props']) ? $post['props'] : [];
@@ -168,10 +122,11 @@ class AlertAction extends \Routing_Parent implements \Routing_Interface {
 						'author_name' => 'Monitoring Alert Manager',
 						'title' => 'Alert',
 						'text' => $result['new_text'],
-						'ts' => time(),
+						'ts' => strval(time()),
 					]];
 				} else {
 					$props['attachments'][0]['text'] = $result['new_text'];
+					$props['attachments'][0]['ts'] = strval($props['attachments'][0]['ts'] ?? time());
 					$token = \AlertActions::ensureToken($notify['json_data']);
 					$baseUrl = strval($notify['json_data']['alert_action_base_url'] ?? '');
 					$webhookUrl = \AlertActions::webhookUrl(
@@ -181,7 +136,7 @@ class AlertAction extends \Routing_Parent implements \Routing_Interface {
 					);
 					$props['attachments'][0]['actions'] = \AlertActions::mattermostActions(
 						intval($result['monitor_id']),
-						intval($notify['id']),
+						intval($targetNotify['id']),
 						$webhookUrl
 					);
 				}
@@ -190,12 +145,11 @@ class AlertAction extends \Routing_Parent implements \Routing_Interface {
 			}
 		}
 
-		$ephemeral = [
-			'ephemeral_text' => strval($result['toast'] ?? 'OK'),
-		];
 		http_response_code(200);
 		header('Content-Type: application/json;charset=utf-8');
-		echo json_encode($ephemeral, JSON_UNESCAPED_UNICODE);
+		echo json_encode([
+			'ephemeral_text' => strval($result['toast'] ?? 'OK'),
+		], JSON_UNESCAPED_UNICODE);
 		exit(0);
 	}
 
@@ -206,19 +160,14 @@ class AlertAction extends \Routing_Parent implements \Routing_Interface {
 			$this->jsonError('Bad request', 400);
 			return;
 		}
-		// Single update or wrapper with updates[]
 		$updates = [];
 		if (isset($data['update_type'])) {
 			$updates = [$data];
 		} elseif (isset($data['updates']) && is_array($data['updates'])) {
 			$updates = $data['updates'];
 		}
-		$handled = false;
 		foreach ($updates as $u) {
-			if (!is_array($u)) {
-				continue;
-			}
-			if (($u['update_type'] ?? '') !== 'message_callback') {
+			if (!is_array($u) || ($u['update_type'] ?? '') !== 'message_callback') {
 				continue;
 			}
 			$cb = isset($u['callback']) && is_array($u['callback']) ? $u['callback'] : [];
@@ -241,8 +190,6 @@ class AlertAction extends \Routing_Parent implements \Routing_Interface {
 			$messageId = '';
 			if (!empty($body['mid'])) {
 				$messageId = strval($body['mid']);
-			} elseif (!empty($msg['body']['mid'])) {
-				$messageId = strval($msg['body']['mid']);
 			}
 			$recipient = isset($msg['recipient']) && is_array($msg['recipient']) ? $msg['recipient'] : [];
 			$chatId = strval($recipient['chat_id'] ?? ($u['chat_id'] ?? ''));
@@ -250,15 +197,21 @@ class AlertAction extends \Routing_Parent implements \Routing_Interface {
 			$targetNotify = \AlertActions::resolveNotifyForCallback($notify, $parsed);
 			if ($targetNotify === null) {
 				$token = strval($notify['json_data']['max_token'] ?? '');
-				$callbackId = strval($cb['callback_id'] ?? '');
 				if ($token !== '' && $callbackId !== '') {
 					\MaxMessenger::answerCallback($token, $callbackId, null, 'Notify mismatch');
 				}
-				$handled = true;
 				continue;
 			}
 			$currentText = strval($body['text'] ?? '');
-			$result = $this->applyAction($targetNotify, $parsed, $author, \AlertActions::CHANNEL_MAX, $chatId, $messageId, $currentText);
+			$result = \AlertActionHandler::apply(
+				$targetNotify,
+				$parsed,
+				$author,
+				\AlertActions::CHANNEL_MAX,
+				$chatId,
+				$messageId,
+				$currentText
+			);
 			$token = strval($targetNotify['json_data']['max_token'] ?? '');
 			if ($token !== '' && $callbackId !== '') {
 				$messageBody = null;
@@ -273,82 +226,10 @@ class AlertAction extends \Routing_Parent implements \Routing_Interface {
 				}
 				\MaxMessenger::answerCallback($token, $callbackId, $messageBody, strval($result['toast'] ?? 'OK'));
 			}
-			$handled = true;
-		}
-		if (!$handled) {
-			http_response_code(200);
-			echo 'ok';
-			exit(0);
 		}
 		http_response_code(200);
 		echo 'ok';
 		exit(0);
-	}
-
-	/**
-	 * @param array{action: string, monitor_id: int, notify_id: int}|null $parsed
-	 * @return array{ok: bool, toast: string, new_text: string, monitor_id: int}
-	 */
-	private function applyAction(
-		array $notify,
-		?array $parsed,
-		string $author,
-		string $channel,
-		string $chatId,
-		string $messageId,
-		string $currentText = ''
-	): array {
-		$empty = ['ok' => false, 'toast' => 'Error', 'new_text' => '', 'monitor_id' => 0];
-		if ($parsed === null) {
-			return $empty + ['toast' => 'Unknown action'];
-		}
-		$monitorId = intval($parsed['monitor_id']);
-		$notifyId = intval($parsed['notify_id']);
-		if ($notifyId > 0 && $notifyId !== intval($notify['id'])) {
-			return $empty + ['toast' => 'Notify mismatch'];
-		}
-		$notifyId = intval($notify['id']);
-		$monitor = \Monitors::get(['id' => $monitorId], '', '`id`, `status`, `last_send_status`, `alert_start_time`');
-		if (!$monitor || intval($monitor['status']) !== \Monitors::STATUS_ENABLED) {
-			return $empty + ['toast' => 'Monitor not found'];
-		}
-		if (intval($monitor['last_send_status']) !== \MonitoringLogs::STATUS_FAIL || intval($monitor['alert_start_time']) < 1) {
-			return $empty + ['toast' => 'No active alert'];
-		}
-
-		$saved = \AlertActions::appendAction($monitorId, $parsed['action'], $author);
-		if (!$saved) {
-			return $empty + ['toast' => 'Save failed'];
-		}
-
-		$line = \AlertActions::formatLogLine($author, $parsed['action'], intval($saved['action_time']));
-		$stored = \AlertActions::getMessage($monitorId, $notifyId);
-		$baseText = '';
-		if ($stored && trim(strval($stored['message_text'] ?? '')) !== '') {
-			$baseText = strval($stored['message_text']);
-		} elseif (trim($currentText) !== '') {
-			$baseText = $currentText;
-		}
-		if ($baseText === '') {
-			$baseText = $line;
-		} else {
-			$baseText = rtrim($baseText)."\n".$line;
-		}
-		\AlertActions::updateStoredMessageText($monitorId, $notifyId, $baseText);
-		if ($messageId !== '') {
-			\AlertActions::saveMessage($monitorId, $notifyId, $channel, $chatId, $messageId, $baseText);
-		}
-
-		$toast = \AlertActions::actionButtonText($parsed['action']);
-		if ($parsed['action'] === \AlertActions::ACTION_MUTE) {
-			$toast = 'Mute';
-		}
-		return [
-			'ok' => true,
-			'toast' => $toast,
-			'new_text' => $baseText,
-			'monitor_id' => $monitorId,
-		];
 	}
 
 	private function jsonError(string $error, int $http_code): void {

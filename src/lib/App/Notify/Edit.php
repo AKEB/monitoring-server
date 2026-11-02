@@ -474,9 +474,10 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				$token,
 				intval($notify['id'] ?? 0)
 			);
-			$url = \AlertActions::webhookUrl(\AlertActions::CHANNEL_TELEGRAM, $token, $baseUrl);
+			// Outbound API goes through proxy; Telegram cannot webhook back (Connection timed out).
+			// Use getUpdates poller (mngr_alert_actions) instead of setWebhook.
 			try {
-				@$bot->setWebhook($url);
+				@$bot->deleteWebhook(false);
 			} catch (\Exception $e) {
 			}
 			return;

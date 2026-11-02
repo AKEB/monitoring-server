@@ -510,6 +510,7 @@ class AlertActions extends \DB\MySQLObject {
 		foreach (static::buttonDefs($monitorId, $notifyId) as $btn) {
 			$actions[] = [
 				'id' => $btn['action'],
+				'type' => 'button',
 				'name' => $btn['text'],
 				'integration' => [
 					'url' => $webhookUrl,

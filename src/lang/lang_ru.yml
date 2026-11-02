@@ -242,7 +242,7 @@ Notify:
     WebHookUsername: "WebHook Basic Auth логин"
     WebHookPassword: "WebHook Basic Auth пароль"
     AlertActionWebhook: "Webhook кнопок алерта"
-    AlertActionWebhookTelegramHint: "Один webhook на бота (setWebhook). Несколько Notify с одним токеном бота и разными чатами делят этот URL — получатель берётся из кнопки. Кнопки: Решить, Взять, Mute, Позвонить, Всё ок."
+    AlertActionWebhookTelegramHint: "Колбэки кнопок забираются через getUpdates (poller), webhook не используется — Telegram снаружи часто не достучится до сервера. Несколько Notify с одним ботом и разными чатами поддерживаются. Кнопки: Решить, Взять, Mute, Позвонить, Всё ок."
     AlertActionWebhookMattermostHint: "URL встраивается в кнопки сообщения. Отдельная настройка в Mattermost не нужна."
     AlertActionWebhookMaxHint: "Один webhook на токен бота. Несколько Notify с одним токеном делят URL. Подписка при сохранении, если API поддерживает; иначе укажите URL в кабинете Max."
     CreateTime: "Время создания"

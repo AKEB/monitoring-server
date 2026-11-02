@@ -143,7 +143,7 @@ class MonitoringNotify extends \DB\MySQLObject {
 						'author_name' => 'Monitoring Alert Manager',
 						'title'       => $title_send,
 						'text'        => $text_send,
-						'ts'          => time(),
+						'ts'          => strval(time()),
 						'footer'      => 'Alert: '.$notify['title'],
 					];
 					if ($withButtons && $notifyId > 0) {

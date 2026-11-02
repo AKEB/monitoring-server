@@ -1715,8 +1715,8 @@ class T {
 	/**
 	 * Notify_Edit_AlertActionWebhookTelegramHint
 	 * 
-	 * @return string "One webhook per bot (setWebhook). Multiple Notify rows with the same bot token and different chats share this URL — the receiver comes from the button. Buttons: Resolve, Take, Mute, Call, All OK."
-	 * @return string "Один webhook на бота (setWebhook). Несколько Notify с одним токеном бота и разными чатами делят этот URL — получатель берётся из кнопки. Кнопки: Решить, Взять, Mute, Позвонить, Всё ок."
+	 * @return string "Button callbacks are polled via getUpdates (webhook is not used — Telegram often cannot reach the server). Multiple Notify rows with the same bot and different chats are supported. Buttons: Resolve, Take, Mute, Call, All OK."
+	 * @return string "Колбэки кнопок забираются через getUpdates (poller), webhook не используется — Telegram снаружи часто не достучится до сервера. Несколько Notify с одним ботом и разными чатами поддерживаются. Кнопки: Решить, Взять, Mute, Позвонить, Всё ок."
 	 */
 	public static function Notify_Edit_AlertActionWebhookTelegramHint(...$argv): string { return ''; }
 

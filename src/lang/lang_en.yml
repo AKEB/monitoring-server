@@ -245,7 +245,7 @@ Notify:
     WebHookUsername: "WebHook Basic Auth username"
     WebHookPassword: "WebHook Basic Auth password"
     AlertActionWebhook: "Alert action webhook"
-    AlertActionWebhookTelegramHint: "One webhook per bot (setWebhook). Multiple Notify rows with the same bot token and different chats share this URL — the receiver comes from the button. Buttons: Resolve, Take, Mute, Call, All OK."
+    AlertActionWebhookTelegramHint: "Button callbacks are polled via getUpdates (webhook is not used — Telegram often cannot reach the server). Multiple Notify rows with the same bot and different chats are supported. Buttons: Resolve, Take, Mute, Call, All OK."
     AlertActionWebhookMattermostHint: "URL is embedded in message buttons. No extra Mattermost setup needed."
     AlertActionWebhookMaxHint: "One webhook per bot token. Multiple Notify rows with the same token share this URL. Subscription on save when supported; otherwise paste the URL in the Max cabinet."
     CreateTime: "Create time"
