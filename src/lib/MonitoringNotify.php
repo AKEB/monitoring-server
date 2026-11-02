@@ -173,6 +173,29 @@ class MonitoringNotify extends \DB\MySQLObject {
 					continue;
 				}
 				continue;
+			} elseif ($notify['type'] == \Notify::TYPE_WEBHOOK) {
+				try {
+					$url = trim((string) ($notify['receiver'] ?? ''));
+					if ($url === '') {
+						continue;
+					}
+					$payload = \NotifyWebhook::buildPayload(
+						$monitor_id,
+						$text_send,
+						$title_send,
+						(bool) $status,
+						strval($notify['title'] ?? '')
+					);
+					\NotifyWebhook::send(
+						$url,
+						strval($notify['json_data']['webhook_username'] ?? ''),
+						strval($notify['json_data']['webhook_password'] ?? ''),
+						$payload
+					);
+				} catch (\Exception $e) {
+					continue;
+				}
+				continue;
 			} else {
 				continue;
 			}

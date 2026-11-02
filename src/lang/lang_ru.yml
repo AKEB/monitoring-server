@@ -182,6 +182,7 @@ Notify:
     Mattermost: "Mattermost"
     Gotify: "Gottify"
     Max: "Max"
+    WebHook: "WebHook"
   Table:
     Title: "Название"
     Status: "Статус"
@@ -227,6 +228,9 @@ Notify:
     GotifyServer: "Gotify сервер"
     GotifyToken: "Gotify токен"
     GotifyPriority: "Gotify приоритет"
+    WebHookUrlHint: "В поле «Получатель»: полный URL webhook (например https://host/api/v1/alertmanager/webhook)."
+    WebHookUsername: "WebHook Basic Auth логин"
+    WebHookPassword: "WebHook Basic Auth пароль"
     CreateTime: "Время создания"
     UpdateTime: "Время обновления"
     ChangeButton: "Обновить"

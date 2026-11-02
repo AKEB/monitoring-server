@@ -913,6 +913,30 @@ class T {
 	public static function Monitor_Edit_SendRepeatMinute(...$argv): string { return ''; }
 
 	/**
+	 * Monitor_Edit_ExternalOkUrl
+	 * 
+	 * @return string "OK callback URL (resource is up)"
+	 * @return string "Ссылка OK (ресурс работает)"
+	 */
+	public static function Monitor_Edit_ExternalOkUrl(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_ExternalFailUrl
+	 * 
+	 * @return string "Fail callback URL (resource is down)"
+	 * @return string "Ссылка Fail (ресурс поломан)"
+	 */
+	public static function Monitor_Edit_ExternalFailUrl(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_ExternalUrlsHint
+	 * 
+	 * @return string "Call these GET links from your system to report status. Links differ only by the status parameter."
+	 * @return string "Вызывайте эти GET-ссылки из своей системы, чтобы сообщить статус. Ссылки отличаются только параметром status."
+	 */
+	public static function Monitor_Edit_ExternalUrlsHint(...$argv): string { return ''; }
+
+	/**
 	 * Monitor_Edit_NameLengthError
 	 * 
 	 * @return string "Name length must be between 2 and 255 characters"
@@ -1026,35 +1050,11 @@ class T {
 
 	/**
 	 * Monitor_Type_External
-	 *
+	 * 
 	 * @return string "External"
 	 * @return string "External"
 	 */
 	public static function Monitor_Type_External(...$argv): string { return ''; }
-
-	/**
-	 * Monitor_Edit_ExternalOkUrl
-	 *
-	 * @return string "OK callback URL (resource is up)"
-	 * @return string "Ссылка OK (ресурс работает)"
-	 */
-	public static function Monitor_Edit_ExternalOkUrl(...$argv): string { return ''; }
-
-	/**
-	 * Monitor_Edit_ExternalFailUrl
-	 *
-	 * @return string "Fail callback URL (resource is down)"
-	 * @return string "Ссылка Fail (ресурс поломан)"
-	 */
-	public static function Monitor_Edit_ExternalFailUrl(...$argv): string { return ''; }
-
-	/**
-	 * Monitor_Edit_ExternalUrlsHint
-	 *
-	 * @return string "Call these GET links from your system to report status. Links differ only by the status parameter."
-	 * @return string "Вызывайте эти GET-ссылки из своей системы, чтобы сообщить статус. Ссылки отличаются только параметром status."
-	 */
-	public static function Monitor_Edit_ExternalUrlsHint(...$argv): string { return ''; }
 
 	/**
 	 * Dashboard_Response
@@ -1247,6 +1247,14 @@ class T {
 	 * @return string "Max"
 	 */
 	public static function Notify_Type_Max(...$argv): string { return ''; }
+
+	/**
+	 * Notify_Type_WebHook
+	 * 
+	 * @return string "WebHook"
+	 * @return string "WebHook"
+	 */
+	public static function Notify_Type_WebHook(...$argv): string { return ''; }
 
 	/**
 	 * Notify_Table_Title
@@ -1591,6 +1599,30 @@ class T {
 	 * @return string "Gotify приоритет"
 	 */
 	public static function Notify_Edit_GotifyPriority(...$argv): string { return ''; }
+
+	/**
+	 * Notify_Edit_WebHookUrlHint
+	 * 
+	 * @return string "In «Receiver»: full webhook URL (e.g. https://host/api/v1/alertmanager/webhook)."
+	 * @return string "В поле «Получатель»: полный URL webhook (например https://host/api/v1/alertmanager/webhook)."
+	 */
+	public static function Notify_Edit_WebHookUrlHint(...$argv): string { return ''; }
+
+	/**
+	 * Notify_Edit_WebHookUsername
+	 * 
+	 * @return string "WebHook Basic Auth username"
+	 * @return string "WebHook Basic Auth логин"
+	 */
+	public static function Notify_Edit_WebHookUsername(...$argv): string { return ''; }
+
+	/**
+	 * Notify_Edit_WebHookPassword
+	 * 
+	 * @return string "WebHook Basic Auth password"
+	 * @return string "WebHook Basic Auth пароль"
+	 */
+	public static function Notify_Edit_WebHookPassword(...$argv): string { return ''; }
 
 	/**
 	 * Notify_Edit_CreateTime

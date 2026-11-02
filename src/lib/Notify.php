@@ -14,6 +14,7 @@ class Notify extends \DB\MySQLObject implements \PermissionSubject_Interface {
 	const TYPE_MATTERMOST = 1;
 	const TYPE_GOTIFY     = 2;
 	const TYPE_MAX        = 3;
+	const TYPE_WEBHOOK    = 4;
 
 	const STATUS_DISABLED = 0;
 	const STATUS_ENABLED = 1;
@@ -35,6 +36,7 @@ class Notify extends \DB\MySQLObject implements \PermissionSubject_Interface {
 			static::TYPE_MATTERMOST => \T::Notify_Type_Mattermost(),
 			static::TYPE_GOTIFY     => \T::Notify_Type_Gotify(),
 			static::TYPE_MAX        => \T::Notify_Type_Max(),
+			static::TYPE_WEBHOOK    => \T::Notify_Type_WebHook(),
 		];
 	}
 

@@ -111,7 +111,7 @@ class MonitorsEvents extends \DB\MySQLObject {
 		if (!isset($monitors) || !count($monitors)) return;
 		$monitor_ids = array_keys($monitors);
 		if (!count($monitor_ids)) return;
-		$monitors = \Monitors::data(false, sql_pholder(' AND `id` IN (?@) AND `status` = ?', $monitor_ids, \Monitors::STATUS_ENABLED), '`id`, `title`, `type`, `docker`, `last_send_status`, `last_send_time`, `send_repeat_minute`, `additional_text`');
+		$monitors = \Monitors::data(false, sql_pholder(' AND `id` IN (?@) AND `status` = ?', $monitor_ids, \Monitors::STATUS_ENABLED), '`id`, `title`, `type`, `docker`, `last_send_status`, `last_send_time`, `alert_start_time`, `send_repeat_minute`, `additional_text`');
 		$monitors_hash = [];
 		$dockers_monitor_hash = [];
 		foreach($monitors as $monitor) {
@@ -173,6 +173,7 @@ class MonitorsEvents extends \DB\MySQLObject {
 			$title = '';
 			$text = '';
 			$success = 1;
+			$clear_alert_start = false;
 			if ($global_good == count($jobs_hash[$monitor_id])) {
 				// Все обработчики вернули успех
 				if ($monitor['last_send_status'] != \MonitoringLogs::STATUS_GOOD) {
@@ -185,6 +186,8 @@ class MonitorsEvents extends \DB\MySQLObject {
 						'last_send_time' => time(),
 						'update_time' => time(),
 					]);
+					// alert_start_time очищаем после webhook, чтобы resolved ушёл с тем же startsAt
+					$clear_alert_start = true;
 				}
 			} elseif ($global_failed == count($jobs_hash[$monitor_id])) {
 				// Все обработчики вернули ошибки
@@ -198,6 +201,7 @@ class MonitorsEvents extends \DB\MySQLObject {
 						'id' => $monitor_id,
 						'last_send_status' => \MonitoringLogs::STATUS_FAIL,
 						'last_send_time' => time(),
+						'alert_start_time' => time(),
 						'update_time' => time(),
 					]);
 				} elseif ($monitor['send_repeat_minute'] > 0) {
@@ -218,6 +222,13 @@ class MonitorsEvents extends \DB\MySQLObject {
 			}
 			if ($text) {
 				\MonitoringNotify::sendNotification($monitor_id, $text, $title, $success);
+				if ($clear_alert_start) {
+					\Monitors::save([
+						'id' => $monitor_id,
+						'alert_start_time' => 0,
+						'update_time' => time(),
+					]);
+				}
 				$subs = \MonitoringSubscribe::data(false, sql_pholder(' AND `monitor_id` = ? AND `expire_time` >= ? ', $monitor_id, time()), '`user_id`');
 				if (is_array($subs) && $subs) {
 					foreach($subs as $sub) {

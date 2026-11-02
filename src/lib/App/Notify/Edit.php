@@ -116,6 +116,13 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					if (isset($data['json_data']['max_token']) && $data['json_data']['max_token'] && trim($data['json_data']['max_token']) != '') {
 						$params['json_data']['max_token'] = trim($data['json_data']['max_token']);
 					}
+				} elseif ($params['type'] == \Notify::TYPE_WEBHOOK) {
+					if (isset($data['json_data']['webhook_username'])) {
+						$params['json_data']['webhook_username'] = trim(strval($data['json_data']['webhook_username']));
+					}
+					if (isset($data['json_data']['webhook_password']) && $data['json_data']['webhook_password'] && trim($data['json_data']['webhook_password']) != '') {
+						$params['json_data']['webhook_password'] = trim($data['json_data']['webhook_password']);
+					}
 				}
 			}
 
@@ -142,6 +149,11 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 
 				if (!isset($params['json_data']) || !is_array($params['json_data'])) {
 					$params['json_data'] = $old_notify['json_data'];
+				} else {
+					$params['json_data'] = array_merge(
+						is_array($old_notify['json_data']) ? $old_notify['json_data'] : [],
+						$params['json_data']
+					);
 				}
 				if (!$params['json_data']) {
 					$params['json_data'] = [];
@@ -265,6 +277,30 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					}
 					$this->success = \T::Notify_Edit_TestSuccess();
 					break;
+				} else if ($params['type'] == \Notify::TYPE_WEBHOOK) {
+					$url = trim((string) ($params['receiver'] ?? ''));
+					if ($url === '' || !preg_match('#^https?://#i', $url)) {
+						$this->error = \T::Notify_Edit_TestError(50);
+						break;
+					}
+					try {
+						$payload = \NotifyWebhook::buildTestPayload(strval($params['title'] ?? 'webhook'));
+						$ok = \NotifyWebhook::send(
+							$url,
+							strval($params['json_data']['webhook_username'] ?? ''),
+							strval($params['json_data']['webhook_password'] ?? ''),
+							$payload
+						);
+						if (!$ok) {
+							$this->error = \T::Notify_Edit_TestError(51);
+							break;
+						}
+					} catch (\Exception $e) {
+						$this->error = \T::Notify_Edit_TestError(51);
+						break;
+					}
+					$this->success = \T::Notify_Edit_TestSuccess();
+					break;
 				}
 				$this->error = \T::Notify_Edit_TestError(1);
 				break;
@@ -285,6 +321,12 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					$old_notify['json_data'] = json_decode($old_notify['json_data'], true);
 				} else {
 					$old_notify['json_data'] = [];
+				}
+				if (isset($params['json_data']) && is_array($params['json_data'])) {
+					$params['json_data'] = array_merge(
+						is_array($old_notify['json_data']) ? $old_notify['json_data'] : [],
+						$params['json_data']
+					);
 				}
 				foreach($params as $k=>$v) {
 					if ($old_notify[$k] == $v) {
@@ -525,6 +567,9 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					<div class="type-dependence type-<?=\Notify::TYPE_MAX;?> col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6 mb-2">
 						<small class="text-muted"><?=\T::Notify_Edit_MaxReceiverHint();?></small>
 					</div>
+					<div class="type-dependence type-<?=\Notify::TYPE_WEBHOOK;?> col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6 mb-2">
+						<small class="text-muted"><?=\T::Notify_Edit_WebHookUrlHint();?></small>
+					</div>
 					<?php
 					if ($secrets_show) {
 						echo $this->template->html_input("json_data[telegram_bot_token]", $this->notify['json_data']['telegram_bot_token']??'', \T::Notify_Edit_TelegramBotToken(), false, [
@@ -551,6 +596,17 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 							'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
 							'global-class' => 'type-dependence type-'.\Notify::TYPE_GOTIFY,
 							'readonly' => !($this->can_write || $this->can_create),
+						]);
+						echo $this->template->html_input("json_data[webhook_username]", $this->notify['json_data']['webhook_username']??'alertmanager', \T::Notify_Edit_WebHookUsername(), false, [
+							'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+							'global-class' => 'type-dependence type-'.\Notify::TYPE_WEBHOOK,
+							'readonly' => !($this->can_write || $this->can_create),
+						]);
+						echo $this->template->html_input("json_data[webhook_password]", $this->notify['json_data']['webhook_password']??'', \T::Notify_Edit_WebHookPassword(), false, [
+							'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+							'global-class' => 'type-dependence type-'.\Notify::TYPE_WEBHOOK,
+							'readonly' => !($this->can_write || $this->can_create),
+							'type' => 'password',
 						]);
 					}
 
