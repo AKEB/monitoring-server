@@ -222,7 +222,7 @@ class MonitoringApiStatus {
 		$rows = \Monitors::data(
 			['api_enabled' => 1],
 			$sql,
-			'`id`, `title`, `type`, `url`, `host`, `port`, `docker`, `container`, `status`, `parent_id`, `repeat_seconds`, `api_description_ru`, `api_description_en`'
+			'`id`, `title`, `type`, `url`, `host`, `port`, `docker`, `container`, `status`, `parent_id`, `repeat_seconds`, `api_description_ru`, `api_description_en`, `external_hash`'
 		);
 		if (!$rows || !is_array($rows)) {
 			return [];
@@ -280,6 +280,9 @@ class MonitoringApiStatus {
 					return $url;
 				}
 				return $port > 0 ? $host.':'.$port : $host;
+			case \Monitors::TYPE_EXTERNAL:
+				$hash = trim(strval($monitor['external_hash'] ?? ''));
+				return $hash !== '' ? 'external://'.$hash : 'external://';
 			default:
 				return $url !== '' ? $url : $host;
 		}
@@ -357,6 +360,7 @@ class MonitoringApiStatus {
 				$hash[intval($row['id'])] = strval($row['title'] ?? '');
 			}
 		}
+		$hash[\Monitors::EXTERNAL_WORKER_ID] = \ExternalMonitors::workerTitle();
 		return $hash;
 	}
 

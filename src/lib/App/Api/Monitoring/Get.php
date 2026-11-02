@@ -103,7 +103,7 @@ class Get extends \Routing_Parent implements \Routing_Interface {
 		$enabled_jobs = [];
 		if ($this->worker && $this->worker['id']) {
 			$sql = sql_pholder(' AND M.`status` = ? ',\Monitors::STATUS_ENABLED);
-			$sql .= sql_pholder(' AND M.`type` NOT IN (?@)', [\Monitors::TYPE_FOLDER, \Monitors::TYPE_DOCKER]);
+			$sql .= sql_pholder(' AND M.`type` NOT IN (?@)', [\Monitors::TYPE_FOLDER, \Monitors::TYPE_DOCKER, \Monitors::TYPE_EXTERNAL]);
 			$fields = 't.`id` AS `job_id`, t.`update_time`, M.`id`, M.`type`, M.`url`, M.`method`, M.`host`, M.`port`, '
 				. 'M.`timeout`, M.`repeat_seconds`, M.`request_headers`, M.`proxy_host`, M.`proxy_type`, M.`ssl_verify`, M.`ssl_verify_host`, '
 				. 'M.`max_redirects`, M.`json_path`, M.`json_expected_value`, M.`json_expected_type`';

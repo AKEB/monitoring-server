@@ -250,6 +250,10 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					$params['container'] = $data['container'];
 				}
 
+			} elseif (intval($data['type']) == \Monitors::TYPE_EXTERNAL) {
+				$params['repeat_seconds'] = 60;
+				$params['timeout'] = 60;
+				$data['workers'] = [];
 			}
 
 			if (isset($data['parent_id'])) {
@@ -288,8 +292,23 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					$this->error = \T::Monitor_Edit_MonitorNotFound();
 					break;
 				}
+				$new_type = intval($params['type'] ?? $old_monitor['type'] ?? 0);
+				if ($new_type == \Monitors::TYPE_EXTERNAL) {
+					$data['workers'] = [];
+					$params['repeat_seconds'] = 60;
+					$params['timeout'] = 60;
+					$old_hash = trim(strval($old_monitor['external_hash'] ?? ''));
+					if (intval($old_monitor['type']) != \Monitors::TYPE_EXTERNAL || $old_hash === '') {
+						$params['external_hash'] = \ExternalMonitors::generateHash();
+						$params['external_status'] = \ExternalMonitors::STATUS_UNSET;
+					}
+				} elseif (intval($old_monitor['type']) == \Monitors::TYPE_EXTERNAL) {
+					$params['external_hash'] = '';
+					$params['external_status'] = \ExternalMonitors::STATUS_UNSET;
+				}
 				$old_jobs = get_hash(\MonitoringJobs::data(['monitor_id' => $params['id']]), 'worker_id', 'monitor_id');
 				foreach($old_jobs as $worker_id=>$_) {
+					if (intval($worker_id) === \Monitors::EXTERNAL_WORKER_ID) continue;
 					if (!isset($workers_hash[$worker_id]) || !$workers_hash[$worker_id]) continue;
 					if (!in_array($worker_id, $data['workers'])) {
 						$update_jobs[$worker_id] = -1;
@@ -332,6 +351,13 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				if (!\Sessions::checkPermission(\Monitors::PERMISSION_CREATE, 0, WRITE)) {
 					$this->error = \T::Monitor_Create_PermissionDenied();
 					break;
+				}
+				if (intval($params['type'] ?? $data['type'] ?? 0) == \Monitors::TYPE_EXTERNAL) {
+					$data['workers'] = [];
+					$params['repeat_seconds'] = 60;
+					$params['timeout'] = 60;
+					$params['external_hash'] = \ExternalMonitors::generateHash();
+					$params['external_status'] = \ExternalMonitors::STATUS_UNSET;
 				}
 				if ($data['workers']) {
 					foreach($data['workers'] as $worker_id) {
@@ -478,8 +504,17 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 			}
 			if ($monitor_id) {
 				$monitor = \Monitors::get(['id' => $monitor_id]);
+				if (intval($monitor['type']) == \Monitors::TYPE_EXTERNAL) {
+					\ExternalMonitors::clearRealJobs(intval($monitor_id));
+					\ExternalMonitors::ensureVirtualJob(intval($monitor_id));
+				} else {
+					\ExternalMonitors::removeVirtualJob(intval($monitor_id));
+				}
 				if ($monitor['type'] == \Monitors::TYPE_FOLDER && !$old_monitor) {
 					common_redirect('/admin/monitors/'.$monitor['id'].'/');
+				} elseif (intval($monitor['type']) == \Monitors::TYPE_EXTERNAL) {
+					// Stay on edit page so callback URLs are visible right after create.
+					common_redirect('/admin/monitors/'.$monitor['parent_id'].'/edit/'.$monitor_id.'/');
 				} else {
 					common_redirect('/admin/monitors/'.$monitor['parent_id'].'/');
 				}
@@ -524,6 +559,23 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				isset($this->monitor['update_time']) && $this->monitor['update_time'] > 0 ?
 				date('Y-m-d H:i:s', $this->monitor['update_time']) : ''
 			);
+			if (intval($this->monitor['type'] ?? 0) == \Monitors::TYPE_EXTERNAL) {
+				if (trim(strval($this->monitor['external_hash'] ?? '')) === '') {
+					$hash = \ExternalMonitors::generateHash();
+					\Monitors::save([
+						'id' => intval($this->monitor['id']),
+						'external_hash' => $hash,
+						'external_status' => \ExternalMonitors::STATUS_UNSET,
+						'repeat_seconds' => 60,
+						'timeout' => 60,
+						'update_time' => time(),
+						'_mode' => \DB\Common::CSMODE_UPDATE,
+					]);
+					$this->monitor['external_hash'] = $hash;
+					$this->monitor['external_status'] = \ExternalMonitors::STATUS_UNSET;
+				}
+				\ExternalMonitors::ensureVirtualJob(intval($this->monitor['id']));
+			}
 			$this->monitor['workers'] = [];
 			$jobs = \MonitoringJobs::data(['monitor_id' => $this->monitor['id']], false, '`worker_id`');
 			if ($jobs) {
@@ -667,7 +719,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					]);
 					echo $this->template->html_switch("api_enabled", intval($this->monitor['api_enabled']??0), \T::Monitor_Edit_ApiEnabled(), false,[
 						'readonly' => !($this->can_write || $this->can_create),
-						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_HTTP_JSON.' type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_PING.' type-'.\Monitors::TYPE_DOCKER.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU,
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_HTTP_JSON.' type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_PING.' type-'.\Monitors::TYPE_DOCKER.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU.' type-'.\Monitors::TYPE_EXTERNAL,
 					]);
 					$api_description_class = 'api-description-dependence';
 					echo $this->template->html_input("api_description_ru", htmlspecialchars(strval($this->monitor['api_description_ru']??''), ENT_QUOTES, 'UTF-8'), \T::Monitor_Edit_ApiDescriptionRu(), false, [
@@ -692,6 +744,23 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_HTTP_JSON,
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
+
+					$external_urls = \ExternalMonitors::urlsForMonitor($this->monitor ?? []);
+					echo '<div class="type-dependence type-'.\Monitors::TYPE_EXTERNAL.' mb-3">';
+					if (!empty($this->monitor['id']) && !empty($external_urls['ok'])) {
+						echo '<p class="text-muted">'.\T::Monitor_Edit_ExternalUrlsHint().'</p>';
+						echo $this->template->html_input("external_ok_url", $external_urls['ok'], \T::Monitor_Edit_ExternalOkUrl(), false, [
+							'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+							'readonly' => true,
+						]);
+						echo $this->template->html_input("external_fail_url", $external_urls['fail'], \T::Monitor_Edit_ExternalFailUrl(), false, [
+							'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+							'readonly' => true,
+						]);
+					} else {
+						echo '<p class="text-muted">'.\T::Monitor_Edit_ExternalUrlsHint().'</p>';
+					}
+					echo '</div>';
 
 					echo $this->template?->html_select('docker', \Dockers::subject_hash(), $this->monitor['docker']??0, \T::Monitor_Edit_Docker(), false,[
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
@@ -762,7 +831,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					echo $this->template->html_input("send_repeat_minute", $this->monitor['send_repeat_minute']??0, \T::Monitor_Edit_SendRepeatMinute(), false, [
 						'type' => 'number',
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
-						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_HTTP_JSON.' type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_PING.' type-'.\Monitors::TYPE_DOCKER.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU,
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_HTTP_JSON.' type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_PING.' type-'.\Monitors::TYPE_DOCKER.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU.' type-'.\Monitors::TYPE_EXTERNAL,
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 					echo $this->template?->html_select('response_code[]', \Monitors::response_code_hash(), $this->monitor['response_code']??[], \T::Monitor_Edit_ResponseCode(), false,[
@@ -815,7 +884,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 						'type' => 'textarea',
 						'rows' => '5',
 						'cols' => '60',
-						'global-class' => 'type-dependence type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_PING.' type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_HTTP_JSON.' type-'.\Monitors::TYPE_DOCKER.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU,
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_PING.' type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_HTTP_JSON.' type-'.\Monitors::TYPE_DOCKER.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU.' type-'.\Monitors::TYPE_EXTERNAL,
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6'
 					]);
 

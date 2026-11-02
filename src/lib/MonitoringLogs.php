@@ -431,11 +431,21 @@ class MonitoringLogs extends \DB\MySQLObject {
 				];
 			}
 			if ($workers_hash) {
-				$start_time = microtime(true);
-				$workers = \Workers::data(['id' => array_keys($workers_hash)],' ORDER BY title ASC','`id`, `title`');
-				$return['mysql_time']['Workers::data'] = round(microtime(true) - $start_time,3);
-				foreach($workers as $item) {
-					$workers_hash[$item['id']]['title'] = $item['title'] ?? '';
+				$real_worker_ids = [];
+				foreach (array_keys($workers_hash) as $worker_id) {
+					if (intval($worker_id) === \Monitors::EXTERNAL_WORKER_ID) {
+						$workers_hash[$worker_id]['title'] = \ExternalMonitors::workerTitle();
+						continue;
+					}
+					$real_worker_ids[] = intval($worker_id);
+				}
+				if ($real_worker_ids) {
+					$start_time = microtime(true);
+					$workers = \Workers::data(['id' => $real_worker_ids],' ORDER BY title ASC','`id`, `title`');
+					$return['mysql_time']['Workers::data'] = round(microtime(true) - $start_time,3);
+					foreach($workers as $item) {
+						$workers_hash[$item['id']]['title'] = $item['title'] ?? '';
+					}
 				}
 				uasort($workers_hash, function($a, $b) {
 					return strcasecmp($a['title'] ?? '', $b['title'] ?? '');

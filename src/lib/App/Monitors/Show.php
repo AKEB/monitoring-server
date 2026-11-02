@@ -79,6 +79,12 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 		$newMonitor['title'] .= ' (copy)';
 		$newMonitor['create_time'] = time();
 		$newMonitor['update_time'] = time();
+		if (intval($newMonitor['type'] ?? 0) == \Monitors::TYPE_EXTERNAL) {
+			$newMonitor['external_hash'] = \ExternalMonitors::generateHash();
+			$newMonitor['external_status'] = \ExternalMonitors::STATUS_UNSET;
+			$newMonitor['repeat_seconds'] = 60;
+			$newMonitor['timeout'] = 60;
+		}
 		$newMonitor['id'] = \Monitors::save($newMonitor);
 		if ($newMonitor['id']) {
 			\Logs::create_log(\Monitors::LOGS_OBJECT, $newMonitor['id'], $newMonitor);
@@ -107,15 +113,22 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 				}
 			}
 
-			$jobs = \MonitoringJobs::data(['monitor_id'=>$monitorId]);
-			foreach($jobs as $job) {
-				unset($job['id']);
-				$job['monitor_id'] = $newMonitor['id'];
-				$job['create_time'] = time();
-				$job['update_time'] = time();
-				$job['id'] = \MonitoringJobs::save($job);
-				$log_id = \Logs::create_log(\MonitoringJobs::LOGS_OBJECT, $job['id'], $job);
-				\Logs::add_tag($log_id, \Monitors::LOGS_OBJECT, $newMonitor['id']);
+			if (intval($newMonitor['type'] ?? 0) == \Monitors::TYPE_EXTERNAL) {
+				\ExternalMonitors::ensureVirtualJob(intval($newMonitor['id']));
+			} else {
+				$jobs = \MonitoringJobs::data(['monitor_id'=>$monitorId]);
+				foreach($jobs as $job) {
+					if (intval($job['worker_id'] ?? 0) === \Monitors::EXTERNAL_WORKER_ID) {
+						continue;
+					}
+					unset($job['id']);
+					$job['monitor_id'] = $newMonitor['id'];
+					$job['create_time'] = time();
+					$job['update_time'] = time();
+					$job['id'] = \MonitoringJobs::save($job);
+					$log_id = \Logs::create_log(\MonitoringJobs::LOGS_OBJECT, $job['id'], $job);
+					\Logs::add_tag($log_id, \Monitors::LOGS_OBJECT, $newMonitor['id']);
+				}
 			}
 			common_redirect('/admin/monitors/'.($this->parent_id ? $this->parent_id.'/':'0/').'edit/'.$newMonitor['id'].'/');
 		}

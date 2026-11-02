@@ -20,6 +20,10 @@ class Monitors extends \DB\MySQLObject implements \PermissionSubject_Interface {
 	const TYPE_EXPORTER_MEMORY = 6;
 	const TYPE_EXPORTER_CPU    = 7;
 	const TYPE_HTTP_JSON       = 8;
+	const TYPE_EXTERNAL        = 9;
+
+	/** Virtual worker_id for push-based External monitors (never a real Workers row). */
+	const EXTERNAL_WORKER_ID = -1;
 
 	static private array $monitors_hash = [];
 
@@ -48,6 +52,7 @@ class Monitors extends \DB\MySQLObject implements \PermissionSubject_Interface {
 			static::TYPE_EXPORTER_DISK => \T::Monitor_Type_ExporterDisk(),
 			static::TYPE_EXPORTER_MEMORY => \T::Monitor_Type_ExporterMemory(),
 			static::TYPE_HTTP_JSON => \T::Monitor_Type_HTTPJson(),
+			static::TYPE_EXTERNAL => \T::Monitor_Type_External(),
 			// static::TYPE_EXPORTER_CPU => \T::Monitor_Type_ExporterCPU(),
 		];
 	}

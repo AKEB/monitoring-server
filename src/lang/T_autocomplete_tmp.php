@@ -1025,6 +1025,38 @@ class T {
 	public static function Monitor_Type_HTTPJson(...$argv): string { return ''; }
 
 	/**
+	 * Monitor_Type_External
+	 *
+	 * @return string "External"
+	 * @return string "External"
+	 */
+	public static function Monitor_Type_External(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_ExternalOkUrl
+	 *
+	 * @return string "OK callback URL (resource is up)"
+	 * @return string "Ссылка OK (ресурс работает)"
+	 */
+	public static function Monitor_Edit_ExternalOkUrl(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_ExternalFailUrl
+	 *
+	 * @return string "Fail callback URL (resource is down)"
+	 * @return string "Ссылка Fail (ресурс поломан)"
+	 */
+	public static function Monitor_Edit_ExternalFailUrl(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_ExternalUrlsHint
+	 *
+	 * @return string "Call these GET links from your system to report status. Links differ only by the status parameter."
+	 * @return string "Вызывайте эти GET-ссылки из своей системы, чтобы сообщить статус. Ссылки отличаются только параметром status."
+	 */
+	public static function Monitor_Edit_ExternalUrlsHint(...$argv): string { return ''; }
+
+	/**
 	 * Dashboard_Response
 	 * 
 	 * @return string "Response"

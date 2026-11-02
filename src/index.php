@@ -111,6 +111,7 @@ require_once("./autoload.php");
 \Routes::addRoute('/maintenances/', '\\App\\Maintenances\\Show');
 
 \Routes::addRoute('/api/v1/status/', '\\App\\Api\\V1\\Status');
+\Routes::addRoute('/api/external/(?P<hash>[a-fA-F0-9]{64})/', '\\App\\Api\\External');
 \Routes::addRoute('/settings/api/', '\\App\\Settings\\ApiTokens');
 
 \Routes::addRoute('/admin/dockers/edit/(?P<docker_id>\d+)/', '\\App\\Dockers\\Edit');

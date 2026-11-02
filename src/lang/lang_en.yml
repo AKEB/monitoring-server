@@ -132,6 +132,9 @@ Monitor:
     Container: "Container"
     AdditionalAlertText: "Additional alert text"
     SendRepeatMinute: "Resending error notifications in minutes"
+    ExternalOkUrl: "OK callback URL (resource is up)"
+    ExternalFailUrl: "Fail callback URL (resource is down)"
+    ExternalUrlsHint: "Call these GET links from your system to report status. Links differ only by the status parameter."
     NameLengthError: "Name length must be between 2 and 255 characters"
     MonitorNotFound: "Monitor not found"
     PermissionDenied: "You don't have permission to edit this monitor"
@@ -148,6 +151,7 @@ Monitor:
     ExporterMemory: "Node Exporter (memory)"
     ExporterCPU: "Node Exporter (cpu)"
     HTTPJson: "HTTP(s) JSON check"
+    External: "External"
 
 
 

@@ -131,6 +131,9 @@ Monitor:
     Container: "Контейнер"
     AdditionalAlertText: "Дополнительный текст уведомлений"
     SendRepeatMinute: "Повторная отправка уведомлений об ошибках в минутах"
+    ExternalOkUrl: "Ссылка OK (ресурс работает)"
+    ExternalFailUrl: "Ссылка Fail (ресурс поломан)"
+    ExternalUrlsHint: "Вызывайте эти GET-ссылки из своей системы, чтобы сообщить статус. Ссылки отличаются только параметром status."
     NameLengthError: "Название должно быть от 2 до 255 символов"
     MonitorNotFound: "Монитор не найден"
     PermissionDenied: "У вас нет прав на редактирование этого монитора"
@@ -147,6 +150,7 @@ Monitor:
     ExporterMemory: "Node Exporter (memory)"
     ExporterCPU: "Node Exporter (cpu)"
     HTTPJson: "HTTP(s) JSON check"
+    External: "External"
 
 Dashboard:
   Response: "Ответ"
