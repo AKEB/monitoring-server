@@ -787,8 +787,8 @@ class T {
 	/**
 	 * Monitor_Edit_SSLCertExpireAlertDays
 	 * 
-	 * @return string "Notify how many days before expiry"
-	 * @return string "За сколько дней до истечения уведомлять"
+	 * @return string "Notify how many days before TLS certificate expiry"
+	 * @return string "За сколько дней до истечения TLS-сертификата уведомлять"
 	 */
 	public static function Monitor_Edit_SSLCertExpireAlertDays(...$argv): string { return ''; }
 

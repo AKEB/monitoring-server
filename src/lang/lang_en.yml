@@ -116,7 +116,7 @@ Monitor:
     SSLVerify: "SSL verify"
     SSLVerifyHost: "SSL verify host"
     SSLCertExpireAlert: "SSL certificate expire notifications"
-    SSLCertExpireAlertDays: "Notify how many days before expiry"
+    SSLCertExpireAlertDays: "Notify how many days before TLS certificate expiry"
     ResponseCode: "Allowed status codes"
     ProxyHost: "Proxy host"
     ProxyType: "Proxy type"

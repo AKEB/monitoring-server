@@ -115,7 +115,7 @@ Monitor:
     SSLVerify: "Валидация SSL"
     SSLVerifyHost: "Валидация домена SSL"
     SSLCertExpireAlert: "Уведомления о истечении срока действия сертификата"
-    SSLCertExpireAlertDays: "За сколько дней до истечения уведомлять"
+    SSLCertExpireAlertDays: "За сколько дней до истечения TLS-сертификата уведомлять"
     ResponseCode: "Допустимые коды статуса"
     ProxyHost: "Proxy домен и порт"
     ProxyType: "Proxy Тип"
