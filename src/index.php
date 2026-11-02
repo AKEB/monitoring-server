@@ -20,6 +20,7 @@ require_once("./autoload.php");
 \Permissions::add_permission(\Notify::PERMISSION_CREATE, \T::Notify_Permissions_Create());
 \Permissions::add_permission(\Maintenances::PERMISSION_CREATE, \T::Maintenances_Permissions_Create());
 \Permissions::add_permission(\Dockers::PERMISSION_CREATE, \T::Docker_Permissions_Create());
+\Permissions::add_permission(\Signatures::PERMISSION_CREATE, \T::Signature_Permissions_Create());
 
 // Add another permissions subject types
 \Permissions::set_subject_type('worker', '\\Workers', 'Workers');
@@ -27,6 +28,7 @@ require_once("./autoload.php");
 \Permissions::set_subject_type('notify', '\\Notify', 'Notify');
 \Permissions::set_subject_type('maintenance', '\\Maintenances', 'Maintenances');
 \Permissions::set_subject_type('docker', '\\Dockers', 'Docker');
+\Permissions::set_subject_type('signature', '\\Signatures', 'Signatures');
 
 \Sessions::session_init(true); // This need to check Permissions and user language
 
@@ -46,6 +48,7 @@ require_once("./autoload.php");
 \Logs::add_object(\MonitoringMaintenances::LOGS_OBJECT, \MonitoringMaintenances::LOGS_OBJECT);
 \Logs::add_object(\Notify::LOGS_OBJECT, \Notify::LOGS_OBJECT);
 \Logs::add_object(\MonitoringNotify::LOGS_OBJECT, \MonitoringNotify::LOGS_OBJECT);
+\Logs::add_object(\Signatures::LOGS_OBJECT, \Signatures::LOGS_OBJECT);
 
 // Set Application Settings
 \Template::setProjectName("Monitoring");
@@ -77,6 +80,10 @@ require_once("./autoload.php");
 	new \MenuPermissionItem(\Notify::PERMISSION_ACCESS, -1, READ),
 	new \MenuPermissionItem(\Notify::PERMISSION_CREATE, 0, WRITE),
 ]));
+\Template::addMenuAdminItem(new \MenuItem('bi bi-pen', \T::Signature_Menu(), '/admin/signatures/', null, [
+	new \MenuPermissionItem(\Signatures::PERMISSION_ACCESS, -1, READ),
+	new \MenuPermissionItem(\Signatures::PERMISSION_CREATE, 0, WRITE),
+]));
 \Template::addMenuAdminItem(new \MenuItem('bi bi-box', \T::Docker_Menu(), '/admin/dockers/', null, [
 	new \MenuPermissionItem(\Dockers::PERMISSION_ACCESS, -1, READ),
 	new \MenuPermissionItem(\Dockers::PERMISSION_CREATE, 0, WRITE),
@@ -104,6 +111,11 @@ require_once("./autoload.php");
 \Routes::addRoute('/admin/notify/edit/', '\\App\\Notify\\Edit');
 \Routes::addRoute('/admin/notify/(?P<action>[^/]+)/(?P<notify_id>\d+)/', '\\App\\Notify\\Show');
 \Routes::addRoute('/admin/notify/', '\\App\\Notify\\Show');
+
+\Routes::addRoute('/admin/signatures/edit/(?P<signature_id>\d+)/', '\\App\\Signatures\\Edit');
+\Routes::addRoute('/admin/signatures/edit/', '\\App\\Signatures\\Edit');
+\Routes::addRoute('/admin/signatures/(?P<action>[^/]+)/(?P<signature_id>\d+)/', '\\App\\Signatures\\Show');
+\Routes::addRoute('/admin/signatures/', '\\App\\Signatures\\Show');
 
 \Routes::addRoute('/maintenances/edit/(?P<maintenance_id>\d+)/', '\\App\\Maintenances\\Edit');
 \Routes::addRoute('/maintenances/edit/', '\\App\\Maintenances\\Edit');

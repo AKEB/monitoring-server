@@ -111,7 +111,7 @@ class MonitorsEvents extends \DB\MySQLObject {
 		if (!isset($monitors) || !count($monitors)) return;
 		$monitor_ids = array_keys($monitors);
 		if (!count($monitor_ids)) return;
-		$monitors = \Monitors::data(false, sql_pholder(' AND `id` IN (?@) AND `status` = ?', $monitor_ids, \Monitors::STATUS_ENABLED), '`id`, `title`, `type`, `docker`, `last_send_status`, `last_send_time`, `alert_start_time`, `send_repeat_minute`, `additional_text`');
+		$monitors = \Monitors::data(false, sql_pholder(' AND `id` IN (?@) AND `status` = ?', $monitor_ids, \Monitors::STATUS_ENABLED), '`id`, `title`, `type`, `docker`, `last_send_status`, `last_send_time`, `alert_start_time`, `send_repeat_minute`, `signature_id`');
 		$monitors_hash = [];
 		$dockers_monitor_hash = [];
 		foreach($monitors as $monitor) {
@@ -196,7 +196,8 @@ class MonitorsEvents extends \DB\MySQLObject {
 					$success = 0;
 					$text = '<b>'.\Monitors::get_monitor_title_with_folders($monitor['id'])."</b> is down ";
 					if ($descriptions) $text .= "\n\n<i>". implode("\n", $descriptions).'</i>';
-					if ($monitor['additional_text']) $text .= "\n\n". $monitor['additional_text'];
+					$signature_text = \Signatures::resolveText(intval($monitor['signature_id'] ?? 0));
+					if ($signature_text) $text .= "\n\n". $signature_text;
 					\Monitors::save([
 						'id' => $monitor_id,
 						'last_send_status' => \MonitoringLogs::STATUS_FAIL,
@@ -210,7 +211,8 @@ class MonitorsEvents extends \DB\MySQLObject {
 						$success = 0;
 						$text = '<b>'.\Monitors::get_monitor_title_with_folders($monitor['id'])."</b> is down ";
 						if ($descriptions) $text .= "\n\n<i>". implode("\n", $descriptions).'</i>';
-						if ($monitor['additional_text']) $text .= "\n\n". $monitor['additional_text'];
+						$signature_text = \Signatures::resolveText(intval($monitor['signature_id'] ?? 0));
+						if ($signature_text) $text .= "\n\n". $signature_text;
 						\Monitors::save([
 							'id' => $monitor_id,
 							'last_send_status' => \MonitoringLogs::STATUS_FAIL,

@@ -44,8 +44,9 @@ foreach($logs as $log) {
 	$title = \T::Monitor_Expire_Title();
 	$text = \T::Monitor_Expire_Text($monitor['title'], $days, (\T::declension($days, \T::Monitor_Expire_Day(), \T::Monitor_Expire_Days(), \T::Monitor_Expire_Days5())));
 
-	if ($monitor['additional_text']) {
-		$text .= "\n\n" . $monitor['additional_text'];
+	$signature_text = \Signatures::resolveText(intval($monitor['signature_id'] ?? 0));
+	if ($signature_text) {
+		$text .= "\n\n" . $signature_text;
 	}
 
 	\MonitoringNotify::sendNotification($monitor_id, $text, $title, false);

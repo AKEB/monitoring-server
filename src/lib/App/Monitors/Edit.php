@@ -129,11 +129,20 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				$params['timeout'] = intval($data['timeout']);
 			}
 
-			if (isset($data['additional_text'])) {
-				$data['additional_text'] = trim($data['additional_text']);
-				$params['additional_text'] = $data['additional_text'];
+			if (isset($data['signature_id'])) {
+				$params['signature_id'] = intval($data['signature_id']);
+				if ($params['signature_id'] > 0) {
+					if (!\Sessions::checkPermission(\Signatures::PERMISSION_ACCESS, $params['signature_id'], READ)) {
+						$this->error = \T::Monitor_Edit_PermissionDenied();
+						break;
+					}
+					$signature = \Signatures::get(['id' => $params['signature_id']]);
+					if (!$signature) {
+						$params['signature_id'] = 0;
+					}
+				}
 			} else {
-				$params['additional_text'] = '';
+				$params['signature_id'] = 0;
 			}
 
 			if ($data['type'] == \Monitors::TYPE_HTTPS || $data['type'] == \Monitors::TYPE_HTTP_JSON) {
@@ -635,7 +644,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 			$this->monitor['container'] ??= '';
 			$this->monitor['response_code'] ??= [2];
 			$this->monitor['parent_id'] ??= $this->parent_id;
-			$this->monitor['additional_text'] ??= '';
+			$this->monitor['signature_id'] ??= 0;
 			$this->monitor['value'] ??= 80;
 			$this->monitor['request_headers'] ??= '';
 			$this->monitor['json_path'] ??= '';
@@ -912,13 +921,73 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 
-					echo $this->template->html_input("additional_text", $this->monitor['additional_text']??'', \T::Monitor_Edit_AdditionalAlertText(), false, [
+					$signature_type_class = 'type-dependence type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_PING.' type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_HTTP_JSON.' type-'.\Monitors::TYPE_DOCKER.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU.' type-'.\Monitors::TYPE_EXTERNAL;
+					$signatures_list = \Signatures::active_list();
+					$current_signature_id = intval($this->monitor['signature_id'] ?? 0);
+					if ($current_signature_id > 0 && !isset($signatures_list[$current_signature_id])) {
+						if (\Sessions::checkPermission(\Signatures::PERMISSION_ACCESS, $current_signature_id, READ)) {
+							$current_sig = \Signatures::get(['id' => $current_signature_id]);
+							if ($current_sig) {
+								$signatures_list[$current_signature_id] = [
+									'id' => $current_signature_id,
+									'project' => (string)($current_sig['project'] ?? ''),
+									'title' => (string)($current_sig['title'] ?? ''),
+									'text' => (string)($current_sig['text'] ?? ''),
+								];
+							} else {
+								$current_signature_id = 0;
+							}
+						} else {
+							$current_signature_id = 0;
+						}
+					}
+					$signature_projects = [];
+					foreach ($signatures_list as $sig) {
+						$project = (string)($sig['project'] ?? '');
+						$key = $project === '' ? '__empty__' : $project;
+						$signature_projects[$key] = $project !== '' ? $project : \T::Monitor_Edit_SignatureEmptyProject();
+					}
+					$selected_project = '';
+					$selected_project_key = '';
+					$selected_text = '';
+					if ($current_signature_id > 0 && isset($signatures_list[$current_signature_id])) {
+						$selected_project = (string)$signatures_list[$current_signature_id]['project'];
+						$selected_project_key = $selected_project === '' ? '__empty__' : $selected_project;
+						$selected_text = (string)$signatures_list[$current_signature_id]['text'];
+					}
+					$signature_titles = [0 => \T::Monitor_Edit_SignatureNone()];
+					foreach ($signatures_list as $sig) {
+						if ((string)($sig['project'] ?? '') !== $selected_project) continue;
+						$signature_titles[intval($sig['id'])] = (string)$sig['title'];
+					}
+					echo $this->template?->html_select('signature_project', $signature_projects, $selected_project_key, \T::Monitor_Edit_SignatureProject(), false, [
+						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+						'global-class' => $signature_type_class,
+						'readonly' => !($this->can_write || $this->can_create),
+						'with-undefined' => true,
+						'undefined-value' => '',
+						'undefined-title' => \T::Monitor_Edit_SignatureNone(),
+					]);
+					echo $this->template?->html_select('signature_id', $signature_titles, $current_signature_id, \T::Monitor_Edit_SignatureTitle(), false, [
+						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+						'global-class' => $signature_type_class,
+						'readonly' => !($this->can_write || $this->can_create),
+					]);
+					echo $this->template->html_input("signature_text", $selected_text, \T::Monitor_Edit_SignatureText(), false, [
 						'type' => 'textarea',
 						'rows' => '5',
 						'cols' => '60',
-						'global-class' => 'type-dependence type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_PING.' type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_HTTP_JSON.' type-'.\Monitors::TYPE_DOCKER.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU.' type-'.\Monitors::TYPE_EXTERNAL,
-						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6'
+						'global-class' => $signature_type_class,
+						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+						'readonly' => true,
 					]);
+					$signature_link_style = $current_signature_id > 0 ? '' : 'display:none;';
+					echo '<div class="mb-3 row '.$signature_type_class.'" id="signature-edit-link-row" style="'.$signature_link_style.'">';
+					echo '<label class="col-xs-12 col-sm-12 col-md-3 col-form-label"></label>';
+					echo '<div class="col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6">';
+					echo '<a href="/admin/signatures/edit/'.$current_signature_id.'/" id="signature-edit-link" target="_blank" rel="noopener">'.\T::Monitor_Edit_SignatureEditLink().'</a>';
+					echo '</div></div>';
+					echo '<script type="application/json" id="signatures-data">'.json_encode(array_values($signatures_list), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT).'</script>';
 
 					echo $this->template->html_input("proxy_host", $this->monitor['proxy_host']??'', \T::Monitor_Edit_ProxyHost(), false, [
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
@@ -992,6 +1061,73 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				);
 			}
 
+			function monitor_signature_project_value() {
+				const raw = ($('#signature_project').val() || '').toString();
+				if (raw === '__empty__') return '';
+				return raw;
+			}
+
+			function monitor_signature_refresh(keepSignatureId) {
+				const $dataEl = $('#signatures-data');
+				if (!$dataEl.length) return;
+				let signatures = [];
+				try {
+					signatures = JSON.parse($dataEl.text() || '[]');
+				} catch (e) {
+					signatures = [];
+				}
+				const projectKey = ($('#signature_project').val() || '').toString();
+				const project = monitor_signature_project_value();
+				const $title = $('#signature_id');
+				const currentId = keepSignatureId ? String(keepSignatureId) : String($title.val() || '0');
+				const noneLabel = <?=json_encode(\T::Monitor_Edit_SignatureNone(), JSON_UNESCAPED_UNICODE);?>;
+				$title.empty();
+				$title.append($('<option>', {value: '0', text: noneLabel}));
+				let matched = null;
+				if (projectKey !== '') {
+					signatures.forEach(function(sig) {
+						const sigProject = (sig.project || '').toString();
+						if (sigProject !== project) return;
+						const option = $('<option>', {value: String(sig.id), text: sig.title || ('#' + sig.id)});
+						if (String(sig.id) === currentId) {
+							option.prop('selected', true);
+							matched = sig;
+						}
+						$title.append(option);
+					});
+				}
+				if (!matched) {
+					$title.val('0');
+				}
+				$title.selectpicker('destroy').selectpicker();
+				monitor_signature_preview();
+			}
+
+			function monitor_signature_preview() {
+				const $dataEl = $('#signatures-data');
+				if (!$dataEl.length) return;
+				let signatures = [];
+				try {
+					signatures = JSON.parse($dataEl.text() || '[]');
+				} catch (e) {
+					signatures = [];
+				}
+				const id = parseInt($('#signature_id').val() || '0', 10) || 0;
+				let text = '';
+				signatures.forEach(function(sig) {
+					if (parseInt(sig.id, 10) === id) {
+						text = sig.text || '';
+					}
+				});
+				$('#signature_text').val(text);
+				if (id > 0) {
+					$('#signature-edit-link').attr('href', '/admin/signatures/edit/' + id + '/');
+					$('#signature-edit-link-row').show();
+				} else {
+					$('#signature-edit-link-row').hide();
+				}
+			}
+
 			$(document).ready(function(){
 				monitor_type_select();
 				$('#type').change(function(){
@@ -1004,6 +1140,13 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				monitor_docker_select();
 				$('#docker').change(function(){
 					monitor_docker_select();
+				});
+
+				$('#signature_project').on('changed.bs.select change', function(){
+					monitor_signature_refresh(0);
+				});
+				$('#signature_id').on('changed.bs.select change', function(){
+					monitor_signature_preview();
 				});
 
 				$('form').on('submit', function(event) {
