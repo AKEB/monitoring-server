@@ -13,6 +13,20 @@ function isExternalMonitor(monitor) {
 }
 
 /**
+ * Escape a string for use inside an HTML attribute (e.g. data-bs-title).
+ * With data-bs-html="true", entities are decoded once by the browser before
+ * Bootstrap renders the tooltip, so intentional markup like &lt;br/&gt; still works.
+ */
+function escapeHtmlAttr(value) {
+	return String(value ?? '')
+		.replace(/&/g, '&amp;')
+		.replace(/"/g, '&quot;')
+		.replace(/'/g, '&#39;')
+		.replace(/</g, '&lt;')
+		.replace(/>/g, '&gt;');
+}
+
+/**
  * Рекурсивно генерирует HTML-представление списка мониторов.
  * @param {Object} data - Данные мониторов для отображения.
  * @param {number} [level=0] - Уровень вложенности для отступов.
@@ -66,7 +80,7 @@ function printMonitors(data, level=0, searchText='') {
 				for (var i in lastKeys) {
 					const time = lastKeys[i];
 					const state = old_states[time];
-					HTML += '<div data-min-time="'+ state.min_time + '" class="' + state.class + '" data-bs-toggle="tooltip" data-bs-html="true" data-bs-title="' + state.title + '"></div>';
+					HTML += '<div data-min-time="'+ state.min_time + '" class="' + state.class + '" data-bs-toggle="tooltip" data-bs-html="true" data-bs-title="' + escapeHtmlAttr(state.title) + '"></div>';
 				}
 				HTML += '</div></div></div>';
 
@@ -107,7 +121,7 @@ function printMonitors(data, level=0, searchText='') {
 			for (var i in lastKeys) {
 				const time = lastKeys[i];
 				const state = old_states[time];
-				HTML += '<div data-min-time="'+ state.min_time + '" class="' + state.class + '" data-bs-toggle="tooltip" data-bs-html="true" data-bs-title="' + state.title + '"></div>';
+				HTML += '<div data-min-time="'+ state.min_time + '" class="' + state.class + '" data-bs-toggle="tooltip" data-bs-html="true" data-bs-title="' + escapeHtmlAttr(state.title) + '"></div>';
 			}
 			HTML += '</div></div></div></div>';
 		}
@@ -327,7 +341,7 @@ function updateMonitorWorkersLogs(data) {
 							title = title + '<br/>' + Maintenance_Title + '<br/>' + maintenance_title;
 						}
 
-						HTML += '<div data-min-time="'+ time + '" class="' + className + '" data-bs-toggle="tooltip" data-bs-html="true" data-bs-title="' + title + '"></div>';
+						HTML += '<div data-min-time="'+ time + '" class="' + className + '" data-bs-toggle="tooltip" data-bs-html="true" data-bs-title="' + escapeHtmlAttr(title) + '"></div>';
 					}
 				HTML += '</div></div>';
 			HTML += '</div>';
