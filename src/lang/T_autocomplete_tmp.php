@@ -1715,8 +1715,8 @@ class T {
 	/**
 	 * Notify_Edit_AlertActionWebhookTelegramHint
 	 * 
-	 * @return string "Set automatically on save (setWebhook). Buttons: Resolve, Take, Mute, Call, All OK."
-	 * @return string "Выставляется автоматически при сохранении (setWebhook). Кнопки: Решить, Взять, Mute, Позвонить, Всё ок."
+	 * @return string "One webhook per bot (setWebhook). Multiple Notify rows with the same bot token and different chats share this URL — the receiver comes from the button. Buttons: Resolve, Take, Mute, Call, All OK."
+	 * @return string "Один webhook на бота (setWebhook). Несколько Notify с одним токеном бота и разными чатами делят этот URL — получатель берётся из кнопки. Кнопки: Решить, Взять, Mute, Позвонить, Всё ок."
 	 */
 	public static function Notify_Edit_AlertActionWebhookTelegramHint(...$argv): string { return ''; }
 
@@ -1731,8 +1731,8 @@ class T {
 	/**
 	 * Notify_Edit_AlertActionWebhookMaxHint
 	 * 
-	 * @return string "Subscription is set on save when the API supports it. Otherwise paste this URL in the Max bot cabinet."
-	 * @return string "Подписка выставляется при сохранении, если API поддерживает. Иначе укажите этот URL в кабинете бота Max."
+	 * @return string "One webhook per bot token. Multiple Notify rows with the same token share this URL. Subscription on save when supported; otherwise paste the URL in the Max cabinet."
+	 * @return string "Один webhook на токен бота. Несколько Notify с одним токеном делят URL. Подписка при сохранении, если API поддерживает; иначе укажите URL в кабинете Max."
 	 */
 	public static function Notify_Edit_AlertActionWebhookMaxHint(...$argv): string { return ''; }
 

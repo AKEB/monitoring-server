@@ -85,6 +85,169 @@ class AlertActions extends \DB\MySQLObject {
 		return $token;
 	}
 
+	/**
+	 * Telegram/MAX: один webhook на бота. Несколько Notify с одним токеном бота
+	 * должны делить один alert_action_token (иначе setWebhook перетирает URL).
+	 */
+	static public function ensureSharedBotToken(array &$jsonData, int $notifyType, int $excludeNotifyId = 0): string {
+		$secretField = static::botSecretField($notifyType);
+		if ($secretField === null) {
+			return static::ensureToken($jsonData);
+		}
+		$secret = trim(strval($jsonData[$secretField] ?? ''));
+		if ($secret === '') {
+			return static::ensureToken($jsonData);
+		}
+		$shared = static::findSharedActionToken($notifyType, $secretField, $secret, $excludeNotifyId);
+		if ($shared !== '') {
+			$jsonData['alert_action_token'] = $shared;
+			return $shared;
+		}
+		$token = static::ensureToken($jsonData);
+		static::syncSharedActionToken($notifyType, $secretField, $secret, $token, $excludeNotifyId);
+		return $token;
+	}
+
+	static public function botSecretField(int $notifyType): ?string {
+		if ($notifyType === \Notify::TYPE_TELEGRAM) {
+			return 'telegram_bot_token';
+		}
+		if ($notifyType === \Notify::TYPE_MAX) {
+			return 'max_token';
+		}
+		return null;
+	}
+
+	static public function findSharedActionToken(int $notifyType, string $secretField, string $secret, int $excludeNotifyId = 0): string {
+		$secret = trim($secret);
+		if ($secret === '') {
+			return '';
+		}
+		$rows = \Notify::data(false, sql_pholder(' AND `type` = ? AND `status` = ?', $notifyType, \Notify::STATUS_ENABLED));
+		if (!is_array($rows)) {
+			return '';
+		}
+		foreach ($rows as $row) {
+			if ($excludeNotifyId > 0 && intval($row['id'] ?? 0) === $excludeNotifyId) {
+				continue;
+			}
+			$json = $row['json_data'] ?? [];
+			if (is_string($json)) {
+				$json = json_decode($json, true) ?: [];
+			}
+			if (!is_array($json)) {
+				continue;
+			}
+			if (trim(strval($json[$secretField] ?? '')) !== $secret) {
+				continue;
+			}
+			$token = trim(strval($json['alert_action_token'] ?? ''));
+			if ($token !== '' && preg_match('/^[a-f0-9]{32}$/', $token)) {
+				return $token;
+			}
+		}
+		return '';
+	}
+
+	/**
+	 * Выровнять alert_action_token у всех Notify с тем же токеном бота.
+	 */
+	static public function syncSharedActionToken(
+		int $notifyType,
+		string $secretField,
+		string $secret,
+		string $token,
+		int $excludeNotifyId = 0
+	): void {
+		$secret = trim($secret);
+		$token = trim($token);
+		if ($secret === '' || $token === '') {
+			return;
+		}
+		$rows = \Notify::data(false, sql_pholder(' AND `type` = ?', $notifyType));
+		if (!is_array($rows)) {
+			return;
+		}
+		foreach ($rows as $row) {
+			$id = intval($row['id'] ?? 0);
+			if ($id < 1 || ($excludeNotifyId > 0 && $id === $excludeNotifyId)) {
+				continue;
+			}
+			$json = $row['json_data'] ?? [];
+			if (is_string($json)) {
+				$json = json_decode($json, true) ?: [];
+			}
+			if (!is_array($json)) {
+				continue;
+			}
+			if (trim(strval($json[$secretField] ?? '')) !== $secret) {
+				continue;
+			}
+			if (($json['alert_action_token'] ?? '') === $token) {
+				continue;
+			}
+			$json['alert_action_token'] = $token;
+			\Notify::save([
+				'id' => $id,
+				'json_data' => json_encode($json),
+				'update_time' => time(),
+			]);
+		}
+	}
+
+	static public function getNotifyById(int $notifyId): ?array {
+		if ($notifyId < 1) {
+			return null;
+		}
+		$row = \Notify::get(['id' => $notifyId]);
+		if (!$row) {
+			return null;
+		}
+		$json = $row['json_data'] ?? [];
+		if (is_string($json)) {
+			$json = json_decode($json, true) ?: [];
+		}
+		$row['json_data'] = is_array($json) ? $json : [];
+		return $row;
+	}
+
+	/**
+	 * Webhook-токен авторизует бота; конкретный Notify берём из callback notify_id.
+	 */
+	static public function resolveNotifyForCallback(array $webhookNotify, ?array $parsed): ?array {
+		if ($parsed === null) {
+			return $webhookNotify;
+		}
+		$targetId = intval($parsed['notify_id'] ?? 0);
+		if ($targetId < 1 || $targetId === intval($webhookNotify['id'] ?? 0)) {
+			return $webhookNotify;
+		}
+		$target = static::getNotifyById($targetId);
+		if (!$target) {
+			return null;
+		}
+		if (intval($target['type'] ?? -1) !== intval($webhookNotify['type'] ?? -2)) {
+			return null;
+		}
+		if (intval($target['status'] ?? 0) !== \Notify::STATUS_ENABLED) {
+			return null;
+		}
+		$secretField = static::botSecretField(intval($webhookNotify['type'] ?? -1));
+		if ($secretField === null) {
+			// Mattermost: токен в URL привязан к конкретному notify
+			if (($target['json_data']['alert_action_token'] ?? '') !== ($webhookNotify['json_data']['alert_action_token'] ?? '')) {
+				return null;
+			}
+			return $target;
+		}
+		$webhookSecret = trim(strval($webhookNotify['json_data'][$secretField] ?? ''));
+		$targetSecret = trim(strval($target['json_data'][$secretField] ?? ''));
+		if ($webhookSecret === '' || $webhookSecret !== $targetSecret) {
+			return null;
+		}
+		return $target;
+	}
+
 	static public function webhookUrl(string $channel, string $token, ?string $baseUrl = null): string {
 		$base = rtrim($baseUrl !== null && $baseUrl !== '' ? $baseUrl : \ExternalMonitors::baseUrl(), '/');
 		return $base.'/api/alert-action/'.$channel.'/'.rawurlencode($token).'/';

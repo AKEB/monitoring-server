@@ -64,10 +64,24 @@ class AlertAction extends \Routing_Parent implements \Routing_Interface {
 		$chatId = strval($message['chat']['id'] ?? '');
 		$messageId = strval($message['message_id'] ?? '');
 
-		$currentText = strval($message['text'] ?? ($message['caption'] ?? ''));
-		$result = $this->applyAction($notify, $parsed, $author, \AlertActions::CHANNEL_TELEGRAM, $chatId, $messageId, $currentText);
+		$targetNotify = \AlertActions::resolveNotifyForCallback($notify, $parsed);
+		if ($targetNotify === null) {
+			$bot = \MonitoringNotify::telegramBot(strval($notify['json_data']['telegram_bot_token'] ?? ''));
+			if ($bot && $callbackQueryId !== '') {
+				try {
+					@$bot->answerCallbackQuery($callbackQueryId, 'Notify mismatch', false);
+				} catch (\Exception $e) {
+				}
+			}
+			http_response_code(200);
+			echo 'ok';
+			exit(0);
+		}
 
-		$bot = \MonitoringNotify::telegramBot(strval($notify['json_data']['telegram_bot_token'] ?? ''));
+		$currentText = strval($message['text'] ?? ($message['caption'] ?? ''));
+		$result = $this->applyAction($targetNotify, $parsed, $author, \AlertActions::CHANNEL_TELEGRAM, $chatId, $messageId, $currentText);
+
+		$bot = \MonitoringNotify::telegramBot(strval($targetNotify['json_data']['telegram_bot_token'] ?? ''));
 		if ($bot && $callbackQueryId !== '') {
 			try {
 				@$bot->answerCallbackQuery($callbackQueryId, $result['toast'] ?? 'OK', false);
@@ -76,7 +90,7 @@ class AlertAction extends \Routing_Parent implements \Routing_Interface {
 		}
 		if ($bot && !empty($result['ok']) && !empty($result['new_text']) && $chatId !== '' && $messageId !== '') {
 			try {
-				$keyboard = \AlertActions::telegramKeyboard(intval($result['monitor_id']), intval($notify['id']));
+				$keyboard = \AlertActions::telegramKeyboard(intval($result['monitor_id']), intval($targetNotify['id']));
 				@$bot->editMessageText($chatId, intval($messageId), $result['new_text'], 'HTML', true, $keyboard);
 			} catch (\Exception $e) {
 			}
@@ -233,9 +247,19 @@ class AlertAction extends \Routing_Parent implements \Routing_Interface {
 			$recipient = isset($msg['recipient']) && is_array($msg['recipient']) ? $msg['recipient'] : [];
 			$chatId = strval($recipient['chat_id'] ?? ($u['chat_id'] ?? ''));
 
+			$targetNotify = \AlertActions::resolveNotifyForCallback($notify, $parsed);
+			if ($targetNotify === null) {
+				$token = strval($notify['json_data']['max_token'] ?? '');
+				$callbackId = strval($cb['callback_id'] ?? '');
+				if ($token !== '' && $callbackId !== '') {
+					\MaxMessenger::answerCallback($token, $callbackId, null, 'Notify mismatch');
+				}
+				$handled = true;
+				continue;
+			}
 			$currentText = strval($body['text'] ?? '');
-			$result = $this->applyAction($notify, $parsed, $author, \AlertActions::CHANNEL_MAX, $chatId, $messageId, $currentText);
-			$token = strval($notify['json_data']['max_token'] ?? '');
+			$result = $this->applyAction($targetNotify, $parsed, $author, \AlertActions::CHANNEL_MAX, $chatId, $messageId, $currentText);
+			$token = strval($targetNotify['json_data']['max_token'] ?? '');
 			if ($token !== '' && $callbackId !== '') {
 				$messageBody = null;
 				if (!empty($result['ok']) && !empty($result['new_text'])) {
@@ -243,7 +267,7 @@ class AlertAction extends \Routing_Parent implements \Routing_Interface {
 						'text' => mb_substr($result['new_text'], 0, 4000),
 						'format' => 'html',
 						'attachments' => [
-							\AlertActions::maxInlineKeyboard(intval($result['monitor_id']), intval($notify['id'])),
+							\AlertActions::maxInlineKeyboard(intval($result['monitor_id']), intval($targetNotify['id'])),
 						],
 					];
 				}

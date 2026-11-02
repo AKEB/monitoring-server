@@ -335,7 +335,12 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					if (!is_array($params['json_data'])) {
 						$params['json_data'] = [];
 					}
-					\AlertActions::ensureToken($params['json_data']);
+					$excludeId = intval($old_notify['id'] ?? 0);
+					if (in_array($finalType, [\Notify::TYPE_TELEGRAM, \Notify::TYPE_MAX], true)) {
+						\AlertActions::ensureSharedBotToken($params['json_data'], $finalType, $excludeId);
+					} else {
+						\AlertActions::ensureToken($params['json_data']);
+					}
 					$params['json_data']['alert_action_base_url'] = \ExternalMonitors::baseUrl();
 				}
 				foreach($params as $k=>$v) {
@@ -367,7 +372,11 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					if (!isset($params['json_data']) || !is_array($params['json_data'])) {
 						$params['json_data'] = [];
 					}
-					\AlertActions::ensureToken($params['json_data']);
+					if (in_array($finalType, [\Notify::TYPE_TELEGRAM, \Notify::TYPE_MAX], true)) {
+						\AlertActions::ensureSharedBotToken($params['json_data'], $finalType, 0);
+					} else {
+						\AlertActions::ensureToken($params['json_data']);
+					}
 					$params['json_data']['alert_action_base_url'] = \ExternalMonitors::baseUrl();
 				}
 			}
@@ -458,6 +467,13 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 			if (!$bot) {
 				return;
 			}
+			\AlertActions::syncSharedActionToken(
+				\Notify::TYPE_TELEGRAM,
+				'telegram_bot_token',
+				$botToken,
+				$token,
+				intval($notify['id'] ?? 0)
+			);
 			$url = \AlertActions::webhookUrl(\AlertActions::CHANNEL_TELEGRAM, $token, $baseUrl);
 			try {
 				@$bot->setWebhook($url);
@@ -470,6 +486,13 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 			if ($maxToken === '') {
 				return;
 			}
+			\AlertActions::syncSharedActionToken(
+				\Notify::TYPE_MAX,
+				'max_token',
+				$maxToken,
+				$token,
+				intval($notify['id'] ?? 0)
+			);
 			$url = \AlertActions::webhookUrl(\AlertActions::CHANNEL_MAX, $token, $baseUrl);
 			try {
 				\MaxMessenger::subscribeWebhook($maxToken, $url);
