@@ -5,6 +5,10 @@ namespace App\Api;
 /**
  * Public GET callback for External monitors.
  * /api/external/{hash}/?status=ok|fail
+ *
+ * Optional alert text (shown in notifications as "Log: …"):
+ *   HTTP header Log: …
+ *   or query ?log=… / ?message=…
  */
 class External extends \Routing_Parent implements \Routing_Interface {
 
@@ -16,15 +20,20 @@ class External extends \Routing_Parent implements \Routing_Interface {
 			$this->responseError('Invalid status. Use status=ok or status=fail', 400);
 			return;
 		}
-		$result = \ExternalMonitors::applyCallback($hash, $status);
+		$log = \ExternalMonitors::extractLogFromRequest();
+		$result = \ExternalMonitors::applyCallback($hash, $status, $log);
 		if (!$result) {
 			$this->responseError('Monitor not found or disabled', 404);
 			return;
 		}
-		$this->responseSuccess([
+		$response = [
 			'monitor_id' => $result['monitor_id'],
 			'external_status' => $result['status'] === \MonitoringLogs::STATUS_GOOD ? 'ok' : 'fail',
-		]);
+		];
+		if ($result['status'] === \MonitoringLogs::STATUS_FAIL && ($result['log'] ?? '') !== '') {
+			$response['log'] = $result['log'];
+		}
+		$this->responseSuccess($response);
 	}
 
 	private function responseSuccess(array $response = []): void {

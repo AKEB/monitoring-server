@@ -83,6 +83,64 @@ class ExternalMonitors {
 		return null;
 	}
 
+	/**
+	 * Optional alert text from HTTP header Log or query ?log= / ?message=.
+	 * Returns null when the caller did not send any of these.
+	 */
+	static public function extractLogFromRequest(): ?string {
+		$headers = [];
+		if (function_exists('getallheaders')) {
+			$headers = getallheaders() ?: [];
+		}
+		foreach ($headers as $key => $value) {
+			if (strcasecmp(strval($key), 'Log') === 0) {
+				return static::sanitizeLog(strval($value));
+			}
+		}
+		if (isset($_SERVER['HTTP_LOG'])) {
+			return static::sanitizeLog(strval($_SERVER['HTTP_LOG']));
+		}
+		if (array_key_exists('log', $_GET)) {
+			return static::sanitizeLog(strval($_GET['log']));
+		}
+		if (array_key_exists('message', $_GET)) {
+			return static::sanitizeLog(strval($_GET['message']));
+		}
+		return null;
+	}
+
+	static public function sanitizeLog(string $raw): string {
+		$log = trim($raw);
+		if ($log === '') {
+			return '';
+		}
+		// Public callback input ends up in HTML notifications (Telegram HTML, etc.).
+		$log = strip_tags($log);
+		$log = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', '', $log) ?? $log;
+		$log = preg_replace("/\r\n?/", "\n", $log) ?? $log;
+		if (mb_strlen($log) > 2000) {
+			$log = mb_substr($log, 0, 2000);
+		}
+		return $log;
+	}
+
+	/**
+	 * Fail description for monitoring_logs.response_error (CHAR 255) and alerts.
+	 * Custom text is prefixed with "Log:" (same style as "Alert:" in notifications).
+	 */
+	static public function formatFailError(string $log): string {
+		$log = trim($log);
+		if ($log === '') {
+			return 'External status: fail';
+		}
+		// Keep plain text short so HTML-escaped form fits CHAR(255).
+		if (mb_strlen($log) > 120) {
+			$log = mb_substr($log, 0, 117).'...';
+		}
+		// Escape for HTML notifications (Telegram/MAX parse_mode HTML).
+		return 'Log: '.htmlspecialchars($log, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+	}
+
 	static public function baseUrl(): string {
 		$https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
 			|| (isset($_SERVER['SERVER_PORT']) && intval($_SERVER['SERVER_PORT']) === 443)
@@ -110,8 +168,10 @@ class ExternalMonitors {
 
 	/**
 	 * Flip desired status from a public callback and persist a log row immediately.
+	 *
+	 * @param string|null $log null = leave previous external_log; on OK always cleared
 	 */
-	static public function applyCallback(string $hash, int $status): array|false {
+	static public function applyCallback(string $hash, int $status, ?string $log = null): array|false {
 		$hash = trim($hash);
 		if ($hash === '' || strlen($hash) !== 64 || !ctype_xdigit($hash)) {
 			return false;
@@ -139,6 +199,13 @@ class ExternalMonitors {
 			'update_time' => time(),
 			'_mode' => \DB\Common::CSMODE_UPDATE,
 		];
+		if ($status === \MonitoringLogs::STATUS_GOOD) {
+			$save['external_log'] = '';
+			$monitor['external_log'] = '';
+		} elseif ($log !== null) {
+			$save['external_log'] = $log;
+			$monitor['external_log'] = $log;
+		}
 		\Monitors::save($save);
 		$monitor['external_status'] = $status;
 
@@ -151,6 +218,7 @@ class ExternalMonitors {
 		return [
 			'monitor_id' => intval($monitor['id']),
 			'status' => $status,
+			'log' => strval($monitor['external_log'] ?? ''),
 		];
 	}
 
@@ -206,7 +274,7 @@ class ExternalMonitors {
 		$error = '';
 		$status_code = 200;
 		if ($status === \MonitoringLogs::STATUS_FAIL) {
-			$error = 'External status: fail';
+			$error = static::formatFailError(strval($monitor['external_log'] ?? ''));
 			$status_code = 500;
 		}
 
@@ -242,7 +310,7 @@ class ExternalMonitors {
 				\Monitors::STATUS_ENABLED,
 				[\MonitoringLogs::STATUS_GOOD, \MonitoringLogs::STATUS_FAIL]
 			),
-			'`id`, `status`, `type`, `external_status`, `parent_id`'
+			'`id`, `status`, `type`, `external_status`, `external_log`, `parent_id`'
 		);
 		if (!$monitors) {
 			return 0;

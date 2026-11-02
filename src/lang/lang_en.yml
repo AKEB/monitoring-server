@@ -144,7 +144,7 @@ Monitor:
     AlertFailModeAny: "Any worker failed"
     ExternalOkUrl: "OK callback URL (resource is up)"
     ExternalFailUrl: "Fail callback URL (resource is down)"
-    ExternalUrlsHint: "Call these GET links from your system to report status. Links differ only by the status parameter."
+    ExternalUrlsHint: "Call these GET links from your system to report status. Links differ only by the status parameter. Optional HTTP header Log (or ?log=) adds custom text to fail notifications as Log: …"
     NameLengthError: "Name length must be between 2 and 255 characters"
     MonitorNotFound: "Monitor not found"
     PermissionDenied: "You don't have permission to edit this monitor"

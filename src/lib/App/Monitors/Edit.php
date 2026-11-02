@@ -329,10 +329,12 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					if (intval($old_monitor['type']) != \Monitors::TYPE_EXTERNAL || $old_hash === '') {
 						$params['external_hash'] = \ExternalMonitors::generateHash();
 						$params['external_status'] = \ExternalMonitors::STATUS_UNSET;
+						$params['external_log'] = '';
 					}
 				} elseif (intval($old_monitor['type']) == \Monitors::TYPE_EXTERNAL) {
 					$params['external_hash'] = '';
 					$params['external_status'] = \ExternalMonitors::STATUS_UNSET;
+					$params['external_log'] = '';
 				}
 				$old_jobs = get_hash(\MonitoringJobs::data(['monitor_id' => $params['id']]), 'worker_id', 'monitor_id');
 				foreach($old_jobs as $worker_id=>$_) {
@@ -386,6 +388,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					$params['timeout'] = 60;
 					$params['external_hash'] = \ExternalMonitors::generateHash();
 					$params['external_status'] = \ExternalMonitors::STATUS_UNSET;
+					$params['external_log'] = '';
 				}
 				if ($data['workers']) {
 					foreach($data['workers'] as $worker_id) {

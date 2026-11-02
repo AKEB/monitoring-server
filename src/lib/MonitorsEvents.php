@@ -111,7 +111,7 @@ class MonitorsEvents extends \DB\MySQLObject {
 		if (!isset($monitors) || !count($monitors)) return;
 		$monitor_ids = array_keys($monitors);
 		if (!count($monitor_ids)) return;
-		$monitors = \Monitors::data(false, sql_pholder(' AND `id` IN (?@) AND `status` = ?', $monitor_ids, \Monitors::STATUS_ENABLED), '`id`, `title`, `type`, `docker`, `last_send_status`, `last_send_time`, `alert_start_time`, `send_repeat_minute`, `alert_fail_mode`, `alert_muted`, `signature_id`');
+		$monitors = \Monitors::data(false, sql_pholder(' AND `id` IN (?@) AND `status` = ?', $monitor_ids, \Monitors::STATUS_ENABLED), '`id`, `title`, `type`, `docker`, `last_send_status`, `last_send_time`, `alert_start_time`, `send_repeat_minute`, `alert_fail_mode`, `alert_muted`, `signature_id`, `external_log`');
 		$monitors_hash = [];
 		$dockers_monitor_hash = [];
 		foreach($monitors as $monitor) {
@@ -197,7 +197,7 @@ class MonitorsEvents extends \DB\MySQLObject {
 					$title = "🚫 Error ".date("Y-m-d H:i:s");
 					$success = 0;
 					$text = '<b>'.\Monitors::get_monitor_title_with_folders($monitor['id'])."</b> is down ";
-					if ($descriptions) $text .= "\n\n<i>". implode("\n", $descriptions).'</i>';
+					$text .= static::failDescriptionHtml($monitor, $descriptions);
 					$signature_text = \Signatures::resolveText(intval($monitor['signature_id'] ?? 0));
 					if ($signature_text) $text .= "\n\n". $signature_text;
 					\Monitors::save([
@@ -215,7 +215,7 @@ class MonitorsEvents extends \DB\MySQLObject {
 						$title = "🚫 Error ".date("Y-m-d H:i:s");
 						$success = 0;
 						$text = '<b>'.\Monitors::get_monitor_title_with_folders($monitor['id'])."</b> is down ";
-						if ($descriptions) $text .= "\n\n<i>". implode("\n", $descriptions).'</i>';
+						$text .= static::failDescriptionHtml($monitor, $descriptions);
 						$signature_text = \Signatures::resolveText(intval($monitor['signature_id'] ?? 0));
 						if ($signature_text) $text .= "\n\n". $signature_text;
 						\Monitors::save([
@@ -247,5 +247,24 @@ class MonitorsEvents extends \DB\MySQLObject {
 				}
 			}
 		}
+	}
+
+	/**
+	 * Error body for fail alerts. External monitors prefer full external_log as "Log: …"
+	 * (same label style as "Alert:" in notification footers).
+	 *
+	 * @param array<int|string,string> $descriptions
+	 */
+	static private function failDescriptionHtml(array $monitor, array $descriptions): string {
+		if (intval($monitor['type'] ?? 0) === \Monitors::TYPE_EXTERNAL) {
+			$log = trim(strval($monitor['external_log'] ?? ''));
+			if ($log !== '') {
+				return "\n\n<i>Log: ".htmlspecialchars($log, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8').'</i>';
+			}
+		}
+		if (!$descriptions) {
+			return '';
+		}
+		return "\n\n<i>".implode("\n", $descriptions).'</i>';
 	}
 }
