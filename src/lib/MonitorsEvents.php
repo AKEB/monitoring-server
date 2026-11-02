@@ -53,12 +53,14 @@ class MonitorsEvents extends \DB\MySQLObject {
 			'response_error' => $param['response_error'] ?? '',
 			'create_time' => time(),
 		];
+		// Include response_error so Log text changes (External / HTTP(s)) show up as new events in UI.
 		$event['hash'] = md5(json_encode([
 			'monitor_id' => $event['monitor_id'],
 			'worker_id' => $event['worker_id'],
 			'status' => $event['status'],
 			'status_code' => $event['status_code'],
 			'response_error_num' => intval($event['response_error_num']),
+			'response_error' => strval($event['response_error']),
 		]));
 		if ($lastEvent) {
 			// Есть какое-то событие, нужно проверить такого же оно состояния или нет
