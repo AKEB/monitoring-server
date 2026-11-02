@@ -58,13 +58,9 @@ class AlertActionHandler {
 			\AlertActions::saveMessage($monitorId, $notifyId, $channel, $chatId, $messageId, $baseText);
 		}
 
-		$toast = \AlertActions::actionButtonText($parsed['action']);
-		if ($parsed['action'] === \AlertActions::ACTION_MUTE) {
-			$toast = 'Mute';
-		}
 		return [
 			'ok' => true,
-			'toast' => $toast,
+			'toast' => \AlertActions::actionButtonText($parsed['action']),
 			'new_text' => $baseText,
 			'monitor_id' => $monitorId,
 		];
@@ -137,11 +133,7 @@ class AlertActionHandler {
 		}
 
 		// Answer before DB/edit work — late answers make Telegram clients resend the click.
-		$toast = $parsed
-			? (($parsed['action'] === \AlertActions::ACTION_MUTE)
-				? 'Mute'
-				: \AlertActions::actionButtonText($parsed['action']))
-			: 'OK';
+		$toast = $parsed ? \AlertActions::actionButtonText($parsed['action']) : 'OK';
 		if ($bot && $callbackQueryId !== '') {
 			static::answerTelegramCallback($bot, $callbackQueryId, $toast);
 		}
@@ -149,6 +141,7 @@ class AlertActionHandler {
 		$result = static::apply($targetNotify, $parsed, $author, \AlertActions::CHANNEL_TELEGRAM, $chatId, $messageId, $currentText);
 		if ($bot && !empty($result['ok']) && !empty($result['new_text']) && $chatId !== '' && $messageId !== '') {
 			try {
+				// Rebuild keyboard after mute/unmute so Mute ↔ Unmute swaps on the message.
 				$keyboard = \AlertActions::telegramKeyboard(intval($result['monitor_id']), intval($targetNotify['id']));
 				@$bot->editMessageText($chatId, intval($messageId), $result['new_text'], 'HTML', true, $keyboard);
 			} catch (\Exception $e) {

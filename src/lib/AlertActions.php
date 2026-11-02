@@ -10,6 +10,7 @@ class AlertActions extends \DB\MySQLObject {
 	const ACTION_RESOLVE = 'resolve';
 	const ACTION_TAKE = 'take';
 	const ACTION_MUTE = 'mute';
+	const ACTION_UNMUTE = 'unmute';
 	const ACTION_CALL = 'call';
 	const ACTION_OK = 'ok';
 
@@ -30,6 +31,10 @@ class AlertActions extends \DB\MySQLObject {
 			static::ACTION_MUTE => [
 				'button' => 'Mute',
 				'log' => 'mute',
+			],
+			static::ACTION_UNMUTE => [
+				'button' => 'Unmute',
+				'log' => 'unmute',
 			],
 			static::ACTION_CALL => [
 				'button' => 'Позвонить',
@@ -377,6 +382,8 @@ class AlertActions extends \DB\MySQLObject {
 		}
 		if ($action === static::ACTION_MUTE) {
 			static::setMuted($monitorId, true);
+		} elseif ($action === static::ACTION_UNMUTE) {
+			static::setMuted($monitorId, false);
 		}
 		return [
 			'id' => $id,
@@ -475,11 +482,19 @@ class AlertActions extends \DB\MySQLObject {
 	}
 
 	/**
-	 * @return list<array{text: string, callback_data: string}>
+	 * @return list<array{text: string, callback_data: string, action: string}>
 	 */
 	static public function buttonDefs(int $monitorId, int $notifyId): array {
+		$muted = static::isMuted($monitorId);
 		$defs = [];
 		foreach (static::actionsHash() as $action => $meta) {
+			// One mute toggle: Mute when active alerts, Unmute when already muted.
+			if ($action === static::ACTION_MUTE && $muted) {
+				continue;
+			}
+			if ($action === static::ACTION_UNMUTE && !$muted) {
+				continue;
+			}
 			$defs[] = [
 				'text' => $meta['button'],
 				'callback_data' => static::callbackData($action, $monitorId, $notifyId),
