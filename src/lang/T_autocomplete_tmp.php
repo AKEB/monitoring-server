@@ -905,12 +905,52 @@ class T {
 	public static function Monitor_Edit_Container(...$argv): string { return ''; }
 
 	/**
-	 * Monitor_Edit_AdditionalAlertText
+	 * Monitor_Edit_SignatureProject
 	 * 
-	 * @return string "Additional alert text"
-	 * @return string "Дополнительный текст уведомлений"
+	 * @return string "Signature project"
+	 * @return string "Проект подписи"
 	 */
-	public static function Monitor_Edit_AdditionalAlertText(...$argv): string { return ''; }
+	public static function Monitor_Edit_SignatureProject(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_SignatureTitle
+	 * 
+	 * @return string "Alert signature"
+	 * @return string "Подпись уведомления"
+	 */
+	public static function Monitor_Edit_SignatureTitle(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_SignatureText
+	 * 
+	 * @return string "Signature text"
+	 * @return string "Текст подписи"
+	 */
+	public static function Monitor_Edit_SignatureText(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_SignatureEditLink
+	 * 
+	 * @return string "Edit signature"
+	 * @return string "Редактировать подпись"
+	 */
+	public static function Monitor_Edit_SignatureEditLink(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_SignatureNone
+	 * 
+	 * @return string "— no signature —"
+	 * @return string "— без подписи —"
+	 */
+	public static function Monitor_Edit_SignatureNone(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_SignatureEmptyProject
+	 * 
+	 * @return string "(no project)"
+	 * @return string "(без проекта)"
+	 */
+	public static function Monitor_Edit_SignatureEmptyProject(...$argv): string { return ''; }
 
 	/**
 	 * Monitor_Edit_SendRepeatMinute
@@ -919,6 +959,38 @@ class T {
 	 * @return string "Повторная отправка уведомлений об ошибках в минутах"
 	 */
 	public static function Monitor_Edit_SendRepeatMinute(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_AlertFailMode
+	 * 
+	 * @return string "Send error notification when"
+	 * @return string "Отправлять уведомление об ошибке когда"
+	 */
+	public static function Monitor_Edit_AlertFailMode(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_AlertFailModeAll
+	 * 
+	 * @return string "All workers failed"
+	 * @return string "Все обработчики вернули ошибку"
+	 */
+	public static function Monitor_Edit_AlertFailModeAll(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_AlertFailModeMajority
+	 * 
+	 * @return string "At least 50% of workers failed"
+	 * @return string "Не меньше 50% обработчиков вернули ошибку"
+	 */
+	public static function Monitor_Edit_AlertFailModeMajority(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_AlertFailModeAny
+	 * 
+	 * @return string "Any worker failed"
+	 * @return string "Хотя бы один обработчик вернул ошибку"
+	 */
+	public static function Monitor_Edit_AlertFailModeAny(...$argv): string { return ''; }
 
 	/**
 	 * Monitor_Edit_ExternalOkUrl
@@ -2567,6 +2639,294 @@ class T {
 	 * @return string "GET /api/v1/status/ с заголовком Authorization: Bearer &lt;token&gt;. В ответе только мониторы с правом чтения и включённым флагом «Отдавать в API»."
 	 */
 	public static function Api_Settings_DocsHint(...$argv): string { return ''; }
+
+	/**
+	 * Signature_Menu
+	 * 
+	 * @return string "Signatures"
+	 * @return string "Подписи"
+	 */
+	public static function Signature_Menu(...$argv): string { return ''; }
+
+	/**
+	 * Signature_PageTitle
+	 * 
+	 * @return string "Alert signatures"
+	 * @return string "Подписи уведомлений"
+	 */
+	public static function Signature_PageTitle(...$argv): string { return ''; }
+
+	/**
+	 * Signature_Permissions_Access
+	 * 
+	 * @return string "Access"
+	 * @return string "Доступ"
+	 */
+	public static function Signature_Permissions_Access(...$argv): string { return ''; }
+
+	/**
+	 * Signature_Permissions_Create
+	 * 
+	 * @return string "Create signature"
+	 * @return string "Создание подписи"
+	 */
+	public static function Signature_Permissions_Create(...$argv): string { return ''; }
+
+	/**
+	 * Signature_Status_Disabled
+	 * 
+	 * @return string "Disabled"
+	 * @return string "Выключена"
+	 */
+	public static function Signature_Status_Disabled(...$argv): string { return ''; }
+
+	/**
+	 * Signature_Status_Enabled
+	 * 
+	 * @return string "Enabled"
+	 * @return string "Включена"
+	 */
+	public static function Signature_Status_Enabled(...$argv): string { return ''; }
+
+	/**
+	 * Signature_Delete_Title
+	 * 
+	 * @return string "Removing the signature"
+	 * @return string "Удаление подписи"
+	 */
+	public static function Signature_Delete_Title(...$argv): string { return ''; }
+
+	/**
+	 * Signature_Delete_Confirmation
+	 * 
+	 * @return string "Are you sure you want to delete the signature {title}?"
+	 * @return string "Вы уверены, что хотите удалить подпись {title}?"
+	 */
+	public static function Signature_Delete_Confirmation(...$argv): string { return ''; }
+
+	/**
+	 * Signature_Delete_PermissionDenied
+	 * 
+	 * @return string "You don\'t have permission to delete this signature"
+	 * @return string "У вас нет прав на удаление этой подписи"
+	 */
+	public static function Signature_Delete_PermissionDenied(...$argv): string { return ''; }
+
+	/**
+	 * Signature_Delete_NotFound
+	 * 
+	 * @return string "Signature not found"
+	 * @return string "Подпись не найдена"
+	 */
+	public static function Signature_Delete_NotFound(...$argv): string { return ''; }
+
+	/**
+	 * Signature_Table_Project
+	 * 
+	 * @return string "Project"
+	 * @return string "Проект"
+	 */
+	public static function Signature_Table_Project(...$argv): string { return ''; }
+
+	/**
+	 * Signature_Table_Title
+	 * 
+	 * @return string "Title"
+	 * @return string "Название"
+	 */
+	public static function Signature_Table_Title(...$argv): string { return ''; }
+
+	/**
+	 * Signature_Table_Status
+	 * 
+	 * @return string "Status"
+	 * @return string "Статус"
+	 */
+	public static function Signature_Table_Status(...$argv): string { return ''; }
+
+	/**
+	 * Signature_Table_TextPreview
+	 * 
+	 * @return string "Text"
+	 * @return string "Текст"
+	 */
+	public static function Signature_Table_TextPreview(...$argv): string { return ''; }
+
+	/**
+	 * Signature_Table_CreateTime
+	 * 
+	 * @return string "Create time"
+	 * @return string "Время создания"
+	 */
+	public static function Signature_Table_CreateTime(...$argv): string { return ''; }
+
+	/**
+	 * Signature_Table_UpdateTime
+	 * 
+	 * @return string "Update time"
+	 * @return string "Время обновления"
+	 */
+	public static function Signature_Table_UpdateTime(...$argv): string { return ''; }
+
+	/**
+	 * Signature_Table_Actions
+	 * 
+	 * @return string "Actions"
+	 * @return string "Действия"
+	 */
+	public static function Signature_Table_Actions(...$argv): string { return ''; }
+
+	/**
+	 * Signature_Table_Delete
+	 * 
+	 * @return string "Delete"
+	 * @return string "Удалить"
+	 */
+	public static function Signature_Table_Delete(...$argv): string { return ''; }
+
+	/**
+	 * Signature_Table_Edit
+	 * 
+	 * @return string "Edit"
+	 * @return string "Редактировать"
+	 */
+	public static function Signature_Table_Edit(...$argv): string { return ''; }
+
+	/**
+	 * Signature_Create_PermissionDenied
+	 * 
+	 * @return string "You don\'t have permission to create a signature"
+	 * @return string "У вас нет прав на создание подписи"
+	 */
+	public static function Signature_Create_PermissionDenied(...$argv): string { return ''; }
+
+	/**
+	 * Signature_Edit_CreateTitle
+	 * 
+	 * @return string "Create signature"
+	 * @return string "Создание подписи"
+	 */
+	public static function Signature_Edit_CreateTitle(...$argv): string { return ''; }
+
+	/**
+	 * Signature_Edit_EditTitle
+	 * 
+	 * @return string "Edit signature &quot;%s&quot; [ID=%d]"
+	 * @return string "Редактирование подписи &quot;%s&quot; [ID=%d]"
+	 */
+	public static function Signature_Edit_EditTitle(...$argv): string { return ''; }
+
+	/**
+	 * Signature_Edit_Project
+	 * 
+	 * @return string "Project"
+	 * @return string "Проект"
+	 */
+	public static function Signature_Edit_Project(...$argv): string { return ''; }
+
+	/**
+	 * Signature_Edit_Title
+	 * 
+	 * @return string "Title"
+	 * @return string "Название"
+	 */
+	public static function Signature_Edit_Title(...$argv): string { return ''; }
+
+	/**
+	 * Signature_Edit_Status
+	 * 
+	 * @return string "Status"
+	 * @return string "Статус"
+	 */
+	public static function Signature_Edit_Status(...$argv): string { return ''; }
+
+	/**
+	 * Signature_Edit_Text
+	 * 
+	 * @return string "Signature text"
+	 * @return string "Текст подписи"
+	 */
+	public static function Signature_Edit_Text(...$argv): string { return ''; }
+
+	/**
+	 * Signature_Edit_CreateTime
+	 * 
+	 * @return string "Create time"
+	 * @return string "Время создания"
+	 */
+	public static function Signature_Edit_CreateTime(...$argv): string { return ''; }
+
+	/**
+	 * Signature_Edit_UpdateTime
+	 * 
+	 * @return string "Update time"
+	 * @return string "Время обновления"
+	 */
+	public static function Signature_Edit_UpdateTime(...$argv): string { return ''; }
+
+	/**
+	 * Signature_Edit_ChangeButton
+	 * 
+	 * @return string "Update"
+	 * @return string "Обновить"
+	 */
+	public static function Signature_Edit_ChangeButton(...$argv): string { return ''; }
+
+	/**
+	 * Signature_Edit_CreateButton
+	 * 
+	 * @return string "Create"
+	 * @return string "Создать"
+	 */
+	public static function Signature_Edit_CreateButton(...$argv): string { return ''; }
+
+	/**
+	 * Signature_Edit_NameLengthError
+	 * 
+	 * @return string "Title length must be between 1 and 255 characters"
+	 * @return string "Название должно быть от 1 до 255 символов"
+	 */
+	public static function Signature_Edit_NameLengthError(...$argv): string { return ''; }
+
+	/**
+	 * Signature_Edit_ProjectLengthError
+	 * 
+	 * @return string "Project must be at most 255 characters"
+	 * @return string "Проект должен быть не длиннее 255 символов"
+	 */
+	public static function Signature_Edit_ProjectLengthError(...$argv): string { return ''; }
+
+	/**
+	 * Signature_Edit_DuplicateError
+	 * 
+	 * @return string "A signature with this project and title already exists"
+	 * @return string "Подпись с таким проектом и названием уже существует"
+	 */
+	public static function Signature_Edit_DuplicateError(...$argv): string { return ''; }
+
+	/**
+	 * Signature_Edit_NotFound
+	 * 
+	 * @return string "Signature not found"
+	 * @return string "Подпись не найдена"
+	 */
+	public static function Signature_Edit_NotFound(...$argv): string { return ''; }
+
+	/**
+	 * Signature_Edit_PermissionDenied
+	 * 
+	 * @return string "You don\'t have permission to edit this signature"
+	 * @return string "У вас нет прав на редактирование этой подписи"
+	 */
+	public static function Signature_Edit_PermissionDenied(...$argv): string { return ''; }
+
+	/**
+	 * Signature_Edit_NotingChanged
+	 * 
+	 * @return string "Nothing changed"
+	 * @return string "Ничего не изменилось"
+	 */
+	public static function Signature_Edit_NotingChanged(...$argv): string { return ''; }
 
 	/**
 	 * Framework_ServerVersion

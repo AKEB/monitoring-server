@@ -119,6 +119,14 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				$data['send_repeat_minute'] = trim($data['send_repeat_minute']);
 				$params['send_repeat_minute'] = intval($data['send_repeat_minute']);
 			}
+			if (isset($data['alert_fail_mode'])) {
+				$alert_fail_mode = intval($data['alert_fail_mode']);
+				$params['alert_fail_mode'] = isset(\Monitors::alert_fail_mode_hash()[$alert_fail_mode])
+					? $alert_fail_mode
+					: \Monitors::ALERT_FAIL_MODE_ALL;
+			} else {
+				$params['alert_fail_mode'] = \Monitors::ALERT_FAIL_MODE_ALL;
+			}
 			if (isset($data['repeat_seconds'])) {
 				$data['repeat_seconds'] = trim($data['repeat_seconds']);
 				$params['repeat_seconds'] = intval($data['repeat_seconds']);
@@ -632,6 +640,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 			$this->monitor['timeout'] ??= 15;
 			$this->monitor['max_redirects'] ??= 10;
 			$this->monitor['send_repeat_minute'] ??= 15;
+			$this->monitor['alert_fail_mode'] ??= \Monitors::ALERT_FAIL_MODE_ALL;
 			$this->monitor['repeat_seconds'] ??= 60;
 			$this->monitor['ssl_verify'] ??= 1;
 			$this->monitor['ssl_verify_host'] ??= 1;
@@ -865,6 +874,11 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					]);
 					echo $this->template->html_input("send_repeat_minute", $this->monitor['send_repeat_minute']??0, \T::Monitor_Edit_SendRepeatMinute(), false, [
 						'type' => 'number',
+						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_HTTP_JSON.' type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_PING.' type-'.\Monitors::TYPE_DOCKER.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU.' type-'.\Monitors::TYPE_EXTERNAL,
+						'readonly' => !($this->can_write || $this->can_create),
+					]);
+					echo $this->template?->html_select('alert_fail_mode', \Monitors::alert_fail_mode_hash(), intval($this->monitor['alert_fail_mode']??\Monitors::ALERT_FAIL_MODE_ALL), \T::Monitor_Edit_AlertFailMode(), false,[
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
 						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_HTTP_JSON.' type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_PING.' type-'.\Monitors::TYPE_DOCKER.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU.' type-'.\Monitors::TYPE_EXTERNAL,
 						'readonly' => !($this->can_write || $this->can_create),

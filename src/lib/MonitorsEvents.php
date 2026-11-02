@@ -111,7 +111,7 @@ class MonitorsEvents extends \DB\MySQLObject {
 		if (!isset($monitors) || !count($monitors)) return;
 		$monitor_ids = array_keys($monitors);
 		if (!count($monitor_ids)) return;
-		$monitors = \Monitors::data(false, sql_pholder(' AND `id` IN (?@) AND `status` = ?', $monitor_ids, \Monitors::STATUS_ENABLED), '`id`, `title`, `type`, `docker`, `last_send_status`, `last_send_time`, `alert_start_time`, `send_repeat_minute`, `signature_id`');
+		$monitors = \Monitors::data(false, sql_pholder(' AND `id` IN (?@) AND `status` = ?', $monitor_ids, \Monitors::STATUS_ENABLED), '`id`, `title`, `type`, `docker`, `last_send_status`, `last_send_time`, `alert_start_time`, `send_repeat_minute`, `alert_fail_mode`, `signature_id`');
 		$monitors_hash = [];
 		$dockers_monitor_hash = [];
 		foreach($monitors as $monitor) {
@@ -174,7 +174,9 @@ class MonitorsEvents extends \DB\MySQLObject {
 			$text = '';
 			$success = 1;
 			$clear_alert_start = false;
-			if ($global_good == count($jobs_hash[$monitor_id])) {
+			$workers_total = count($jobs_hash[$monitor_id]);
+			$alert_fail_mode = intval($monitor['alert_fail_mode'] ?? \Monitors::ALERT_FAIL_MODE_ALL);
+			if ($global_good == $workers_total) {
 				// Все обработчики вернули успех
 				if ($monitor['last_send_status'] != \MonitoringLogs::STATUS_GOOD) {
 					$title = "✅ Success ".date("Y-m-d H:i:s");
@@ -189,8 +191,8 @@ class MonitorsEvents extends \DB\MySQLObject {
 					// alert_start_time очищаем после webhook, чтобы resolved ушёл с тем же startsAt
 					$clear_alert_start = true;
 				}
-			} elseif ($global_failed == count($jobs_hash[$monitor_id])) {
-				// Все обработчики вернули ошибки
+			} elseif (\Monitors::is_alert_fail_threshold($alert_fail_mode, $global_failed, $workers_total)) {
+				// Порог ошибок по настройке монитора (все / большинство / любой)
 				if ($monitor['last_send_status'] != \MonitoringLogs::STATUS_FAIL) {
 					$title = "🚫 Error ".date("Y-m-d H:i:s");
 					$success = 0;

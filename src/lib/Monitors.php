@@ -25,6 +25,13 @@ class Monitors extends \DB\MySQLObject implements \PermissionSubject_Interface {
 	/** Virtual worker_id for push-based External monitors (never a real Workers row). */
 	const EXTERNAL_WORKER_ID = -1;
 
+	/** Alert when every assigned worker failed (current default). */
+	const ALERT_FAIL_MODE_ALL = 0;
+	/** Alert when at least half of assigned workers failed. */
+	const ALERT_FAIL_MODE_MAJORITY = 1;
+	/** Alert when at least one assigned worker failed. */
+	const ALERT_FAIL_MODE_ANY = 2;
+
 	static private array $monitors_hash = [];
 
 
@@ -67,6 +74,25 @@ class Monitors extends \DB\MySQLObject implements \PermissionSubject_Interface {
 			CURLPROXY_SOCKS5 => 'CURLPROXY_SOCKS5',
 			CURLPROXY_SOCKS5_HOSTNAME => 'CURLPROXY_SOCKS5_HOSTNAME',
 		];
+	}
+
+	static public function alert_fail_mode_hash(): array {
+		return [
+			static::ALERT_FAIL_MODE_ALL => \T::Monitor_Edit_AlertFailModeAll(),
+			static::ALERT_FAIL_MODE_MAJORITY => \T::Monitor_Edit_AlertFailModeMajority(),
+			static::ALERT_FAIL_MODE_ANY => \T::Monitor_Edit_AlertFailModeAny(),
+		];
+	}
+
+	static public function is_alert_fail_threshold(int $mode, int $failed, int $total): bool {
+		if ($total < 1 || $failed < 1) {
+			return false;
+		}
+		return match ($mode) {
+			static::ALERT_FAIL_MODE_ANY => true,
+			static::ALERT_FAIL_MODE_MAJORITY => ($failed * 2) >= $total,
+			default => $failed >= $total,
+		};
 	}
 
 	static public function response_code_hash(): array {
