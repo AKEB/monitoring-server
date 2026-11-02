@@ -193,6 +193,8 @@ class ExternalMonitors {
 			return false;
 		}
 
+		$previousLog = strval($monitor['external_log'] ?? '');
+		$alreadyFail = intval($monitor['last_send_status'] ?? -999) === \MonitoringLogs::STATUS_FAIL;
 		$save = [
 			'id' => intval($monitor['id']),
 			'external_status' => $status,
@@ -213,7 +215,17 @@ class ExternalMonitors {
 		$result = static::writeStatusLog($monitor, $status, true);
 		if ($result) {
 			\MonitorsEvents::updateEvent($result);
-			\MonitorsEvents::checkMonitors([intval($monitor['id']) => true]);
+			$forceFailNotify = [];
+			// Already FAIL + new/changed Log text → re-send alert (otherwise only first fail notifies).
+			if (
+				$status === \MonitoringLogs::STATUS_FAIL
+				&& $alreadyFail
+				&& $log !== null
+				&& strval($monitor['external_log'] ?? '') !== $previousLog
+			) {
+				$forceFailNotify[intval($monitor['id'])] = true;
+			}
+			\MonitorsEvents::checkMonitors([intval($monitor['id']) => true], $forceFailNotify);
 		}
 		return [
 			'monitor_id' => intval($monitor['id']),

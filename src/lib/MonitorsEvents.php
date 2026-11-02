@@ -107,7 +107,11 @@ class MonitorsEvents extends \DB\MySQLObject {
 
 	}
 
-	static public function checkMonitors(array $monitors): void {
+	/**
+	 * @param array<int,bool> $monitors monitor_id => true
+	 * @param array<int,bool> $forceFailNotify re-send fail alert even if already FAIL (e.g. External log text changed)
+	 */
+	static public function checkMonitors(array $monitors, array $forceFailNotify = []): void {
 		if (!isset($monitors) || !count($monitors)) return;
 		$monitor_ids = array_keys($monitors);
 		if (!count($monitor_ids)) return;
@@ -193,6 +197,7 @@ class MonitorsEvents extends \DB\MySQLObject {
 				}
 			} elseif (\Monitors::is_alert_fail_threshold($alert_fail_mode, $global_failed, $workers_total)) {
 				// Порог ошибок по настройке монитора (все / большинство / любой)
+				$forceFail = !empty($forceFailNotify[$monitor_id]);
 				if ($monitor['last_send_status'] != \MonitoringLogs::STATUS_FAIL) {
 					$title = "🚫 Error ".date("Y-m-d H:i:s");
 					$success = 0;
@@ -206,6 +211,20 @@ class MonitorsEvents extends \DB\MySQLObject {
 						'last_send_time' => time(),
 						'alert_start_time' => time(),
 						'alert_muted' => 0,
+						'update_time' => time(),
+					]);
+				} elseif ($forceFail && intval($monitor['alert_muted'] ?? 0) !== 1) {
+					// External (etc.): log text changed while already FAIL — re-send with new text
+					$title = "🚫 Error ".date("Y-m-d H:i:s");
+					$success = 0;
+					$text = '<b>'.\Monitors::get_monitor_title_with_folders($monitor['id'])."</b> is down ";
+					$text .= static::failDescriptionHtml($monitor, $descriptions);
+					$signature_text = \Signatures::resolveText(intval($monitor['signature_id'] ?? 0));
+					if ($signature_text) $text .= "\n\n". $signature_text;
+					\Monitors::save([
+						'id' => $monitor_id,
+						'last_send_status' => \MonitoringLogs::STATUS_FAIL,
+						'last_send_time' => time(),
 						'update_time' => time(),
 					]);
 				} elseif ($monitor['send_repeat_minute'] > 0) {
