@@ -8,6 +8,8 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 	private bool $can_write = false;
 	private bool $can_create = false;
 	private array $workers_hash = [];
+	/** @var array<int, array<string, mixed>> */
+	private array $worker_polls = [];
 
 	public function Run(int $docker_id=0) {
 		$this->docker_id = intval($docker_id ?? 0);
@@ -353,6 +355,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 
 	private function get_data() {
 		if (!isset($this->docker['id'])) $this->docker['id'] = '';
+		$this->worker_polls = [];
 
 		if ($this->docker['id']) {
 			$this->docker['create_date'] = (
@@ -363,11 +366,30 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				isset($this->docker['update_time']) && $this->docker['update_time'] > 0 ?
 				date('Y-m-d H:i:s', $this->docker['update_time']) : ''
 			);
+			$this->docker['last_success_date'] = (
+				isset($this->docker['last_success_time']) && intval($this->docker['last_success_time']) > 0 ?
+				date('Y-m-d H:i:s', intval($this->docker['last_success_time'])) : ''
+			);
+			$engineInfo = [];
+			if (!empty($this->docker['engine_info'])) {
+				$decoded = @json_decode(strval($this->docker['engine_info']), true);
+				if (is_array($decoded)) {
+					$engineInfo = $decoded;
+				}
+			}
+			$this->docker['engine_info_parsed'] = $engineInfo;
+
 			$this->docker['workers'] = [];
-			$jobs = \MonitoringDockers::data(['docker_id' => $this->docker['id']], false, '`worker_id`');
+			$jobs = \MonitoringDockers::data(
+				['docker_id' => $this->docker['id']],
+				false,
+				'`id`, `worker_id`, `update_time`, `last_status`, `last_status_code`, `last_error`, `last_success_time`, `engine_version`, `containers_count`'
+			);
 			if ($jobs) {
 				foreach($jobs as $v) {
-					$this->docker['workers'][$v['worker_id']] = true;
+					$workerId = intval($v['worker_id'] ?? 0);
+					$this->docker['workers'][$workerId] = true;
+					$this->worker_polls[$workerId] = $v;
 				}
 			}
 		} else {
@@ -377,6 +399,8 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 			$this->docker['workers'] ??= [];
 			$this->docker['timeout'] ??= 15;
 			$this->docker['repeat_seconds'] ??= 60;
+			$this->docker['last_success_date'] = '';
+			$this->docker['engine_info_parsed'] = [];
 		}
 
 		$this->workers_hash = [];
@@ -496,9 +520,24 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				</form>
 			</div>
 
+			<?php if ($this->docker['id']) {
+				$this->print_poll_status();
+			} ?>
+
 			<?php if ($this->docker['id'] && isset($this->docker['container_states']) && $this->docker['container_states']) { ?>
 				<div class="card bg-transparent col-xl-10 p-4 mt-2 mb-3">
 					<div class="card-body">
+						<?php
+						$containersUpdated = trim(strval($this->docker['last_success_date'] ?? ''));
+						if ($containersUpdated !== '') {
+							?>
+							<p class="mb-3 text-secondary">
+								<?=\T::Docker_Edit_ContainersUpdatedAt();?>:
+								<strong><?=htmlspecialchars($containersUpdated);?></strong>
+							</p>
+							<?php
+						}
+						?>
 						<table class="table table-transparent table-responsive" id="Table">
 							<thead class="">
 								<tr>
@@ -556,6 +595,130 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					</div>
 				</div>
 			<?php } ?>
+		</div>
+		<?php
+	}
+
+	private function print_poll_status(): void {
+		$lastSuccessTime = intval($this->docker['last_success_time'] ?? 0);
+		$repeat = intval($this->docker['repeat_seconds'] ?? 60);
+		if ($repeat < 60) {
+			$repeat = 60;
+		}
+		$freshWindow = $repeat * 3;
+		$freshClass = 'text-secondary';
+		$freshLabel = \T::Docker_Edit_EngineNever();
+		if ($lastSuccessTime > 0) {
+			if ($lastSuccessTime + $freshWindow >= time()) {
+				$freshClass = 'text-success';
+				$freshLabel = \T::Docker_Edit_EngineFresh();
+			} else {
+				$freshClass = 'text-warning';
+				$freshLabel = \T::Docker_Edit_EngineStale();
+			}
+		}
+
+		$engine = $this->docker['engine_info_parsed'] ?? [];
+		$engineLine = '';
+		if (is_array($engine) && !empty($engine['Version'])) {
+			$parts = [strval($engine['Version'])];
+			if (!empty($engine['ApiVersion'])) {
+				$parts[] = 'API ' . strval($engine['ApiVersion']);
+			}
+			$osArch = trim(strval($engine['Os'] ?? '') . '/' . strval($engine['Arch'] ?? ''), '/');
+			if ($osArch !== '') {
+				$parts[] = $osArch;
+			}
+			$engineLine = implode(' · ', $parts);
+		}
+
+		$lastWorkerId = intval($this->docker['last_success_worker_id'] ?? 0);
+		$lastWorkerTitle = '';
+		if ($lastWorkerId > 0 && isset($this->workers_hash[$lastWorkerId])) {
+			$lastWorkerTitle = strval($this->workers_hash[$lastWorkerId]['title'] ?? '');
+		} elseif ($lastWorkerId > 0) {
+			$lastWorkerTitle = '#' . $lastWorkerId;
+		}
+		?>
+		<div class="card bg-transparent col-xl-10 p-4 mt-2 mb-3">
+			<div class="card-header bg-transparent"><h4><?=\T::Docker_Edit_PollStatusTitle();?></h4></div>
+			<div class="card-body">
+				<p class="mb-2">
+					<span class="<?=$freshClass;?>"><?=htmlspecialchars($freshLabel);?></span>
+				</p>
+				<p class="mb-1">
+					<?=\T::Docker_Edit_LastSuccessTime();?>:
+					<strong><?=($this->docker['last_success_date'] ?? '') !== '' ? htmlspecialchars($this->docker['last_success_date']) : '—';?></strong>
+				</p>
+				<p class="mb-1">
+					<?=\T::Docker_Edit_LastSuccessWorker();?>:
+					<strong><?=$lastWorkerTitle !== '' ? $lastWorkerTitle : '—';?></strong>
+				</p>
+				<p class="mb-3">
+					<?=\T::Docker_Edit_EngineVersion();?>:
+					<strong><?=$engineLine !== '' ? htmlspecialchars($engineLine) : '—';?></strong>
+				</p>
+
+				<h5 class="mt-3"><?=\T::Docker_Edit_WorkersPollTitle();?></h5>
+				<?php if (!$this->worker_polls) { ?>
+					<p class="text-secondary mb-0"><?=\T::Docker_Edit_WorkersPollNone();?></p>
+				<?php } else { ?>
+					<table class="table table-transparent table-responsive mb-0" id="WorkersPollTable">
+						<thead>
+							<tr>
+								<th scope="col"><?=\T::Docker_Edit_WorkersPollWorker();?></th>
+								<th scope="col" class="text-center"><?=\T::Docker_Edit_WorkersPollAttempt();?></th>
+								<th scope="col" class="text-center"><?=\T::Docker_Edit_WorkersPollResult();?></th>
+								<th scope="col" class="text-center"><?=\T::Docker_Edit_WorkersPollCode();?></th>
+								<th scope="col"><?=\T::Docker_Edit_WorkersPollError();?></th>
+								<th scope="col" class="text-center"><?=\T::Docker_Edit_WorkersPollEngine();?></th>
+								<th scope="col" class="text-center"><?=\T::Docker_Edit_WorkersPollContainers();?></th>
+								<th scope="col" class="text-center"><?=\T::Docker_Edit_WorkersPollSuccess();?></th>
+							</tr>
+						</thead>
+						<tbody>
+							<?php
+							foreach ($this->worker_polls as $workerId => $poll) {
+								$title = isset($this->workers_hash[$workerId])
+									? strval($this->workers_hash[$workerId]['title'] ?? '')
+									: ('#' . intval($workerId));
+								$attempt = intval($poll['update_time'] ?? 0) > 0
+									? date('Y-m-d H:i:s', intval($poll['update_time']))
+									: '—';
+								$success = intval($poll['last_success_time'] ?? 0) > 0
+									? date('Y-m-d H:i:s', intval($poll['last_success_time']))
+									: '—';
+								$ok = intval($poll['last_status'] ?? 0) === 1;
+								$code = intval($poll['last_status_code'] ?? 0);
+								$error = trim(strval($poll['last_error'] ?? ''));
+								$engineVer = trim(strval($poll['engine_version'] ?? ''));
+								$containers = intval($poll['containers_count'] ?? 0);
+								$hasPollResult = $ok || $code > 0 || $error !== '' || intval($poll['last_success_time'] ?? 0) > 0;
+								if ($hasPollResult) {
+									$resultClass = $ok ? 'text-success' : 'text-danger';
+									$resultLabel = $ok ? \T::Docker_Edit_WorkersPollOk() : \T::Docker_Edit_WorkersPollFail();
+								} else {
+									$resultClass = 'text-secondary';
+									$resultLabel = '—';
+								}
+								?>
+								<tr>
+									<td class="align-middle"><?=$title;?></td>
+									<td class="align-middle text-center"><?=htmlspecialchars($attempt);?></td>
+									<td class="align-middle text-center <?=$resultClass;?>"><?=$resultLabel;?></td>
+									<td class="align-middle text-center"><?=$code > 0 ? $code : '—';?></td>
+									<td class="align-middle"><?=$error !== '' ? htmlspecialchars($error) : '—';?></td>
+									<td class="align-middle text-center"><?=$engineVer !== '' ? htmlspecialchars($engineVer) : '—';?></td>
+									<td class="align-middle text-center"><?=$containers > 0 ? $containers : ($ok ? '0' : '—');?></td>
+									<td class="align-middle text-center"><?=htmlspecialchars($success);?></td>
+								</tr>
+								<?php
+							}
+							?>
+						</tbody>
+					</table>
+				<?php } ?>
+			</div>
 		</div>
 		<?php
 	}

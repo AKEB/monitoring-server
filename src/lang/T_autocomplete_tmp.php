@@ -1011,8 +1011,8 @@ class T {
 	/**
 	 * Monitor_Edit_ExternalUrlsHint
 	 * 
-	 * @return string "Call these GET links from your system to report status. Links differ only by the status parameter."
-	 * @return string "Вызывайте эти GET-ссылки из своей системы, чтобы сообщить статус. Ссылки отличаются только параметром status."
+	 * @return string "Call these GET links from your system to report status. Links differ only by the status parameter. Optional HTTP header Log (or ?log=) adds custom text to fail notifications as Log: …"
+	 * @return string "Вызывайте эти GET-ссылки из своей системы, чтобы сообщить статус. Ссылки отличаются только параметром status. Опциональный HTTP-заголовок Log (или ?log=) добавит текст в уведомления об ошибке как Log: …"
 	 */
 	public static function Monitor_Edit_ExternalUrlsHint(...$argv): string { return ''; }
 
@@ -1915,8 +1915,8 @@ class T {
 	/**
 	 * Docker_Table_UpdateTime
 	 * 
-	 * @return string "Update time"
-	 * @return string "Время обновления"
+	 * @return string "Data update time"
+	 * @return string "Время обновления данных"
 	 */
 	public static function Docker_Table_UpdateTime(...$argv): string { return ''; }
 
@@ -2019,8 +2019,8 @@ class T {
 	/**
 	 * Docker_Edit_UpdateTime
 	 * 
-	 * @return string "Update time"
-	 * @return string "Время обновления"
+	 * @return string "Record edit time"
+	 * @return string "Время правки записи"
 	 */
 	public static function Docker_Edit_UpdateTime(...$argv): string { return ''; }
 
@@ -2167,6 +2167,166 @@ class T {
 	 * @return string "TLS ключ (key.pem)"
 	 */
 	public static function Docker_Edit_TlsKey(...$argv): string { return ''; }
+
+	/**
+	 * Docker_Edit_PollStatusTitle
+	 * 
+	 * @return string "Poll status"
+	 * @return string "Состояние опроса"
+	 */
+	public static function Docker_Edit_PollStatusTitle(...$argv): string { return ''; }
+
+	/**
+	 * Docker_Edit_LastSuccessTime
+	 * 
+	 * @return string "Last successful container update"
+	 * @return string "Последнее успешное обновление контейнеров"
+	 */
+	public static function Docker_Edit_LastSuccessTime(...$argv): string { return ''; }
+
+	/**
+	 * Docker_Edit_LastSuccessWorker
+	 * 
+	 * @return string "Last successful worker"
+	 * @return string "Последний успешный обработчик"
+	 */
+	public static function Docker_Edit_LastSuccessWorker(...$argv): string { return ''; }
+
+	/**
+	 * Docker_Edit_EngineVersion
+	 * 
+	 * @return string "Docker Engine"
+	 * @return string "Docker Engine"
+	 */
+	public static function Docker_Edit_EngineVersion(...$argv): string { return ''; }
+
+	/**
+	 * Docker_Edit_EngineNever
+	 * 
+	 * @return string "No successful poll yet"
+	 * @return string "Ещё не было успешного опроса"
+	 */
+	public static function Docker_Edit_EngineNever(...$argv): string { return ''; }
+
+	/**
+	 * Docker_Edit_EngineStale
+	 * 
+	 * @return string "Data is stale"
+	 * @return string "Данные устарели"
+	 */
+	public static function Docker_Edit_EngineStale(...$argv): string { return ''; }
+
+	/**
+	 * Docker_Edit_EngineFresh
+	 * 
+	 * @return string "Data is fresh"
+	 * @return string "Данные свежие"
+	 */
+	public static function Docker_Edit_EngineFresh(...$argv): string { return ''; }
+
+	/**
+	 * Docker_Edit_WorkersPollTitle
+	 * 
+	 * @return string "Workers poll status"
+	 * @return string "Опрос по обработчикам"
+	 */
+	public static function Docker_Edit_WorkersPollTitle(...$argv): string { return ''; }
+
+	/**
+	 * Docker_Edit_WorkersPollWorker
+	 * 
+	 * @return string "Worker"
+	 * @return string "Обработчик"
+	 */
+	public static function Docker_Edit_WorkersPollWorker(...$argv): string { return ''; }
+
+	/**
+	 * Docker_Edit_WorkersPollAttempt
+	 * 
+	 * @return string "Last attempt"
+	 * @return string "Последняя попытка"
+	 */
+	public static function Docker_Edit_WorkersPollAttempt(...$argv): string { return ''; }
+
+	/**
+	 * Docker_Edit_WorkersPollResult
+	 * 
+	 * @return string "Result"
+	 * @return string "Результат"
+	 */
+	public static function Docker_Edit_WorkersPollResult(...$argv): string { return ''; }
+
+	/**
+	 * Docker_Edit_WorkersPollOk
+	 * 
+	 * @return string "OK"
+	 * @return string "OK"
+	 */
+	public static function Docker_Edit_WorkersPollOk(...$argv): string { return ''; }
+
+	/**
+	 * Docker_Edit_WorkersPollFail
+	 * 
+	 * @return string "FAIL"
+	 * @return string "FAIL"
+	 */
+	public static function Docker_Edit_WorkersPollFail(...$argv): string { return ''; }
+
+	/**
+	 * Docker_Edit_WorkersPollCode
+	 * 
+	 * @return string "HTTP"
+	 * @return string "HTTP"
+	 */
+	public static function Docker_Edit_WorkersPollCode(...$argv): string { return ''; }
+
+	/**
+	 * Docker_Edit_WorkersPollError
+	 * 
+	 * @return string "Error"
+	 * @return string "Ошибка"
+	 */
+	public static function Docker_Edit_WorkersPollError(...$argv): string { return ''; }
+
+	/**
+	 * Docker_Edit_WorkersPollEngine
+	 * 
+	 * @return string "Engine"
+	 * @return string "Engine"
+	 */
+	public static function Docker_Edit_WorkersPollEngine(...$argv): string { return ''; }
+
+	/**
+	 * Docker_Edit_WorkersPollContainers
+	 * 
+	 * @return string "Containers"
+	 * @return string "Контейнеров"
+	 */
+	public static function Docker_Edit_WorkersPollContainers(...$argv): string { return ''; }
+
+	/**
+	 * Docker_Edit_WorkersPollSuccess
+	 * 
+	 * @return string "Last success"
+	 * @return string "Последний успех"
+	 */
+	public static function Docker_Edit_WorkersPollSuccess(...$argv): string { return ''; }
+
+	/**
+	 * Docker_Edit_WorkersPollNone
+	 * 
+	 * @return string "No workers assigned"
+	 * @return string "Нет назначенных обработчиков"
+	 */
+	public static function Docker_Edit_WorkersPollNone(...$argv): string { return ''; }
+
+	/**
+	 * Docker_Edit_ContainersUpdatedAt
+	 * 
+	 * @return string "Container list updated"
+	 * @return string "Список контейнеров обновлён"
+	 */
+	public static function Docker_Edit_ContainersUpdatedAt(...$argv): string { return ''; }
 
 	/**
 	 * Docker_Container_Table_Name

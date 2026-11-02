@@ -170,39 +170,72 @@ class State extends \Routing_Parent implements \Routing_Interface {
 		$docker = \Dockers::get($dockerJob['docker_id']);
 		if (!$docker) return false;
 		if ($docker['status'] == \Dockers::STATUS_DISABLED) return false;
-		if ($dockerJob['update_time'] + 30 < time()) {
-			\MonitoringDockers::save([
-				'id' => $dockerJob['id'],
-				'update_time' => $docker_response['update_time'] ??	0,
-			]);
+
+		$pollTime = intval($docker_response['update_time'] ?? time());
+		if ($pollTime < 1) {
+			$pollTime = time();
 		}
-		if (!isset($docker_response['response']) || !$docker_response['response'] || !is_array($docker_response['response'])) return false;
-		$response = $docker_response['response'] ?? [];
-		if (!is_array($response)) return false;
-		if (!$response) return false;
-		$response['status'] ??= 0;
-		$response['status_code'] ??= 0;
-		$response['response_error_num'] ??= 0;
-		$response['response_error'] ??= '';
-		if (!$response['status']) return false;
-		if (!($response['status_code'] >= 200 && $response['status_code'] < 299)) return false;
+
+		$response = [];
+		if (isset($docker_response['response']) && is_array($docker_response['response'])) {
+			$response = $docker_response['response'];
+		}
+		$response['status'] = intval($response['status'] ?? 0);
+		$response['status_code'] = intval($response['status_code'] ?? 0);
+		$response['response_error_num'] = intval($response['response_error_num'] ?? 0);
+		$response['response_error'] = strval($response['response_error'] ?? '');
+
+		$engineInfo = $this->resolveDockerEngineInfo($response);
+		$engineVersion = '';
+		if (is_array($engineInfo) && isset($engineInfo['Version'])) {
+			$engineVersion = substr(strval($engineInfo['Version']), 0, 64);
+		}
 
 		$container_states = $this->resolveDockerContainerStates($response);
-		if (!$container_states) return false;
-		$container_states = json_encode($container_states);
+		$ok = (
+			$response['status'] === 1 &&
+			$response['status_code'] >= 200 &&
+			$response['status_code'] < 300 &&
+			is_array($container_states) &&
+			$container_states
+		);
 
-		$apiStatusCode = intval($response['status_code'] ?? 0);
-		$params = [
-			'id' => $docker['id'],
-			'container_states' => $container_states,
-			'update_time' => $docker_response['update_time'] ?? time(),
+		$jobSave = [
+			'id' => $dockerJob['id'],
+			'update_time' => $pollTime,
+			'last_status' => $ok ? 1 : 0,
+			'last_status_code' => $response['status_code'],
+			'last_error' => $ok ? '' : substr($response['response_error'], 0, 512),
+			'engine_version' => $engineVersion,
+			'containers_count' => is_array($container_states) ? count($container_states) : 0,
 			'_mode' => \DB\Common::CSMODE_UPDATE,
 		];
+		if ($ok) {
+			$jobSave['last_success_time'] = $pollTime;
+		}
+		\MonitoringDockers::save($jobSave);
+
+		if (!$ok) {
+			return false;
+		}
+
+		$containerStatesJson = json_encode($container_states);
+		$params = [
+			'id' => $docker['id'],
+			'container_states' => $containerStatesJson,
+			'last_success_time' => $pollTime,
+			'last_success_worker_id' => intval($worker_id),
+			'_mode' => \DB\Common::CSMODE_UPDATE,
+		];
+		if (is_array($engineInfo) && $engineInfo) {
+			$params['engine_info'] = json_encode($engineInfo);
+		}
 		$params['id'] = \Dockers::save($params);
 		if ($params['id']) {
 			$params['job_id'] = $dockerJob['id'];
 			// HTTP status from Docker Engine API (for container monitor logs / tooltips).
-			$params['status_code'] = $apiStatusCode;
+			$params['status_code'] = $response['status_code'];
+			$params['container_states'] = $containerStatesJson;
 			return $params;
 		}
 
@@ -337,6 +370,30 @@ class State extends \Routing_Parent implements \Routing_Interface {
 			return false;
 		}
 		return $response['container_states'];
+	}
+
+	/**
+	 * Compact Docker Engine /version payload from the worker (optional).
+	 *
+	 * @return array<string, string>|false
+	 */
+	private function resolveDockerEngineInfo(array $response): array|false {
+		if (!isset($response['engine_info']) || !is_array($response['engine_info'])) {
+			return false;
+		}
+		$info = $response['engine_info'];
+		$version = trim(strval($info['Version'] ?? ''));
+		if ($version === '') {
+			return false;
+		}
+		return [
+			'Version' => $version,
+			'ApiVersion' => strval($info['ApiVersion'] ?? ''),
+			'MinAPIVersion' => strval($info['MinAPIVersion'] ?? ''),
+			'Os' => strval($info['Os'] ?? ''),
+			'Arch' => strval($info['Arch'] ?? ''),
+			'KernelVersion' => strval($info['KernelVersion'] ?? ''),
+		];
 	}
 
 	private function normalizeJobResponse(array &$job_response): void {

@@ -67,7 +67,7 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 			}
 			\MonitoringDockers::delete(['id' => $job['id']]);
 		}
-		$monitors = \Monitors::data(['docker_id' => $docker_id, 'type' => \Monitors::TYPE_DOCKER]);
+		$monitors = \Monitors::data(['docker' => $docker_id, 'type' => \Monitors::TYPE_DOCKER]);
 		foreach($monitors as $monitor) {
 			$jobs = \MonitoringJobs::data(['monitor_id' => $monitor['id']]);
 			foreach($jobs as $job) {
@@ -165,7 +165,11 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 							'host' => htmlspecialchars(trim($item['host'] ?? '')),
 							'port' => intval($item['port'] ?? 0),
 							'create_time' => isset($item['create_time']) && $item['create_time'] > 0 ? date("Y-m-d H:i:s", $item['create_time']) : '',
-							'update_time' => isset($item['update_time']) && $item['update_time'] > 0 ? date("Y-m-d H:i:s", $item['update_time']) : '',
+							'update_time' => (
+								isset($item['last_success_time']) && intval($item['last_success_time']) > 0
+									? date("Y-m-d H:i:s", intval($item['last_success_time']))
+									: (isset($item['update_time']) && $item['update_time'] > 0 ? date("Y-m-d H:i:s", $item['update_time']) : '')
+							),
 							'containers' => '',
 						];
 						$container_class = 'text-secondary';
