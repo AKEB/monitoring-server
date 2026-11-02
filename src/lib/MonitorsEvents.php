@@ -111,7 +111,7 @@ class MonitorsEvents extends \DB\MySQLObject {
 		if (!isset($monitors) || !count($monitors)) return;
 		$monitor_ids = array_keys($monitors);
 		if (!count($monitor_ids)) return;
-		$monitors = \Monitors::data(false, sql_pholder(' AND `id` IN (?@) AND `status` = ?', $monitor_ids, \Monitors::STATUS_ENABLED), '`id`, `title`, `type`, `docker`, `last_send_status`, `last_send_time`, `alert_start_time`, `send_repeat_minute`, `alert_fail_mode`, `signature_id`');
+		$monitors = \Monitors::data(false, sql_pholder(' AND `id` IN (?@) AND `status` = ?', $monitor_ids, \Monitors::STATUS_ENABLED), '`id`, `title`, `type`, `docker`, `last_send_status`, `last_send_time`, `alert_start_time`, `send_repeat_minute`, `alert_fail_mode`, `alert_muted`, `signature_id`');
 		$monitors_hash = [];
 		$dockers_monitor_hash = [];
 		foreach($monitors as $monitor) {
@@ -205,10 +205,13 @@ class MonitorsEvents extends \DB\MySQLObject {
 						'last_send_status' => \MonitoringLogs::STATUS_FAIL,
 						'last_send_time' => time(),
 						'alert_start_time' => time(),
+						'alert_muted' => 0,
 						'update_time' => time(),
 					]);
 				} elseif ($monitor['send_repeat_minute'] > 0) {
-					if ($monitor['last_send_time'] + $monitor['send_repeat_minute'] * 60 < time()) {
+					if (intval($monitor['alert_muted'] ?? 0) === 1) {
+						// Mute: не шлём повторные алерты до зелёного
+					} elseif ($monitor['last_send_time'] + $monitor['send_repeat_minute'] * 60 < time()) {
 						$title = "🚫 Error ".date("Y-m-d H:i:s");
 						$success = 0;
 						$text = '<b>'.\Monitors::get_monitor_title_with_folders($monitor['id'])."</b> is down ";
@@ -227,9 +230,11 @@ class MonitorsEvents extends \DB\MySQLObject {
 			if ($text) {
 				\MonitoringNotify::sendNotification($monitor_id, $text, $title, $success);
 				if ($clear_alert_start) {
+					\AlertActions::clearForMonitor($monitor_id);
 					\Monitors::save([
 						'id' => $monitor_id,
 						'alert_start_time' => 0,
+						'alert_muted' => 0,
 						'update_time' => time(),
 					]);
 				}

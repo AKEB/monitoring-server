@@ -82,14 +82,22 @@ class MaxMessenger {
 	 * @param int|string $receiverId user_id > 0 или chat_id < 0 (целое, допускается строка для больших id)
 	 * @param string $text тело сообщения (до 4000 символов на стороне API)
 	 * @param string|null $format "html"|"markdown"|null
+	 * @param array|null $attachments вложения (например inline_keyboard)
+	 * @return array{ok: bool, message_id: string, data: array|null}
 	 */
-	public static function send(string $accessToken, $receiverId, string $text, ?string $format = 'html'): bool {
+	public static function send(
+		string $accessToken,
+		$receiverId,
+		string $text,
+		?string $format = 'html',
+		?array $attachments = null
+	): array {
 		$raw = trim((string) $receiverId);
 		if ($raw === '' || !preg_match('/^-?\d+$/', $raw)) {
-			return false;
+			return ['ok' => false, 'message_id' => '', 'data' => null];
 		}
 		if ($raw === '0' || $raw === '-0' || $raw === '+0') {
-			return false;
+			return ['ok' => false, 'message_id' => '', 'data' => null];
 		}
 		$query = ['disable_link_preview' => false];
 		if ($raw[0] === '-') {
@@ -101,7 +109,114 @@ class MaxMessenger {
 		if ($format !== null && $format !== '') {
 			$body['format'] = $format;
 		}
-		return self::request('POST', '/messages', $query, $accessToken, $body)['ok'];
+		if ($attachments !== null) {
+			$body['attachments'] = $attachments;
+		}
+		$res = self::request('POST', '/messages', $query, $accessToken, $body);
+		$messageId = '';
+		if (is_array($res['data'])) {
+			$messageId = self::extractMessageId($res['data']);
+		}
+		return [
+			'ok' => !empty($res['ok']),
+			'message_id' => $messageId,
+			'data' => $res['data'],
+		];
+	}
+
+	/**
+	 * PUT /messages — редактирование сообщения.
+	 *
+	 * @param array|null $attachments null = не трогать вложения; [] = удалить; иначе заменить
+	 */
+	public static function edit(
+		string $accessToken,
+		string $messageId,
+		string $text,
+		?string $format = 'html',
+		?array $attachments = null,
+		bool $notify = false
+	): bool {
+		$messageId = trim($messageId);
+		if ($messageId === '') {
+			return false;
+		}
+		$body = [
+			'text' => $text,
+			'notify' => $notify,
+		];
+		if ($format !== null && $format !== '') {
+			$body['format'] = $format;
+		}
+		if ($attachments !== null) {
+			$body['attachments'] = $attachments;
+		}
+		return self::request('PUT', '/messages', ['message_id' => $messageId], $accessToken, $body)['ok'];
+	}
+
+	/**
+	 * POST /answers — ответ на callback-кнопку (может обновить сообщение).
+	 *
+	 * @param array|null $messageBody NewMessageBody или null
+	 */
+	public static function answerCallback(
+		string $accessToken,
+		string $callbackId,
+		?array $messageBody = null,
+		?string $notification = null
+	): bool {
+		$callbackId = trim($callbackId);
+		if ($callbackId === '') {
+			return false;
+		}
+		$body = [];
+		if ($messageBody !== null) {
+			$body['message'] = $messageBody;
+		}
+		if ($notification !== null && $notification !== '') {
+			$body['notification'] = $notification;
+		}
+		if (!$body) {
+			$body['notification'] = 'OK';
+		}
+		return self::request('POST', '/answers', ['callback_id' => $callbackId], $accessToken, $body)['ok'];
+	}
+
+	/**
+	 * Подписка на webhook (если API поддерживает).
+	 */
+	public static function subscribeWebhook(string $accessToken, string $url): bool {
+		$url = trim($url);
+		if ($url === '') {
+			return false;
+		}
+		$res = self::request('POST', '/subscriptions', [], $accessToken, [
+			'url' => $url,
+			'update_types' => ['message_callback'],
+		]);
+		return !empty($res['ok']);
+	}
+
+	private static function extractMessageId(array $data): string {
+		if (isset($data['message']['body']['mid'])) {
+			return strval($data['message']['body']['mid']);
+		}
+		if (isset($data['message']['body']['seq'])) {
+			return strval($data['message']['body']['seq']);
+		}
+		if (isset($data['message']['message_id'])) {
+			return strval($data['message']['message_id']);
+		}
+		if (isset($data['message_id'])) {
+			return strval($data['message_id']);
+		}
+		if (isset($data['body']['mid'])) {
+			return strval($data['body']['mid']);
+		}
+		if (isset($data['mid'])) {
+			return strval($data['mid']);
+		}
+		return '';
 	}
 
 	/**

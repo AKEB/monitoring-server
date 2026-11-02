@@ -64,13 +64,29 @@ class MonitoringNotify extends \DB\MySQLObject {
 		if (!$text) return false;
 		$notifications = static::getNotificationsForMonitor($monitor_id);
 		if (!$notifications) return false;
+
+		$alertStartTime = 0;
+		if (!$status) {
+			$alertStartTime = \AlertActions::getAlertStartTime($monitor_id);
+		}
+		$actionBlock = ($alertStartTime > 0) ? \AlertActions::formatActionsBlock($monitor_id, $alertStartTime) : '';
+		$withButtons = (!$status);
+
 		foreach($notifications as $notify) {
 			$text_send = $text??'';
 			$title_send = $title??'';
 			$notify['json_data'] = json_decode($notify['json_data'], true);
+			if (!is_array($notify['json_data'])) {
+				$notify['json_data'] = [];
+			}
+			$notifyId = intval($notify['id'] ?? 0);
+
 			if ($notify['type'] == \Notify::TYPE_TELEGRAM) {
 				$text_send = $title_send."\n".$text_send;
 				$text_send .= "\n\n".'<i>Alert: '.$notify['title'].'</i>';
+				if ($actionBlock !== '') {
+					$text_send = rtrim($text_send)."\n\n".$actionBlock;
+				}
 				try {
 					$t = explode(':',$notify['receiver']);
 					$telegram_chat_id = $t[0];
@@ -79,19 +95,30 @@ class MonitoringNotify extends \DB\MySQLObject {
 					} else {
 						$telegram_thread_id = 0;
 					}
-					$bot = new \TelegramBot\Api\BotApi($notify['json_data']['telegram_bot_token']);
-					if (\Config::getInstance()->telegram_proxy_host) {
-						$bot->setProxy((\Config::getInstance()->telegram_proxy_host).':'.(\Config::getInstance()->telegram_proxy_port), \Config::getInstance()->telegram_proxy_socks5);
-						if (\Config::getInstance()->telegram_proxy_username && \Config::getInstance()->telegram_proxy_password) {
-							$bot->setCurlOption(CURLOPT_PROXYUSERPWD, \Config::getInstance()->telegram_proxy_username.':'.\Config::getInstance()->telegram_proxy_password);
-						}
+					$bot = static::telegramBot($notify['json_data']['telegram_bot_token'] ?? '');
+					if (!$bot) {
+						continue;
 					}
-					@$bot->sendMessage(
+					$replyMarkup = null;
+					if ($withButtons && $notifyId > 0) {
+						$replyMarkup = \AlertActions::telegramKeyboard($monitor_id, $notifyId);
+					}
+					$message = @$bot->sendMessage(
 						$telegram_chat_id,
 						$text_send,
-						'HTML', true, null, null, false,
+						'HTML', true, null, $replyMarkup, false,
 						$telegram_thread_id
 					);
+					if ($withButtons && $message && method_exists($message, 'getMessageId')) {
+						\AlertActions::saveMessage(
+							$monitor_id,
+							$notifyId,
+							\AlertActions::CHANNEL_TELEGRAM,
+							strval($telegram_chat_id),
+							strval($message->getMessageId()),
+							$text_send
+						);
+					}
 				} catch (\Exception $e) {
 					continue;
 				}
@@ -103,31 +130,56 @@ class MonitoringNotify extends \DB\MySQLObject {
 						["\n",    "\n",     "\n",   '**',       '**',        '**',  '**',   '*',   '*',    '*',    '*',     '__',  '__'],
 						$text_send
 					);
+					if ($actionBlock !== '') {
+						$plainBlock = str_replace(
+							['<br/>', '<br />', '<br>', '<strong>', '</strong>', '<b>', '</b>', '<i>', '</i>', '<em>', '</em>', '<u>', '</u>'],
+							["\n",    "\n",     "\n",   '**',       '**',        '**',  '**',   '*',   '*',    '*',    '*',     '__',  '__'],
+							$actionBlock
+						);
+						$text_send = rtrim($text_send)."\n\n".$plainBlock;
+					}
+					$attachment = [
+						'color'       => $status ? '#00FF00' : '#FF0000',
+						'author_name' => 'Monitoring Alert Manager',
+						'title'       => $title_send,
+						'text'        => $text_send,
+						'ts'          => time(),
+						'footer'      => 'Alert: '.$notify['title'],
+					];
+					if ($withButtons && $notifyId > 0) {
+						$token = \AlertActions::ensureToken($notify['json_data']);
+						$baseUrl = strval($notify['json_data']['alert_action_base_url'] ?? '');
+						$webhookUrl = \AlertActions::webhookUrl(\AlertActions::CHANNEL_MATTERMOST, $token, $baseUrl !== '' ? $baseUrl : null);
+						$attachment['actions'] = \AlertActions::mattermostActions($monitor_id, $notifyId, $webhookUrl);
+					}
 					$props = [
-						'attachments' => [
-							[
-								'color'       => $status ? '#00FF00' : '#FF0000',
-								'author_name' => 'Monitoring Alert Manager',
-								'title'       => $title_send,
-								'text'        => $text_send,
-								'ts'          => time(),
-								'footer'      => 'Alert: '.$notify['title'],
-							],
-						],
+						'attachments' => [$attachment],
 					];
 
 					$mattermost = new \Mattermost($notify['json_data']['mattermost_url'], $notify['json_data']['mattermost_token']);
+					$postId = false;
+					$chatId = strval($notify['receiver'] ?? '');
 					if (strpos($notify['receiver'], '@') !== false) {
-						$mattermost->sendMessageByEmail(
+						$postId = $mattermost->sendMessageByEmail(
 							$notify['receiver'],
 							'',
 							$props
 						);
 					} else {
-						$mattermost->sendMessage(
+						$postId = $mattermost->sendMessage(
 							$notify['receiver'],
 							'',
 							$props
+						);
+					}
+					if ($withButtons && $postId) {
+						\AlertActions::saveMessage(
+							$monitor_id,
+							$notifyId,
+							\AlertActions::CHANNEL_MATTERMOST,
+							$chatId,
+							strval($postId),
+							$text_send
 						);
 					}
 				} catch (\Exception $e) {
@@ -139,6 +191,9 @@ class MonitoringNotify extends \DB\MySQLObject {
 				try {
 					$text_send = $title_send."\n".$text_send;
 					$text_send .= "\n\n".'<i>Alert: '.$notify['title'].'</i>';
+					if ($actionBlock !== '') {
+						$text_send = rtrim($text_send)."\n\n".$actionBlock;
+					}
 					$text_send = str_replace(
 						['<br/>', '<br />', '<br>', '<strong>', '</strong>', '<b>', '</b>', '<i>', '</i>', '<em>', '</em>', '<u>', '</u>'],
 						["\n",    "\n",     "\n",   '',         '',          '',    '',     '',    '',     '',     '',      '',    ''],
@@ -158,17 +213,35 @@ class MonitoringNotify extends \DB\MySQLObject {
 				try {
 					$text_send = $title_send."\n".$text_send;
 					$text_send .= "\n\n".'<i>Alert: '.$notify['title'].'</i>';
+					if ($actionBlock !== '') {
+						$text_send = rtrim($text_send)."\n\n".$actionBlock;
+					}
 					$token = $notify['json_data']['max_token'] ?? '';
 					if ($token === '' || !isset($notify['receiver']) || trim((string) $notify['receiver']) === '') {
 						continue;
 					}
 					$body = mb_substr($text_send, 0, 4000);
-					\MaxMessenger::send(
+					$attachments = null;
+					if ($withButtons && $notifyId > 0) {
+						$attachments = [\AlertActions::maxInlineKeyboard($monitor_id, $notifyId)];
+					}
+					$sent = \MaxMessenger::send(
 						$token,
 						trim((string) $notify['receiver']),
 						$body,
-						'html'
+						'html',
+						$attachments
 					);
+					if ($withButtons && !empty($sent['ok']) && !empty($sent['message_id'])) {
+						\AlertActions::saveMessage(
+							$monitor_id,
+							$notifyId,
+							\AlertActions::CHANNEL_MAX,
+							trim((string) $notify['receiver']),
+							strval($sent['message_id']),
+							$body
+						);
+					}
 				} catch (\Exception $e) {
 					continue;
 				}
@@ -201,6 +274,21 @@ class MonitoringNotify extends \DB\MySQLObject {
 			}
 		}
 		return true;
+	}
+
+	static public function telegramBot(string $token): ?\TelegramBot\Api\BotApi {
+		$token = trim($token);
+		if ($token === '') {
+			return null;
+		}
+		$bot = new \TelegramBot\Api\BotApi($token);
+		if (\Config::getInstance()->telegram_proxy_host) {
+			$bot->setProxy((\Config::getInstance()->telegram_proxy_host).':'.(\Config::getInstance()->telegram_proxy_port), \Config::getInstance()->telegram_proxy_socks5);
+			if (\Config::getInstance()->telegram_proxy_username && \Config::getInstance()->telegram_proxy_password) {
+				$bot->setCurlOption(CURLOPT_PROXYUSERPWD, \Config::getInstance()->telegram_proxy_username.':'.\Config::getInstance()->telegram_proxy_password);
+			}
+		}
+		return $bot;
 	}
 
 }

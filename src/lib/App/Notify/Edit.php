@@ -261,13 +261,13 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 						break;
 					}
 					try {
-						$ok = \MaxMessenger::send(
+						$sent = \MaxMessenger::send(
 							$params['json_data']['max_token'],
 							$maxReceiverStr,
 							'Test Message '.date('Y-m-d H:i:s', time()),
 							'html'
 						);
-						if (!$ok) {
+						if (empty($sent['ok'])) {
 							$this->error = \T::Notify_Edit_TestError(41);
 							break;
 						}
@@ -327,8 +327,26 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 						is_array($old_notify['json_data']) ? $old_notify['json_data'] : [],
 						$params['json_data']
 					);
+				} else {
+					$params['json_data'] = is_array($old_notify['json_data']) ? $old_notify['json_data'] : [];
+				}
+				$finalType = intval($params['type'] ?? ($old_notify['type'] ?? -1));
+				if (in_array($finalType, [\Notify::TYPE_TELEGRAM, \Notify::TYPE_MATTERMOST, \Notify::TYPE_MAX], true)) {
+					if (!is_array($params['json_data'])) {
+						$params['json_data'] = [];
+					}
+					\AlertActions::ensureToken($params['json_data']);
+					$params['json_data']['alert_action_base_url'] = \ExternalMonitors::baseUrl();
 				}
 				foreach($params as $k=>$v) {
+					if ($k === 'json_data') {
+						$oldJson = json_encode($old_notify['json_data'] ?? []);
+						$newJson = json_encode($v);
+						if ($oldJson === $newJson) {
+							unset($params[$k]);
+						}
+						continue;
+					}
 					if ($old_notify[$k] == $v) {
 						unset($params[$k]);
 					}
@@ -344,10 +362,18 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					break;
 				}
 				$params['create_time'] = time();
+				$finalType = intval($params['type'] ?? -1);
+				if (in_array($finalType, [\Notify::TYPE_TELEGRAM, \Notify::TYPE_MATTERMOST, \Notify::TYPE_MAX], true)) {
+					if (!isset($params['json_data']) || !is_array($params['json_data'])) {
+						$params['json_data'] = [];
+					}
+					\AlertActions::ensureToken($params['json_data']);
+					$params['json_data']['alert_action_base_url'] = \ExternalMonitors::baseUrl();
+				}
 			}
 			$params['update_time'] = time();
 
-			if (isset($params['json_data'])) {
+			if (isset($params['json_data']) && is_array($params['json_data'])) {
 				$params['json_data'] = json_encode($params['json_data']);
 			}
 
@@ -364,6 +390,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					$this->error = \T::Notify_Edit_NotFound();
 					break;
 				}
+				$this->registerAlertActionWebhooks($new_notify);
 			} else {
 				// Create
 				$params['_mode'] = \DB\Common::CSMODE_INSERT;
@@ -374,6 +401,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					$this->error = \T::Notify_Edit_NotFound();
 					break;
 				}
+				$this->registerAlertActionWebhooks($notify);
 
 				if (!\Sessions::in_group(\Groups::ADMIN_GROUP_ID, intval(\Sessions::currentUser()['id']))) {
 					$permissions = \Notify::permissions_hash();
@@ -407,6 +435,46 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 		} while(false);
 		foreach($data as $key => $value) {
 			$this->notify[$key] = $value;
+		}
+	}
+
+	private function registerAlertActionWebhooks(array $notify): void {
+		$type = intval($notify['type'] ?? -1);
+		$json = $notify['json_data'] ?? [];
+		if (is_string($json)) {
+			$json = json_decode($json, true) ?: [];
+		}
+		if (!is_array($json)) {
+			return;
+		}
+		$token = trim(strval($json['alert_action_token'] ?? ''));
+		if ($token === '') {
+			return;
+		}
+		$baseUrl = strval($json['alert_action_base_url'] ?? '') ?: \ExternalMonitors::baseUrl();
+		if ($type === \Notify::TYPE_TELEGRAM) {
+			$botToken = strval($json['telegram_bot_token'] ?? '');
+			$bot = \MonitoringNotify::telegramBot($botToken);
+			if (!$bot) {
+				return;
+			}
+			$url = \AlertActions::webhookUrl(\AlertActions::CHANNEL_TELEGRAM, $token, $baseUrl);
+			try {
+				@$bot->setWebhook($url);
+			} catch (\Exception $e) {
+			}
+			return;
+		}
+		if ($type === \Notify::TYPE_MAX) {
+			$maxToken = strval($json['max_token'] ?? '');
+			if ($maxToken === '') {
+				return;
+			}
+			$url = \AlertActions::webhookUrl(\AlertActions::CHANNEL_MAX, $token, $baseUrl);
+			try {
+				\MaxMessenger::subscribeWebhook($maxToken, $url);
+			} catch (\Exception $e) {
+			}
 		}
 	}
 
@@ -571,6 +639,30 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 						<small class="text-muted"><?=\T::Notify_Edit_WebHookUrlHint();?></small>
 					</div>
 					<?php
+					$actionToken = trim(strval($this->notify['json_data']['alert_action_token'] ?? ''));
+					$actionBase = strval($this->notify['json_data']['alert_action_base_url'] ?? '') ?: \ExternalMonitors::baseUrl();
+					if ($actionToken !== '') {
+						$tgUrl = \AlertActions::webhookUrl(\AlertActions::CHANNEL_TELEGRAM, $actionToken, $actionBase);
+						$mmUrl = \AlertActions::webhookUrl(\AlertActions::CHANNEL_MATTERMOST, $actionToken, $actionBase);
+						$maxUrl = \AlertActions::webhookUrl(\AlertActions::CHANNEL_MAX, $actionToken, $actionBase);
+						?>
+						<div class="type-dependence type-<?=\Notify::TYPE_TELEGRAM;?> col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6 mb-2">
+							<label class="form-label"><?=\T::Notify_Edit_AlertActionWebhook();?></label>
+							<input type="text" class="form-control" readonly value="<?=htmlspecialchars($tgUrl, ENT_QUOTES, 'UTF-8');?>"/>
+							<small class="text-muted"><?=\T::Notify_Edit_AlertActionWebhookTelegramHint();?></small>
+						</div>
+						<div class="type-dependence type-<?=\Notify::TYPE_MATTERMOST;?> col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6 mb-2">
+							<label class="form-label"><?=\T::Notify_Edit_AlertActionWebhook();?></label>
+							<input type="text" class="form-control" readonly value="<?=htmlspecialchars($mmUrl, ENT_QUOTES, 'UTF-8');?>"/>
+							<small class="text-muted"><?=\T::Notify_Edit_AlertActionWebhookMattermostHint();?></small>
+						</div>
+						<div class="type-dependence type-<?=\Notify::TYPE_MAX;?> col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6 mb-2">
+							<label class="form-label"><?=\T::Notify_Edit_AlertActionWebhook();?></label>
+							<input type="text" class="form-control" readonly value="<?=htmlspecialchars($maxUrl, ENT_QUOTES, 'UTF-8');?>"/>
+							<small class="text-muted"><?=\T::Notify_Edit_AlertActionWebhookMaxHint();?></small>
+						</div>
+						<?php
+					}
 					if ($secrets_show) {
 						echo $this->template->html_input("json_data[telegram_bot_token]", $this->notify['json_data']['telegram_bot_token']??'', \T::Notify_Edit_TelegramBotToken(), false, [
 							'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',

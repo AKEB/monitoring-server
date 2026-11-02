@@ -1705,6 +1705,38 @@ class T {
 	public static function Notify_Edit_WebHookPassword(...$argv): string { return ''; }
 
 	/**
+	 * Notify_Edit_AlertActionWebhook
+	 * 
+	 * @return string "Alert action webhook"
+	 * @return string "Webhook кнопок алерта"
+	 */
+	public static function Notify_Edit_AlertActionWebhook(...$argv): string { return ''; }
+
+	/**
+	 * Notify_Edit_AlertActionWebhookTelegramHint
+	 * 
+	 * @return string "Set automatically on save (setWebhook). Buttons: Resolve, Take, Mute, Call, All OK."
+	 * @return string "Выставляется автоматически при сохранении (setWebhook). Кнопки: Решить, Взять, Mute, Позвонить, Всё ок."
+	 */
+	public static function Notify_Edit_AlertActionWebhookTelegramHint(...$argv): string { return ''; }
+
+	/**
+	 * Notify_Edit_AlertActionWebhookMattermostHint
+	 * 
+	 * @return string "URL is embedded in message buttons. No extra Mattermost setup needed."
+	 * @return string "URL встраивается в кнопки сообщения. Отдельная настройка в Mattermost не нужна."
+	 */
+	public static function Notify_Edit_AlertActionWebhookMattermostHint(...$argv): string { return ''; }
+
+	/**
+	 * Notify_Edit_AlertActionWebhookMaxHint
+	 * 
+	 * @return string "Subscription is set on save when the API supports it. Otherwise paste this URL in the Max bot cabinet."
+	 * @return string "Подписка выставляется при сохранении, если API поддерживает. Иначе укажите этот URL в кабинете бота Max."
+	 */
+	public static function Notify_Edit_AlertActionWebhookMaxHint(...$argv): string { return ''; }
+
+	/**
 	 * Notify_Edit_CreateTime
 	 * 
 	 * @return string "Create time"
