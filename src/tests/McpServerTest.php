@@ -18,6 +18,7 @@ class McpServerTest extends ApiV2TestCase {
 		$this->assertNotEmpty($tools);
 		$names = array_column($tools, 'name');
 		foreach ([
+			'api_docs',
 			'monitors_list', 'monitors_get', 'monitors_create', 'monitors_update', 'monitors_delete',
 			'notify_list', 'notify_get', 'notify_create', 'notify_update', 'notify_delete',
 			'signatures_list', 'signatures_create', 'signatures_update', 'signatures_delete',
@@ -33,6 +34,30 @@ class McpServerTest extends ApiV2TestCase {
 			$this->assertNotEmpty($tool['description']);
 			$this->assertArrayHasKey('inputSchema', $tool);
 		}
+	}
+
+	function test_api_docs_index_and_path_slice() {
+		$user = ['id' => 1, 'status' => \Users::STATUS_ACTIVE];
+		$index = \Mcp\Server::callTool($user, 'api_docs', []);
+		$this->assertSame(0, $index['status'], json_encode($index));
+		$this->assertIsArray($index['data']['operations'] ?? null);
+		$this->assertNotEmpty($index['data']['operations']);
+		$paths = array_column($index['data']['operations'], 'path');
+		$this->assertContains('/api/v2/monitors/', $paths);
+		$this->assertContains('/api/v1/status/', $paths);
+
+		$slice = \Mcp\Server::callTool($user, 'api_docs', [
+			'path' => '/api/v2/monitors/',
+			'operation' => 'post',
+		]);
+		$this->assertSame(0, $slice['status'], json_encode($slice));
+		$this->assertArrayHasKey('post', $slice['data']['pathItem'] ?? []);
+		$this->assertArrayHasKey('MonitorWrite', $slice['data']['components']['schemas'] ?? []);
+	}
+
+	function test_initialize_mentions_api_docs() {
+		$init = \Mcp\Server::initializeResult();
+		$this->assertStringContainsString('api_docs', $init['instructions']);
 	}
 
 	function test_tool_descriptions_contain_guidance() {

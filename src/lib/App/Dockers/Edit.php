@@ -176,6 +176,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				}
 				if ($data['workers']) {
 					foreach($data['workers'] as $worker_id) {
+						if (!isset($workers_hash[$worker_id]) || !$workers_hash[$worker_id]) continue;
 						if (isset($update_jobs[$worker_id])) continue;
 						if (isset($old_jobs[$worker_id]) && $old_jobs[$worker_id]) continue;
 						$update_jobs[$worker_id] = 1;
@@ -217,6 +218,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				}
 				if ($data['workers']) {
 					foreach($data['workers'] as $worker_id) {
+						if (!isset($workers_hash[$worker_id]) || !$workers_hash[$worker_id]) continue;
 						if (isset($update_jobs[$worker_id])) continue;
 						$update_jobs[$worker_id] = 1;
 					}
@@ -464,11 +466,11 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 
-					echo $this->template->html_input("proxy_host", $this->monitor['proxy_host']??'', \T::Docker_Edit_ProxyHost(), false, [
+					echo $this->template->html_input("proxy_host", $this->docker['proxy_host']??'', \T::Docker_Edit_ProxyHost(), false, [
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
-					echo $this->template?->html_select('proxy_type', \Monitors::proxy_type_hash(), $this->monitor['proxy_type']??0, \T::Docker_Edit_ProxyType(), false,[
+					echo $this->template?->html_select('proxy_type', \Monitors::proxy_type_hash(), $this->docker['proxy_type']??0, \T::Docker_Edit_ProxyType(), false,[
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
 						'readonly' => !($this->can_write || $this->can_create),
 					]);

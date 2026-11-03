@@ -46,6 +46,7 @@ class Server {
 			'Always respect ACL: only act on objects the token user can access.',
 			'GET /api/v1/status/ is a separate opt-in feed (api_enabled flag); do not enable it for every monitor.',
 			'Prefer reading an object before updating. Validate required fields for the monitor type.',
+			'When fields, types, or response shapes are unclear, call api_docs (optionally with tag/path/operation) — same OpenAPI as /api/docs/.',
 			'Never expose notify/worker secrets unless the user explicitly needs them and has rights.',
 			'For maintenances, ensure finish_time >= start_time and only attach readable monitors.',
 		]);
@@ -62,6 +63,7 @@ class Server {
 			'required' => ['id'],
 		];
 		return [
+			['name' => 'api_docs', 'description' => 'Read OpenAPI documentation (same as /api/docs/). No args = index of tags and METHOD path. Optional tag, path, and/or operation (get/post/patch/put/delete) return a focused slice with schemas.', 'inputSchema' => ['type' => 'object', 'properties' => ['tag' => ['type' => 'string', 'description' => 'OpenAPI tag, e.g. monitors'], 'path' => ['type' => 'string', 'description' => 'Exact path key, e.g. /api/v2/monitors/'], 'operation' => ['type' => 'string', 'description' => 'HTTP method under path, e.g. post']]]],
 			['name' => 'monitors_list', 'description' => 'List monitors visible to the current user.', 'inputSchema' => $empty],
 			['name' => 'monitors_get', 'description' => 'Get one monitor by id.', 'inputSchema' => $idSchema],
 			['name' => 'monitors_create', 'description' => 'Create a monitor. Set api_enabled only when the monitor should appear in the opt-in /api/v1/status/ feed — not for every monitor.', 'inputSchema' => ['type' => 'object', 'properties' => ['title' => ['type' => 'string'], 'type' => ['type' => 'integer'], 'url' => ['type' => 'string'], 'host' => ['type' => 'string'], 'api_enabled' => ['type' => 'boolean']], 'required' => ['title', 'type']]],
@@ -106,6 +108,7 @@ class Server {
 	static public function callTool(array $user, string $name, ?array $arguments = null): array {
 		$arguments = $arguments ?? [];
 		return match ($name) {
+			'api_docs' => \Api\OpenApiSpec::query($arguments),
 			'monitors_list' => MonitorsService::list($user, $arguments),
 			'monitors_get' => MonitorsService::get($user, intval($arguments['id'] ?? 0)),
 			'monitors_create' => MonitorsService::create($user, $arguments),

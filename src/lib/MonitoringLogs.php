@@ -381,23 +381,28 @@ class MonitoringLogs extends \DB\MySQLObject {
 	 * Возвращает метрики для карточки в UI (история логов, uptime, графики).
 	 */
 	static public function getMonitorData(int $monitor_id, float $period): array {
-		$cache = new \Cache('monitor_data_'.md5($monitor_id.'__'.$period));
-		if ($cache->isValid()) {
-			$from_cache = json_decode($cache->get(), true);
-			if (
-				$from_cache && is_array($from_cache)
-			) {
-				return $from_cache;
-			}
-		}
-
 		$return = [];
 		$return['start_work_time'] = microtime(true);
 		$max_time = time();
 
 		if ($monitor_id) {
-			// Без прав доступа отдаём пустой ответ, но всё равно замеряем время.
+			// Права — до чтения общего кеша, иначе чужой payload утекает по TTL.
 			if (!\Sessions::checkPermission(\Monitors::PERMISSION_ACCESS, $monitor_id, READ)) return $return;
+		}
+
+		$cache = new \Cache('monitor_data_'.md5($monitor_id.'__'.$period));
+		if ($cache->isValid()) {
+			$from_cache = json_decode($cache->get(), true);
+			if ($from_cache && is_array($from_cache)) {
+				if ($monitor_id && isset($from_cache['monitor']) && is_array($from_cache['monitor'])) {
+					$from_cache['monitor']['can_read'] = true;
+					$from_cache['monitor']['can_write'] = \Sessions::checkPermission(\Monitors::PERMISSION_ACCESS, $monitor_id, WRITE);
+				}
+				return $from_cache;
+			}
+		}
+
+		if ($monitor_id) {
 			// Get Monitor
 			$start_time = microtime(true);
 			$monitor = \Monitors::get(['id' => $monitor_id]);
@@ -406,7 +411,7 @@ class MonitoringLogs extends \DB\MySQLObject {
 			if (!$monitor) return $return;
 			if(!isset($monitor['repeat_seconds']) || !$monitor['repeat_seconds']) $monitor['repeat_seconds'] = 60;
 			$return['monitor'] = $monitor;
-			$return['monitor']['can_read'] = \Sessions::checkPermission(\Monitors::PERMISSION_ACCESS, $monitor_id, READ);
+			$return['monitor']['can_read'] = true;
 			$return['monitor']['can_write'] = \Sessions::checkPermission(\Monitors::PERMISSION_ACCESS, $monitor_id, WRITE);
 			$current_time = intval(time() / intval($monitor['repeat_seconds'])) * intval($monitor['repeat_seconds']);
 

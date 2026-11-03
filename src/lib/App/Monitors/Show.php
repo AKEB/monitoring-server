@@ -21,8 +21,10 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 		// }
 
 		if ($action == 'delete' && $monitor_id) {
+			\Csrf::requirePost();
 			$this->processDeleteAction($monitor_id);
 		} elseif ($action == 'copy' && $monitor_id) {
+			\Csrf::requirePost();
 			$this->processCopyAction($monitor_id);
 		}
 
@@ -411,7 +413,7 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 				});
 
 				$('.copyActionButton').on('click', function() {
-					window.location.href = '/admin/monitors/<?=$this->parent_id;?>/copy/' + $(this).data('object-id') + '/';
+					<?=\Csrf::jsPostToUrl("'/admin/monitors/{$this->parent_id}/copy/' + $(this).data('object-id') + '/'");?>
 				});
 
 				$('.deleteActionButton').on('click', function() {
@@ -427,7 +429,7 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 				modalBody.textContent = '<?=\T::Monitor_Delete_Confirmation();?>'.replace('{title}', objectTitle);
 
 				confirmBtn.onclick = function() {
-					window.location.href = '/admin/monitors/<?=$this->parent_id;?>/delete/' + objectId + '/';
+					<?=\Csrf::jsPostToUrl("'/admin/monitors/{$this->parent_id}/delete/' + objectId + '/'");?>
 				};
 
 				modal.show();

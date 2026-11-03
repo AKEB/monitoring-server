@@ -420,7 +420,7 @@ class MonitoringApiStatus {
 				foreach ($jobs as $job) {
 					$monitor_id = intval($job['monitor_id']);
 					$worker_id = intval($job['worker_id']);
-					if ($monitor_id < 1 || $worker_id < 1) {
+					if ($monitor_id < 1 || $worker_id === 0) {
 						continue;
 					}
 					if (isset($docker_monitor_ids[$monitor_id])) {
@@ -524,7 +524,7 @@ class MonitoringApiStatus {
 			foreach ($rows as $row) {
 				$monitor_id = intval($row['monitor_id']);
 				$worker_id = intval($row['worker_id']);
-				if ($monitor_id < 1 || $worker_id < 1) {
+				if ($monitor_id < 1 || $worker_id === 0) {
 					continue;
 				}
 				if (isset($result[$monitor_id][$worker_id])) {

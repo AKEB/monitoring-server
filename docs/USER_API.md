@@ -2,6 +2,8 @@
 
 JSON API for current monitor status and short-window availability.
 
+Interactive docs: `/api/docs/` (Swagger).
+
 Expected usage: poll about once per minute. Responses are cached for ~20 seconds; more than one request per 5 seconds with the same token returns HTTP 429.
 
 ## Auth

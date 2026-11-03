@@ -15,8 +15,10 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 		$this->check_permissions();
 
 		if ($action == 'delete' && $maintenance_id) {
+			\Csrf::requirePost();
 			$this->processDeleteAction($maintenance_id);
 		} elseif ($action == 'copy' && $maintenance_id) {
+			\Csrf::requirePost();
 			$this->processCopyAction($maintenance_id);
 		}
 
@@ -292,7 +294,7 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 				});
 
 				$('.copyActionButton').on('click', function() {
-					window.location.href = '/maintenances/copy/' + $(this).data('object-id') + '/';
+					<?=\Csrf::jsPostToUrl("'/maintenances/copy/' + $(this).data('object-id') + '/'");?>
 				});
 
 				$('.deleteActionButton').on('click', function() {
@@ -308,7 +310,7 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 				modalBody.textContent = '<?=\T::Maintenances_Delete_Confirmation();?>'.replace('{title}', objectTitle);
 
 				confirmBtn.onclick = function() {
-					window.location.href = '/maintenances/delete/' + objectId + '/';
+					<?=\Csrf::jsPostToUrl("'/maintenances/delete/' + objectId + '/'");?>
 				};
 
 				modal.show();

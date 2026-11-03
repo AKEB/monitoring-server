@@ -2,7 +2,8 @@
 require_once("../autoload.php");
 $mngr = new \MNGR(3600, '1024M');
 
-$today_start_time = time() - (time() % 86400);
+// Same day boundary as MonitoringLogsAggregate::refreshTodayFromRaw (server TZ).
+$today_start_time = strtotime('today');
 
 $ALL_DONE_DATA = [];
 $last_id = 0;
@@ -10,7 +11,7 @@ do {
 	$field = '`id`, `monitor_id`, `worker_id`, `status`, `update_time`, `total_time_us`';
 	$sql = '';
 	$sql .= sql_pholder(' AND id > ?', $last_id);
-	$sql .= sql_pholder(' AND update_time < ?', time() - 86400);
+	$sql .= sql_pholder(' AND update_time < ?', $today_start_time);
 	$sql .= ' ORDER BY `id` ASC';
 	$sql .= ' LIMIT 1000';
 	$data = [];
@@ -18,7 +19,9 @@ do {
 	if (!$data) break;
 	if (count($data) < 1) break;
 	foreach($data as $item) {
-		$item['time'] = $item['update_time'] - ($item['update_time'] % 86400);
+		// Local midnight (same convention as refreshTodayFromRaw), not UTC % 86400.
+		$dayStart = strtotime('today', intval($item['update_time']));
+		$item['time'] = $dayStart !== false ? $dayStart : (intval($item['update_time']) - (intval($item['update_time']) % 86400));
 		$key = ($item['monitor_id']??0).'__'.($item['worker_id']??0).'__'.($item['time']??0);
 		$item['total_time_ms'] = ceil($item['total_time_us'] / 1000);
 		if (!isset($ALL_DONE_DATA[$key])) {
@@ -59,8 +62,9 @@ do {
 
 } while(true);
 
-// Save Aggregate Data
+// Save Aggregate Data — each bucket in a transaction so crash cannot double-count.
 if ($ALL_DONE_DATA) {
+	global $db;
 	foreach($ALL_DONE_DATA as $item) {
 		$delete_ids = $item['delete_id'];
 		unset($item['delete_id']);
@@ -73,6 +77,8 @@ if ($ALL_DONE_DATA) {
 		} else {
 			$item['_mode'] = \DB\Common::CSMODE_UPDATE;
 		}
+
+		$db->execSQL('START TRANSACTION');
 		$status = \MonitoringLogsAggregate::save($item);
 		if ($status) {
 			if (count($delete_ids) > 0) {
@@ -83,6 +89,9 @@ if ($ALL_DONE_DATA) {
 					}
 				}
 			}
+			$db->execSQL('COMMIT');
+		} else {
+			$db->execSQL('ROLLBACK');
 		}
 	}
 }

@@ -2,6 +2,8 @@
 
 Full management surface for monitors, notify channels, signatures, workers, maintenances, dockers, users/groups (read-only), audit logs, and object permissions.
 
+Interactive docs (Swagger UI): **`/api/docs/`** (OpenAPI JSON: `/api/docs/openapi.json`). MCP tool **`api_docs`** returns the same document (index or a `tag` / `path` / `operation` slice).
+
 `GET /api/v1/status/` is unchanged: it only returns monitors with **Expose in /api/v1/status/** (`api_enabled`) plus read ACL. Do not turn that flag on for every monitor.
 
 ## Auth
@@ -49,7 +51,7 @@ Monitors accept the same fields as the UI edit form, including type-specific opt
 
 Remote endpoint: `POST /mcp/` (JSON-RPC).
 
-Same Bearer token. Tools mirror v2 (`monitors_list`, `monitors_create`, …, `logs_list`, `permissions_set`). Server `instructions` and tool descriptions tell the agent to respect ACL and keep `/api/v1/status/` opt-in.
+Same Bearer token. Tools mirror v2 (`monitors_list`, `monitors_create`, …, `logs_list`, `permissions_set`) plus **`api_docs`** for OpenAPI. Server `instructions` and tool descriptions tell the agent to respect ACL, keep `/api/v1/status/` opt-in, and consult `api_docs` when request/response fields are unclear.
 
 Example Cursor MCP config:
 

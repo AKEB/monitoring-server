@@ -338,6 +338,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				}
 				if ($data['workers']) {
 					foreach($data['workers'] as $worker_id) {
+						if (!isset($workers_hash[$worker_id]) || !$workers_hash[$worker_id]) continue;
 						if (isset($update_jobs[$worker_id])) continue;
 						if (isset($old_jobs[$worker_id]) && $old_jobs[$worker_id]) continue;
 						$update_jobs[$worker_id] = 1;
@@ -353,6 +354,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				}
 				if ($data['notify']) {
 					foreach($data['notify'] as $notify_id) {
+						if (!isset($notify_hash[$notify_id]) || !$notify_hash[$notify_id]) continue;
 						if (isset($update_notify[$notify_id])) continue;
 						if (isset($old_notify[$notify_id]) && $old_notify[$notify_id]) continue;
 						$update_notify[$notify_id] = 1;
@@ -384,12 +386,14 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				}
 				if ($data['workers']) {
 					foreach($data['workers'] as $worker_id) {
+						if (!isset($workers_hash[$worker_id]) || !$workers_hash[$worker_id]) continue;
 						if (isset($update_jobs[$worker_id])) continue;
 						$update_jobs[$worker_id] = 1;
 					}
 				}
 				if ($data['notify']) {
 					foreach($data['notify'] as $notify_id) {
+						if (!isset($notify_hash[$notify_id]) || !$notify_hash[$notify_id]) continue;
 						if (isset($update_notify[$notify_id])) continue;
 						$update_notify[$notify_id] = 1;
 					}
@@ -1055,7 +1059,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 
 			function monitor_docker_select() {
 				const selected_docker = $('#docker').val();
-				const selected_container = '<?=($this->monitor['container']??'');?>';
+				const selected_container = <?=json_encode(strval($this->monitor['container'] ?? ''), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);?>;
 				$('#container').load(
 					'?',
 					{

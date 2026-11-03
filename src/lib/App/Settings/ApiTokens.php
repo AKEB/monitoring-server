@@ -65,6 +65,9 @@ class ApiTokens extends \Routing_Parent implements \Routing_Interface {
 	private function print_header() {
 		?>
 		<div class="float-start"><h2><i class="bi bi-key"></i> <?=\T::Api_Settings_PageTitle();?></h2></div>
+		<div class="float-end">
+			<a class="btn btn-outline-primary" href="/api/docs/"><?=\T::Api_Settings_DocsLink();?></a>
+		</div>
 		<div class="clearfix"></div>
 		<p class="text-body-secondary"><?=\T::Api_Settings_DocsHint();?></p>
 		<?php

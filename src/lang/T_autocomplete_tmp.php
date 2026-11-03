@@ -659,8 +659,8 @@ class T {
 	/**
 	 * Monitor_Edit_ApiEnabled
 	 * 
-	 * @return string "Expose in API"
-	 * @return string "Отдавать в API"
+	 * @return string "Expose in /api/v1/status/"
+	 * @return string "Отдавать в /api/v1/status/"
 	 */
 	public static function Monitor_Edit_ApiEnabled(...$argv): string { return ''; }
 
@@ -2827,10 +2827,42 @@ class T {
 	/**
 	 * Api_Settings_DocsHint
 	 * 
-	 * @return string "GET /api/v1/status/ with Authorization: Bearer &lt;token&gt;. The response includes only monitors you can read that have “Expose in API” enabled."
-	 * @return string "GET /api/v1/status/ с заголовком Authorization: Bearer &lt;token&gt;. В ответе только мониторы с правом чтения и включённым флагом «Отдавать в API»."
+	 * @return string "GET /api/v1/status/ with Authorization: Bearer &lt;token&gt;. The response includes only monitors you can read that have “Expose in /api/v1/status/” enabled. Full REST docs (Swagger): /api/docs/."
+	 * @return string "GET /api/v1/status/ с заголовком Authorization: Bearer &lt;token&gt;. В ответе только мониторы с правом чтения и включённым флагом «Отдавать в /api/v1/status/». Полная REST-документация (Swagger): /api/docs/."
 	 */
 	public static function Api_Settings_DocsHint(...$argv): string { return ''; }
+
+	/**
+	 * Api_Settings_DocsLink
+	 * 
+	 * @return string "API documentation (Swagger)"
+	 * @return string "Документация API (Swagger)"
+	 */
+	public static function Api_Settings_DocsLink(...$argv): string { return ''; }
+
+	/**
+	 * Api_Docs_PageTitle
+	 * 
+	 * @return string "API documentation"
+	 * @return string "Документация API"
+	 */
+	public static function Api_Docs_PageTitle(...$argv): string { return ''; }
+
+	/**
+	 * Api_Docs_BackToTokens
+	 * 
+	 * @return string "API tokens"
+	 * @return string "API-токены"
+	 */
+	public static function Api_Docs_BackToTokens(...$argv): string { return ''; }
+
+	/**
+	 * Api_Docs_Intro
+	 * 
+	 * @return string "OpenAPI reference for /api/v1/status/ and /api/v2. Use Authorize with a token from API tokens. MCP tool api_docs reads the same document."
+	 * @return string "OpenAPI-справочник для /api/v1/status/ и /api/v2. В Authorize укажите токен со страницы API-токенов. MCP-инструмент api_docs читает тот же документ."
+	 */
+	public static function Api_Docs_Intro(...$argv): string { return ''; }
 
 	/**
 	 * Signature_Menu

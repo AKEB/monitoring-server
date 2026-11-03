@@ -397,7 +397,12 @@ Api:
     RevokeSuccess: "Токен отозван"
     RevokeConfirmation: "Отозвать токен {title}?"
     NotFound: "Токен не найден"
-    DocsHint: "GET /api/v1/status/ с заголовком Authorization: Bearer &lt;token&gt;. В ответе только мониторы с правом чтения и включённым флагом «Отдавать в /api/v1/status/»."
+    DocsHint: "GET /api/v1/status/ с заголовком Authorization: Bearer &lt;token&gt;. В ответе только мониторы с правом чтения и включённым флагом «Отдавать в /api/v1/status/». Полная REST-документация (Swagger): /api/docs/."
+    DocsLink: "Документация API (Swagger)"
+  Docs:
+    PageTitle: "Документация API"
+    BackToTokens: "API-токены"
+    Intro: "OpenAPI-справочник для /api/v1/status/ и /api/v2. В Authorize укажите токен со страницы API-токенов. MCP-инструмент api_docs читает тот же документ."
 
 Signature:
   Menu: "Подписи"

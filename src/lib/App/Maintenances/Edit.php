@@ -97,6 +97,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				}
 				if ($data['monitor_id']) {
 					foreach($data['monitor_id'] as $monitor_id) {
+						if (!isset($monitors_hash[$monitor_id]) || !$monitors_hash[$monitor_id]) continue;
 						if (isset($update_monitors[$monitor_id])) continue;
 						if (isset($old_jobs[$monitor_id]) && $old_jobs[$monitor_id]) continue;
 						$update_monitors[$monitor_id] = 1;
@@ -120,6 +121,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				}
 				if ($data['monitor_id']) {
 					foreach($data['monitor_id'] as $monitor_id) {
+						if (!isset($monitors_hash[$monitor_id]) || !$monitors_hash[$monitor_id]) continue;
 						if (isset($update_monitors[$monitor_id])) continue;
 						$update_monitors[$monitor_id] = 1;
 					}

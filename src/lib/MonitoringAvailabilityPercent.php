@@ -149,7 +149,7 @@ class MonitoringAvailabilityPercent {
 		foreach ($rows as $row) {
 			$monitor_id = intval($row['monitor_id'] ?? 0);
 			$worker_id = intval($row['worker_id'] ?? 0);
-			if ($monitor_id < 1 || $worker_id < 1) {
+			if ($monitor_id < 1 || $worker_id === 0) {
 				continue;
 			}
 			$good = [];

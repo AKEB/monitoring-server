@@ -10,6 +10,7 @@ Monitoring workers use **protocol 2.0+** only (`monitoring-worker-go` v2.1+). Se
 
 User status API: [docs/USER_API.md](docs/USER_API.md).
 Management API + MCP: [docs/MANAGEMENT_API.md](docs/MANAGEMENT_API.md).
+Swagger UI on the server: `/api/docs/` (OpenAPI: `/api/docs/openapi.json`; MCP tool `api_docs`).
 After upgrade, run DB migrations.
 
 ## Features

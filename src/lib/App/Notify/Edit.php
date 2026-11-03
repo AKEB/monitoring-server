@@ -129,48 +129,38 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 			}
 
 			if ($testNotify) {
-				$old_notify = [];
-				if (isset($params['id']) && $params['id']) {
-					if (!$this->can_read) {
-						$this->error = \T::Notify_Edit_PermissionDenied();
-						break;
-					}
-					$old_notify = \Notify::get(['id' => $params['id']]);
-					if (!$old_notify) {
-						$this->error = \T::Notify_Edit_NotFound();
-						break;
-					}
-					if ($old_notify['json_data'] && is_string($old_notify['json_data'])) {
-						$old_notify['json_data'] = json_decode($old_notify['json_data'], true);
-					} else {
-						$old_notify['json_data'] = [];
-					}
-				} else {
-					$old_notify['json_data'] = [];
-				}
-
-				if (!isset($params['json_data']) || !is_array($params['json_data'])) {
-					$params['json_data'] = $old_notify['json_data'];
-				} else {
-					$params['json_data'] = \EntityValidation::mergeJsonData(
-						is_array($old_notify['json_data']) ? $old_notify['json_data'] : [],
-						$params['json_data']
-					);
-				}
-				if (!$params['json_data']) {
-					$params['json_data'] = [];
-				}
-				if (!isset($params['receiver']) || !$params['receiver']) {
-					$this->error = \T::Notify_Edit_TestError(0);
+				// Тест только по сохранённой записи: write + secrets, receiver/секреты из БД (не из POST).
+				if (!isset($params['id']) || !$params['id']) {
+					$this->error = \T::Notify_Edit_PermissionDenied();
 					break;
 				}
-
 				if (!$this->can_write) {
-					$data['status'] = $old_notify['status']??0;
-					$data['type'] = $old_notify['type']??0;
-
-					$params['status'] = $data['status'];
-					$params['type'] = $data['type'];
+					$this->error = \T::Notify_Edit_PermissionDenied();
+					break;
+				}
+				if (!\Sessions::checkPermission(\Notify::PERMISSION_SECRETS, intval($params['id']), READ)) {
+					$this->error = \T::Notify_Edit_PermissionDenied();
+					break;
+				}
+				$old_notify = \Notify::get(['id' => $params['id']]);
+				if (!$old_notify) {
+					$this->error = \T::Notify_Edit_NotFound();
+					break;
+				}
+				if ($old_notify['json_data'] && is_string($old_notify['json_data'])) {
+					$old_notify['json_data'] = json_decode($old_notify['json_data'], true);
+				}
+				if (!is_array($old_notify['json_data'] ?? null)) {
+					$old_notify['json_data'] = [];
+				}
+				$params['receiver'] = trim(strval($old_notify['receiver'] ?? ''));
+				$params['type'] = intval($old_notify['type'] ?? 0);
+				$params['status'] = intval($old_notify['status'] ?? 0);
+				$params['title'] = strval($old_notify['title'] ?? ($params['title'] ?? 'notify'));
+				$params['json_data'] = $old_notify['json_data'];
+				if ($params['receiver'] === '') {
+					$this->error = \T::Notify_Edit_TestError(0);
+					break;
 				}
 
 				if ($params['type'] == \Notify::TYPE_TELEGRAM) {
@@ -741,7 +731,9 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					?>
 					<div class="d-flex flex-row-reverse flex-wrap gap-2">
 						<button type="submit" class="btn btn-primary me-2" name="<?=$this->notify['id'] ? 'editNotify' : 'createNotify';?>" value="true"><?=($this->notify['id'] ? \T::Notify_Edit_ChangeButton() : \T::Notify_Edit_CreateButton());?></button>
+						<?php if ($this->notify['id'] && $this->can_write) { ?>
 						<button type="submit" class="btn btn-warning me-2" name="testNotify" value="true"><?=\T::Notify_Edit_TestButton();?></button>
+						<?php } ?>
 						<button type="submit" class="btn btn-secondary me-2 type-dependence type-<?=\Notify::TYPE_MAX;?>" name="maxFetchLastMessage" value="true" formnovalidate><?=\T::Notify_Edit_MaxFetchLastButton();?></button>
 					</div>
 				</form>

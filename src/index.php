@@ -100,6 +100,8 @@ require_once("./autoload.php");
 \Routes::addRoute('/api/v2/(?P<resource>[a-z]+)/(?P<id>\d+)/(?P<action>permissions)/', '\\App\\Api\\V2\\Gateway');
 \Routes::addRoute('/api/v2/(?P<resource>[a-z]+)/(?P<id>\d+)/', '\\App\\Api\\V2\\Gateway');
 \Routes::addRoute('/api/v2/(?P<resource>[a-z]+)/', '\\App\\Api\\V2\\Gateway');
+\Routes::addRoute('/api/docs/openapi.json', '\\App\\Api\\OpenApi');
+\Routes::addRoute('/api/docs/', '\\App\\Api\\Docs');
 \Routes::addRoute('/mcp/', '\\App\\Mcp\\Endpoint');
 \Routes::addRoute('/mcp', '\\App\\Mcp\\Endpoint');
 \Routes::addRoute('/api/external/(?P<hash>[a-fA-F0-9]{64})/', '\\App\\Api\\External');

@@ -30,7 +30,8 @@ class MonitoringLogsAggregate extends \DB\MySQLObject {
 			$monitor_id = intval($row['monitor_id'] ?? 0);
 			$worker_id = intval($row['worker_id'] ?? 0);
 			$total_count = intval($row['total_count'] ?? 0);
-			if ($monitor_id < 1 || $worker_id < 1 || $total_count < 1) {
+			// worker_id=0 invalid; External uses Monitors::EXTERNAL_WORKER_ID (-1).
+			if ($monitor_id < 1 || $worker_id === 0 || $total_count < 1) {
 				continue;
 			}
 			$good_count = intval($row['good_count'] ?? 0);

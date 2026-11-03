@@ -15,6 +15,7 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 		$this->check_permissions();
 
 		if ($action == 'delete' && $notify_id) {
+			\Csrf::requirePost();
 			$this->processDeleteAction($notify_id);
 		}
 
@@ -221,7 +222,7 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 				modalBody.textContent = '<?=\T::Notify_Delete_Confirmation();?>'.replace('{title}', objectTitle);
 
 				confirmBtn.onclick = function() {
-					window.location.href = '/admin/notify/delete/' + objectId + '/';
+					<?=\Csrf::jsPostToUrl("'/admin/notify/delete/' + objectId + '/'");?>
 				};
 
 				modal.show();

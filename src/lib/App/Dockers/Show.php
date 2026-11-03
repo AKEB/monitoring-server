@@ -15,6 +15,7 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 		$this->check_permissions();
 
 		if ($action == 'delete' && $docker_id) {
+			\Csrf::requirePost();
 			$this->processDeleteAction($docker_id);
 		}
 
@@ -291,7 +292,7 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 				modalBody.textContent = '<?=\T::Docker_Delete_Confirmation();?>'.replace('{title}', objectTitle);
 
 				confirmBtn.onclick = function() {
-					window.location.href = '/admin/dockers/delete/' + objectId + '/';
+					<?=\Csrf::jsPostToUrl("'/admin/dockers/delete/' + objectId + '/'");?>
 				};
 
 				modal.show();

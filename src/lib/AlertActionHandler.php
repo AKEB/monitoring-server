@@ -27,6 +27,17 @@ class AlertActionHandler {
 			return $empty + ['toast' => 'Notify mismatch'];
 		}
 		$notifyId = intval($notify['id']);
+		// Direct join or folder-inherited notify (same as send path).
+		$linked = false;
+		foreach (\MonitoringNotify::getNotificationsForMonitor($monitorId) as $linkedNotify) {
+			if (intval($linkedNotify['id'] ?? 0) === $notifyId) {
+				$linked = true;
+				break;
+			}
+		}
+		if (!$linked) {
+			return $empty + ['toast' => 'Monitor not linked'];
+		}
 		$monitor = \Monitors::get(['id' => $monitorId], '', '`id`, `status`, `last_send_status`, `alert_start_time`');
 		if (!$monitor || intval($monitor['status']) !== \Monitors::STATUS_ENABLED) {
 			return $empty + ['toast' => 'Monitor not found'];

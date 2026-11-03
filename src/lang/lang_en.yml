@@ -402,7 +402,12 @@ Api:
     RevokeSuccess: "Token revoked"
     RevokeConfirmation: "Revoke token {title}?"
     NotFound: "Token not found"
-    DocsHint: "GET /api/v1/status/ with Authorization: Bearer &lt;token&gt;. The response includes only monitors you can read that have “Expose in /api/v1/status/” enabled."
+    DocsHint: "GET /api/v1/status/ with Authorization: Bearer &lt;token&gt;. The response includes only monitors you can read that have “Expose in /api/v1/status/” enabled. Full REST docs (Swagger): /api/docs/."
+    DocsLink: "API documentation (Swagger)"
+  Docs:
+    PageTitle: "API documentation"
+    BackToTokens: "API tokens"
+    Intro: "OpenAPI reference for /api/v1/status/ and /api/v2. Use Authorize with a token from API tokens. MCP tool api_docs reads the same document."
 
 Signature:
   Menu: "Signatures"
