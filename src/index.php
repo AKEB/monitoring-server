@@ -94,6 +94,18 @@ require_once("./autoload.php");
 \Websocket::addAction('monitor_show_data', '\\MonitorsWebsocket');
 
 // ADD Another Routes
+// API/MCP first: framework matches routes as URI suffixes (`preg_match('~'.$route.'$~')`),
+// so `/maintenances/` would otherwise steal `/api/v2/maintenances/`.
+\Routes::addRoute('/api/v1/status/', '\\App\\Api\\V1\\Status');
+\Routes::addRoute('/api/v2/(?P<resource>[a-z]+)/(?P<id>\d+)/(?P<action>permissions)/', '\\App\\Api\\V2\\Gateway');
+\Routes::addRoute('/api/v2/(?P<resource>[a-z]+)/(?P<id>\d+)/', '\\App\\Api\\V2\\Gateway');
+\Routes::addRoute('/api/v2/(?P<resource>[a-z]+)/', '\\App\\Api\\V2\\Gateway');
+\Routes::addRoute('/mcp/', '\\App\\Mcp\\Endpoint');
+\Routes::addRoute('/mcp', '\\App\\Mcp\\Endpoint');
+\Routes::addRoute('/api/external/(?P<hash>[a-fA-F0-9]{64})/', '\\App\\Api\\External');
+\Routes::addRoute('/api/alert-action/(?P<channel>telegram|mattermost|max)/(?P<token>[a-fA-F0-9]{32})/', '\\App\\Api\\AlertAction');
+\Routes::addRoute('/settings/api/', '\\App\\Settings\\ApiTokens');
+
 \Routes::addRoute('/admin/workers/edit/(?P<worker_id>\d+)/', '\\App\\Workers\\Edit');
 \Routes::addRoute('/admin/workers/edit/', '\\App\\Workers\\Edit');
 \Routes::addRoute('/admin/workers/(?P<action>[^/]+)/(?P<worker_id>\d+)/', '\\App\\Workers\\Show');
@@ -121,16 +133,6 @@ require_once("./autoload.php");
 \Routes::addRoute('/maintenances/edit/', '\\App\\Maintenances\\Edit');
 \Routes::addRoute('/maintenances/(?P<action>[^/]+)/(?P<maintenance_id>\d+)/', '\\App\\Maintenances\\Show');
 \Routes::addRoute('/maintenances/', '\\App\\Maintenances\\Show');
-
-\Routes::addRoute('/api/v1/status/', '\\App\\Api\\V1\\Status');
-\Routes::addRoute('/api/v2/(?P<resource>[a-z]+)/(?P<id>\d+)/(?P<action>permissions)/', '\\App\\Api\\V2\\Gateway');
-\Routes::addRoute('/api/v2/(?P<resource>[a-z]+)/(?P<id>\d+)/', '\\App\\Api\\V2\\Gateway');
-\Routes::addRoute('/api/v2/(?P<resource>[a-z]+)/', '\\App\\Api\\V2\\Gateway');
-\Routes::addRoute('/mcp/', '\\App\\Mcp\\Endpoint');
-\Routes::addRoute('/mcp', '\\App\\Mcp\\Endpoint');
-\Routes::addRoute('/api/external/(?P<hash>[a-fA-F0-9]{64})/', '\\App\\Api\\External');
-\Routes::addRoute('/api/alert-action/(?P<channel>telegram|mattermost|max)/(?P<token>[a-fA-F0-9]{32})/', '\\App\\Api\\AlertAction');
-\Routes::addRoute('/settings/api/', '\\App\\Settings\\ApiTokens');
 
 \Routes::addRoute('/admin/dockers/edit/(?P<docker_id>\d+)/', '\\App\\Dockers\\Edit');
 \Routes::addRoute('/admin/dockers/edit/', '\\App\\Dockers\\Edit');
