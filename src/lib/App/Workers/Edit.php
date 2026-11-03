@@ -357,7 +357,8 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 			foreach ($monitors as $monitor) {
 				$monitor_id = intval($monitor['id']);
 				if (!\Sessions::checkPermission(\Monitors::PERMISSION_ACCESS, $monitor_id, READ)) continue;
-				$this->monitors_options[$monitor_id] = htmlspecialchars(\Monitors::get_monitor_title_with_folders($monitor_id));
+				// Raw text: html_select escapes; pre-escaping turns " > " into visible &gt;
+				$this->monitors_options[$monitor_id] = \Monitors::get_monitor_title_with_folders($monitor_id);
 			}
 		}
 		$dockers = \Dockers::data(false, ' ORDER BY `title` ASC', '`id`, `title`');
@@ -365,7 +366,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 			foreach ($dockers as $docker) {
 				$docker_id = intval($docker['id']);
 				if (!\Sessions::checkPermission(\Dockers::PERMISSION_ACCESS, $docker_id, READ)) continue;
-				$this->dockers_options[$docker_id] = htmlspecialchars(trim($docker['title'] ?? ''));
+				$this->dockers_options[$docker_id] = trim($docker['title'] ?? '');
 			}
 		}
 	}
@@ -394,7 +395,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					<?= \Csrf::field(); ?>
 					<input type="hidden" name="id" value="<?=$this->worker['id'];?>"/>
 					<?php
-					echo $this->template->html_input("title", htmlspecialchars($this->worker['title'] ?? '', ENT_QUOTES, 'UTF-8'), \T::Worker_Edit_Title(), true, [
+					echo $this->template->html_input("title", strval($this->worker['title'] ?? ''), \T::Worker_Edit_Title(), true, [
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6'
 					]);
 
