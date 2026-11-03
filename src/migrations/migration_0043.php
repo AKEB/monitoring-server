@@ -4,19 +4,11 @@ class Migration_0043 {
 		'migration_0042',
 	];
 
+	// No-op: MySQL here rejects DEFAULT on TEXT (error #1101).
+	// Create paths must set external_log explicitly (see Monitors\Edit).
 	static function install() {
-		global $db;
-		$db->execSQL("
-			ALTER TABLE `monitoring_monitor`
-				MODIFY `external_log` TEXT NOT NULL DEFAULT ''
-		;");
 	}
 
 	static function uninstall() {
-		global $db;
-		$db->execSQL("
-			ALTER TABLE `monitoring_monitor`
-				MODIFY `external_log` TEXT NOT NULL
-		;");
 	}
 }

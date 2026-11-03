@@ -8,7 +8,7 @@ class Migration_0041 {
 		global $db;
 		$db->execSQL("
 			ALTER TABLE `monitoring_monitor`
-				ADD `external_log` TEXT NOT NULL DEFAULT '' AFTER `external_status`
+				ADD `external_log` TEXT NOT NULL AFTER `external_status`
 		;");
 	}
 
