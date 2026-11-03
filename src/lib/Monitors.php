@@ -309,7 +309,9 @@ class Monitors extends \DB\MySQLObject implements \PermissionSubject_Interface {
 			if ($v['type'] == static::TYPE_FOLDER) {
 				$title = '['.$v['title'].']';
 			}
-			$options_hash[$v['id']] = str_repeat('&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;', $level).$title;
+			// Real NBSP chars: html_select escapes HTML entities, so "&nbsp;" would show literally
+			$indent = "\u{00A0}\u{00A0}\u{00A0}|\u{00A0}\u{00A0}\u{00A0}";
+			$options_hash[$v['id']] = str_repeat($indent, $level).$title;
 			if ($v['children']) {
 				static::get_folder_titles($options_hash, $v['children'], $level+1);
 			}
