@@ -29,27 +29,26 @@ class Docs extends \Routing_Parent implements \Routing_Interface {
 
 	private function print_swagger() {
 		$specUrl = '/api/docs/openapi.json';
+		$nonce = \CSP::nonceRandom();
 		?>
-		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.17.14/swagger-ui.css">
-		<style>
+		<link rel="stylesheet" href="/css/swagger-ui.css">
+		<style nonce="<?=$nonce;?>">
 			.swagger-ui .topbar { display: none; }
 			#swagger-ui { margin: 0 -0.5rem 2rem; background: #fff; border-radius: 0.375rem; }
 		</style>
 		<div id="swagger-ui"></div>
-		<script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.17.14/swagger-ui-bundle.js" crossorigin></script>
-		<script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.17.14/swagger-ui-standalone-preset.js" crossorigin></script>
-		<script>
-		window.onload = function () {
-			SwaggerUIBundle({
-				url: <?=json_encode($specUrl, JSON_UNESCAPED_SLASHES);?>,
-				dom_id: '#swagger-ui',
-				deepLinking: true,
-				persistAuthorization: true,
-				presets: [SwaggerUIBundle.presets.apis, SwaggerUIStandalonePreset],
-				layout: 'StandaloneLayout',
-				tryItOutEnabled: true
-			});
-		};
+		<script src="/js/swagger-ui-bundle.js"></script>
+		<script src="/js/swagger-ui-standalone-preset.js"></script>
+		<script nonce="<?=$nonce;?>">
+		SwaggerUIBundle({
+			url: <?=json_encode($specUrl, JSON_UNESCAPED_SLASHES);?>,
+			dom_id: '#swagger-ui',
+			deepLinking: true,
+			persistAuthorization: true,
+			presets: [SwaggerUIBundle.presets.apis, SwaggerUIStandalonePreset],
+			layout: 'StandaloneLayout',
+			tryItOutEnabled: true
+		});
 		</script>
 		<?php
 	}
