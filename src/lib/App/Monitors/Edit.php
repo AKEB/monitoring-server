@@ -475,6 +475,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				// Create
 				$params['response_code'] = $params['response_code']??'';
 				$params['request_headers'] = $params['request_headers'] ?? '';
+				$params['external_log'] = $params['external_log'] ?? '';
 				$params['_mode'] = \DB\Common::CSMODE_INSERT;
 				$monitor_id = \Monitors::save($params);
 				$monitor = \Monitors::get(['id' => $monitor_id]);
