@@ -20,6 +20,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 
 		if (isset($_POST) && $_POST) {
 			if (isset($_POST['method']) && $_POST['method'] == 'ajaxDockerContainers') {
+				\Csrf::requirePost();
 				$this->ajaxDockerContainers(intval($_POST['selectedDocker']), trim($_POST['selectedContainer']));
 				return
 				exit;
@@ -741,6 +742,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					?>
 				</h3></div>
 				<form class="card-body needs-validation" method="post" novalidate>
+					<?= \Csrf::field(); ?>
 					<input type="hidden" name="id" value="<?=$this->monitor['id'];?>"/>
 					<?php
 					echo $this->template->html_input("title", htmlspecialchars($this->monitor['title'] ?? '', ENT_QUOTES, 'UTF-8'), \T::Monitor_Edit_Title(), true, [
@@ -1066,7 +1068,8 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 						selectedDocker: selected_docker,
 						selectedContainer: selected_container,
 						ajax: '1',
-						method: 'ajaxDockerContainers'
+						method: 'ajaxDockerContainers',
+						<?=json_encode(\Csrf::FIELD);?>: <?=json_encode(\Csrf::token(), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);?>
 					},
 					function(response, status, xhr) {
 						// $('#container').val('').change();

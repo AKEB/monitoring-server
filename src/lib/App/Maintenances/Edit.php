@@ -294,6 +294,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					?>
 				</h3></div>
 				<form class="card-body needs-validation" method="post" novalidate>
+					<?= \Csrf::field(); ?>
 					<input type="hidden" name="id" value="<?=$this->maintenance['id'];?>"/>
 					<?php
 					echo $this->template?->html_input("title", htmlspecialchars($this->maintenance['title'] ?? '', ENT_QUOTES, 'UTF-8'), \T::Maintenances_Edit_Title(), true, [

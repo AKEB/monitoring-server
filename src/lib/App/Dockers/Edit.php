@@ -431,6 +431,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					?>
 				</h3></div>
 				<form class="card-body needs-validation" enctype="multipart/form-data" method="post" novalidate>
+					<?= \Csrf::field(); ?>
 					<input type="hidden" name="id" value="<?=$this->docker['id'];?>"/>
 					<?php
 					echo $this->template->html_input("title", htmlspecialchars($this->docker['title'] ?? '', ENT_QUOTES, 'UTF-8'), \T::Docker_Edit_Title(), true, [

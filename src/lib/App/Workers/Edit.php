@@ -391,6 +391,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					?>
 				</h3></div>
 				<form class="card-body needs-validation" method="post" novalidate>
+					<?= \Csrf::field(); ?>
 					<input type="hidden" name="id" value="<?=$this->worker['id'];?>"/>
 					<?php
 					echo $this->template->html_input("title", htmlspecialchars($this->worker['title'] ?? '', ENT_QUOTES, 'UTF-8'), \T::Worker_Edit_Title(), true, [

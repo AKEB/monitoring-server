@@ -218,6 +218,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					?>
 				</h3></div>
 				<form class="card-body needs-validation" method="post" novalidate>
+					<?= \Csrf::field(); ?>
 					<input type="hidden" name="id" value="<?=$this->signature['id'];?>"/>
 					<?php
 					echo $this->template->html_input("project", $this->signature['project']??'', \T::Signature_Edit_Project(), false, [

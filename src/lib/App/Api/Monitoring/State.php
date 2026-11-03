@@ -10,7 +10,7 @@ class State extends \Routing_Parent implements \Routing_Interface {
 	public function Run() {
 		$this->worker = [];
 		$this->data = [];
-		$this->processRequest();
+		$this->processWorkerRequest();
 		if (!$this->worker) {
 			$this->responseError([
 				'error' => 'Worker not found',
@@ -450,6 +450,23 @@ class State extends \Routing_Parent implements \Routing_Interface {
 	private function requiresProtocolV2(): bool {
 		$v = isset($this->data['protocol_version']) ? (string)$this->data['protocol_version'] : '';
 		return $v !== '' && version_compare($v, '2.0', '>=');
+	}
+
+	/**
+	 * Worker API authenticates via worker_key_hash in JSON body — skip browser CSRF.
+	 */
+	protected function processWorkerRequest(): void {
+		$this->error = '';
+		if ($_GET) {
+			$this->handleGetData($_GET);
+		}
+		if ($_POST) {
+			$this->handlePostData($_POST);
+		}
+		$data = $this->get_request_body();
+		if ($data) {
+			$this->handleBodyData($data);
+		}
 	}
 
 	protected function handleBodyData(array $data) {

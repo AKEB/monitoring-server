@@ -94,6 +94,7 @@ class ApiTokens extends \Routing_Parent implements \Routing_Interface {
 			<div class="card bg-transparent col-xl-10 p-4 mt-2 mb-3">
 				<div class="card-header bg-transparent"><h3><?=\T::Api_Settings_CreateTitle();?></h3></div>
 				<form class="card-body needs-validation" method="post" novalidate>
+					<?= \Csrf::field(); ?>
 					<?php
 					echo $this->template->html_input('title', '', \T::Api_Settings_Title(), true, [
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
@@ -139,6 +140,7 @@ class ApiTokens extends \Routing_Parent implements \Routing_Interface {
 							<td class="align-middle text-center"><?=$create_time > 0 ? date('Y-m-d H:i:s', $create_time) : '';?></td>
 							<td class="align-middle text-center">
 								<form method="post" class="d-inline" onsubmit="return confirm('<?=\T::Api_Settings_RevokeConfirmation();?>'.replace('{title}', '<?=addslashes($title);?>'));">
+									<?= \Csrf::field(); ?>
 									<input type="hidden" name="token_id" value="<?=$id;?>">
 									<button type="submit" class="btn btn-sm btn-outline-danger" name="revokeToken" value="true"><?=\T::Api_Settings_Revoke();?></button>
 								</form>

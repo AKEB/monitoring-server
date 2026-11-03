@@ -10,7 +10,7 @@ class Get extends \Routing_Parent implements \Routing_Interface {
 	public function Run() {
 		$this->worker = [];
 		$this->data = [];
-		$this->processRequest();
+		$this->processWorkerRequest();
 		if (!$this->worker) {
 			$this->responseError([
 				'error' => 'Worker not found',
@@ -260,6 +260,23 @@ class Get extends \Routing_Parent implements \Routing_Interface {
 			$keys = array_merge($keys, ['tls_ca_file', 'tls_certificate', 'tls_key']);
 		}
 		return $this->pickRowFields($job, $keys);
+	}
+
+	/**
+	 * Worker API authenticates via worker_key_hash in JSON body — skip browser CSRF.
+	 */
+	protected function processWorkerRequest(): void {
+		$this->error = '';
+		if ($_GET) {
+			$this->handleGetData($_GET);
+		}
+		if ($_POST) {
+			$this->handlePostData($_POST);
+		}
+		$data = $this->get_request_body();
+		if ($data) {
+			$this->handleBodyData($data);
+		}
 	}
 
 	protected function handleBodyData(array $data) {
