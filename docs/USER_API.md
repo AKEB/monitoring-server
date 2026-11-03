@@ -31,7 +31,7 @@ Session cookies are ignored. Inactive users and revoked tokens get HTTP 401.
 The token acts as the user who created it:
 
 - only monitors with **read** permission (same ACL as the UI, including folder inheritance)
-- only monitors with **Expose in API** enabled (opt-in, default off)
+- only monitors with **Expose in /api/v1/status/** enabled (opt-in, default off)
 - `description_ru` / `description_en` come from the monitor edit form (shown when the flag is on)
 - folders, disabled monitors, and disabled parent folders are omitted
 - administrators still need the expose flag; they are not shown every monitor

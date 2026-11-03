@@ -31,8 +31,10 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 		$this->save_notify($data);
 	}
 
-	private function save_notify($data) {
-		if (!isset($data)) return;
+	/**
+	 * @param array<string,mixed> $data
+	 */
+	private function save_notify(array $data): void {
 		if (!$data) return;
 
 		$this->maxFetchParsed = null;
@@ -60,7 +62,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 			}
 			if (isset($data['title']) && trim($data['title']) != '') {
 				$data['title'] = trim($data['title']);
-				if (mb_strlen($data['title']) < 2 || mb_strlen($data['title']) > 255) {
+				if (!\EntityValidation::isTitleLengthValid($data['title'])) {
 					$this->error = \T::Notify_Edit_NameLengthError();
 					break;
 				}
@@ -150,7 +152,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				if (!isset($params['json_data']) || !is_array($params['json_data'])) {
 					$params['json_data'] = $old_notify['json_data'];
 				} else {
-					$params['json_data'] = array_merge(
+					$params['json_data'] = \EntityValidation::mergeJsonData(
 						is_array($old_notify['json_data']) ? $old_notify['json_data'] : [],
 						$params['json_data']
 					);
@@ -323,7 +325,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					$old_notify['json_data'] = [];
 				}
 				if (isset($params['json_data']) && is_array($params['json_data'])) {
-					$params['json_data'] = array_merge(
+					$params['json_data'] = \EntityValidation::mergeJsonData(
 						is_array($old_notify['json_data']) ? $old_notify['json_data'] : [],
 						$params['json_data']
 					);
@@ -415,7 +417,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				if (!\Sessions::in_group(\Groups::ADMIN_GROUP_ID, intval(\Sessions::currentUser()['id']))) {
 					$permissions = \Notify::permissions_hash();
 					foreach($permissions as $permission => $_) {
-						$ObjectPermissions = [
+						$object_permission = [
 							'object' => 'user',
 							'object_id' => intval(\Sessions::currentUser()['id']),
 							'subject' => $permission,
@@ -430,8 +432,8 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 							'update_time' => time(),
 							'_mode' => \DB\Common::CSMODE_INSERT,
 						];
-						$ObjectPermissions['id'] = \ObjectPermissions::save($ObjectPermissions);
-						$log_id = \Logs::create_log(\ObjectPermissions::LOGS_OBJECT, $ObjectPermissions['id'], $ObjectPermissions);
+						$object_permission['id'] = \ObjectPermissions::save($object_permission);
+						$log_id = \Logs::create_log(\ObjectPermissions::LOGS_OBJECT, $object_permission['id'], $object_permission);
 						\Logs::add_tag($log_id, \Notify::LOGS_OBJECT, $notify_id);
 					}
 				}

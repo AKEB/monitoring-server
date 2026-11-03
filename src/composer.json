@@ -25,6 +25,11 @@
 		],
 		"files": []
 	},
+	"autoload-dev": {
+		"classmap": [
+			"tests/ApiV2TestCase.php"
+		]
+	},
 	"repositories": {
 	}
 }

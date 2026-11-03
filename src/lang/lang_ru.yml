@@ -99,7 +99,7 @@ Monitor:
     Title: "Название"
     Type: "Тип"
     Status: "Статус"
-    ApiEnabled: "Отдавать в API"
+    ApiEnabled: "Отдавать в /api/v1/status/"
     ApiDescriptionRu: "Описание (русский)"
     ApiDescriptionEn: "Описание (английский)"
     CreateTime: "Время создания"
@@ -397,7 +397,7 @@ Api:
     RevokeSuccess: "Токен отозван"
     RevokeConfirmation: "Отозвать токен {title}?"
     NotFound: "Токен не найден"
-    DocsHint: "GET /api/v1/status/ с заголовком Authorization: Bearer &lt;token&gt;. В ответе только мониторы с правом чтения и включённым флагом «Отдавать в API»."
+    DocsHint: "GET /api/v1/status/ с заголовком Authorization: Bearer &lt;token&gt;. В ответе только мониторы с правом чтения и включённым флагом «Отдавать в /api/v1/status/»."
 
 Signature:
   Menu: "Подписи"

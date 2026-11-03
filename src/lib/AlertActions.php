@@ -253,6 +253,16 @@ class AlertActions extends \DB\MySQLObject {
 		return $target;
 	}
 
+	static public function channelMatchesNotifyType(string $channel, int $notifyType): bool {
+		$channel = strtolower(trim($channel));
+		return match ($channel) {
+			self::CHANNEL_TELEGRAM => $notifyType === \Notify::TYPE_TELEGRAM,
+			self::CHANNEL_MATTERMOST => $notifyType === \Notify::TYPE_MATTERMOST,
+			self::CHANNEL_MAX => $notifyType === \Notify::TYPE_MAX,
+			default => false,
+		};
+	}
+
 	static public function webhookUrl(string $channel, string $token, ?string $baseUrl = null): string {
 		$base = rtrim($baseUrl !== null && $baseUrl !== '' ? $baseUrl : \ExternalMonitors::baseUrl(), '/');
 		return $base.'/api/alert-action/'.$channel.'/'.rawurlencode($token).'/';
@@ -419,16 +429,17 @@ class AlertActions extends \DB\MySQLObject {
 		}
 		$db = static::getDatabase();
 		$now = time();
-		$existing = null;
+		$row = null;
 		$db->db_GetQueryRow(
 			sql_pholder(
 				'SELECT `id` FROM `monitoring_alert_messages` WHERE `monitor_id` = ? AND `notify_id` = ? LIMIT 1',
 				$monitorId,
 				$notifyId
 			),
-			$existing
+			$row
 		);
-		if ($existing && !empty($existing['id'])) {
+		$existingId = (is_array($row) && !empty($row['id'])) ? intval($row['id']) : 0;
+		if ($existingId > 0) {
 			$db->execSQL(sql_pholder(
 				'UPDATE `monitoring_alert_messages` SET `channel` = ?, `chat_id` = ?, `message_id` = ?, `message_text` = ?, `update_time` = ? WHERE `id` = ?',
 				$channel,
@@ -436,7 +447,7 @@ class AlertActions extends \DB\MySQLObject {
 				$messageId,
 				$messageText,
 				$now,
-				intval($existing['id'])
+				$existingId
 			));
 			return;
 		}

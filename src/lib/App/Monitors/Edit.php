@@ -90,7 +90,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 			}
 			if (isset($data['title'])) {
 				$data['title'] = trim($data['title']);
-				if (mb_strlen($data['title']) < 2 || mb_strlen($data['title']) > 255) {
+				if (!\EntityValidation::isTitleLengthValid($data['title'])) {
 					$this->error = \T::Monitor_Edit_NameLengthError();
 					break;
 				}
@@ -100,18 +100,11 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				$data['type'] = trim($data['type']);
 				$params['type'] = intval($data['type']);
 			}
-			if (isset($data['status']) && $data['status'] == 'true') {
-				$params['status'] = 1;
-			} else {
-				$params['status'] = 0;
-			}
-			if (isset($data['type']) && intval($data['type']) == \Monitors::TYPE_FOLDER) {
-				$params['api_enabled'] = 0;
-			} elseif (isset($data['api_enabled']) && $data['api_enabled'] == 'true') {
-				$params['api_enabled'] = 1;
-			} else {
-				$params['api_enabled'] = 0;
-			}
+			$params['status'] = \EntityValidation::normalizeSwitchStatus($data['status'] ?? 0);
+			$params['api_enabled'] = \EntityValidation::normalizeApiEnabled(
+				intval($params['type'] ?? ($data['type'] ?? 0)),
+				$data['api_enabled'] ?? 0
+			);
 			$params['api_description_ru'] = isset($data['api_description_ru']) ? trim($data['api_description_ru']) : '';
 			$params['api_description_en'] = isset($data['api_description_en']) ? trim($data['api_description_en']) : '';
 
@@ -129,8 +122,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 			}
 			if (isset($data['repeat_seconds'])) {
 				$data['repeat_seconds'] = trim($data['repeat_seconds']);
-				$params['repeat_seconds'] = intval($data['repeat_seconds']);
-				if ($params['repeat_seconds'] < 60) $params['repeat_seconds'] = 60;
+				$params['repeat_seconds'] = \EntityValidation::clampRepeatSeconds(intval($data['repeat_seconds']));
 			}
 			if (isset($data['timeout'])) {
 				$data['timeout'] = trim($data['timeout']);

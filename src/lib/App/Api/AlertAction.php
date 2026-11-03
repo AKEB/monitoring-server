@@ -17,15 +17,19 @@ class AlertAction extends \Routing_Parent implements \Routing_Interface {
 			return;
 		}
 		$type = intval($notify['type'] ?? -1);
-		if ($channel === \AlertActions::CHANNEL_TELEGRAM && $type === \Notify::TYPE_TELEGRAM) {
+		if (!\AlertActions::channelMatchesNotifyType($channel, $type)) {
+			$this->jsonError('Channel mismatch', 400);
+			return;
+		}
+		if ($channel === \AlertActions::CHANNEL_TELEGRAM) {
 			$this->handleTelegram($notify);
 			return;
 		}
-		if ($channel === \AlertActions::CHANNEL_MATTERMOST && $type === \Notify::TYPE_MATTERMOST) {
+		if ($channel === \AlertActions::CHANNEL_MATTERMOST) {
 			$this->handleMattermost($notify);
 			return;
 		}
-		if ($channel === \AlertActions::CHANNEL_MAX && $type === \Notify::TYPE_MAX) {
+		if ($channel === \AlertActions::CHANNEL_MAX) {
 			$this->handleMax($notify);
 			return;
 		}

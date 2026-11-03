@@ -46,6 +46,10 @@ class MonitoringApiStatusTest extends PHPUnit\Framework\TestCase {
 			'type' => \Monitors::TYPE_HTTPS,
 			'url' => 'https://ex.com/health',
 		]));
+		$this->assertSame('https://ex.com/json', \MonitoringApiStatus::checkUrl([
+			'type' => \Monitors::TYPE_HTTP_JSON,
+			'url' => 'https://ex.com/json',
+		]));
 		$this->assertSame('tcp://db.local:3306', \MonitoringApiStatus::checkUrl([
 			'type' => \Monitors::TYPE_TCP,
 			'host' => 'db.local',
@@ -59,11 +63,45 @@ class MonitoringApiStatusTest extends PHPUnit\Framework\TestCase {
 			['type' => \Monitors::TYPE_DOCKER, 'docker' => 4, 'container' => 'nginx'],
 			[4 => ['title' => 'prod']]
 		));
+		$this->assertSame('docker://prod', \MonitoringApiStatus::checkUrl(
+			['type' => \Monitors::TYPE_DOCKER, 'docker' => 4, 'container' => ''],
+			[4 => ['title' => 'prod']]
+		));
 		$this->assertSame('node:9100', \MonitoringApiStatus::checkUrl([
 			'type' => \Monitors::TYPE_EXPORTER_DISK,
 			'host' => 'node',
 			'port' => 9100,
 		]));
+		$this->assertSame('node', \MonitoringApiStatus::checkUrl([
+			'type' => \Monitors::TYPE_EXPORTER_MEMORY,
+			'host' => 'node',
+			'port' => 0,
+		]));
+		$this->assertSame('external://abcd', \MonitoringApiStatus::checkUrl([
+			'type' => \Monitors::TYPE_EXTERNAL,
+			'external_hash' => 'abcd',
+		]));
+		$this->assertSame('external://', \MonitoringApiStatus::checkUrl([
+			'type' => \Monitors::TYPE_EXTERNAL,
+			'external_hash' => '',
+		]));
+	}
+
+	function test_availability_windows_and_percent_cap() {
+		$this->assertSame([
+			'1m' => 60,
+			'5m' => 300,
+			'10m' => 600,
+			'1h' => 3600,
+			'4h' => 14400,
+			'8h' => 28800,
+		], \MonitoringAvailabilityPercent::WINDOWS);
+		$this->assertSame(100.0, \MonitoringAvailabilityPercent::percent(3, 2));
+		$empty = \MonitoringAvailabilityPercent::rollupWindows([]);
+		$this->assertSame(['1m', '5m', '10m', '1h', '4h', '8h'], array_keys($empty));
+		foreach ($empty as $value) {
+			$this->assertNull($value);
+		}
 	}
 
 	function test_aggregate_status() {

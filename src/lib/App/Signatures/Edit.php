@@ -43,14 +43,14 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 			}
 			if (isset($data['project'])) {
 				$params['project'] = trim($data['project']);
-				if (mb_strlen($params['project']) > 255) {
+				if (!\EntityValidation::isProjectLengthValid($params['project'])) {
 					$this->error = \T::Signature_Edit_ProjectLengthError();
 					break;
 				}
 			}
 			if (isset($data['title']) && trim($data['title']) != '') {
 				$data['title'] = trim($data['title']);
-				if (mb_strlen($data['title']) < 1 || mb_strlen($data['title']) > 255) {
+				if (!\EntityValidation::isSignatureTitleValid($data['title'])) {
 					$this->error = \T::Signature_Edit_NameLengthError();
 					break;
 				}

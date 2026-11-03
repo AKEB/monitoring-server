@@ -235,6 +235,9 @@ class MonitoringApiStatus {
 			if ($monitor_id < 1) {
 				continue;
 			}
+			if (!\EntityValidation::isStatusApiCandidate($monitor)) {
+				continue;
+			}
 			if (!\Monitors::is_enable($monitor_id)) {
 				continue;
 			}

@@ -100,7 +100,7 @@ Monitor:
     Title: "Title"
     Type: "Type"
     Status: "Status"
-    ApiEnabled: "Expose in API"
+    ApiEnabled: "Expose in /api/v1/status/"
     ApiDescriptionRu: "Description (Russian)"
     ApiDescriptionEn: "Description (English)"
     CreateTime: "Create time"
@@ -402,7 +402,7 @@ Api:
     RevokeSuccess: "Token revoked"
     RevokeConfirmation: "Revoke token {title}?"
     NotFound: "Token not found"
-    DocsHint: "GET /api/v1/status/ with Authorization: Bearer &lt;token&gt;. The response includes only monitors you can read that have “Expose in API” enabled."
+    DocsHint: "GET /api/v1/status/ with Authorization: Bearer &lt;token&gt;. The response includes only monitors you can read that have “Expose in /api/v1/status/” enabled."
 
 Signature:
   Menu: "Signatures"

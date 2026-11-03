@@ -8,7 +8,9 @@ Default User Email: `admin@admin.com` and Password `Admin@123`
 
 Monitoring workers use **protocol 2.0+** only (`monitoring-worker-go` v2.1+). See [docs/WORKER_API.md](docs/WORKER_API.md).
 
-User status API: [docs/USER_API.md](docs/USER_API.md). After upgrade, run DB migrations.
+User status API: [docs/USER_API.md](docs/USER_API.md).
+Management API + MCP: [docs/MANAGEMENT_API.md](docs/MANAGEMENT_API.md).
+After upgrade, run DB migrations.
 
 ## Features
 

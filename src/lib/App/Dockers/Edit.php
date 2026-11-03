@@ -59,20 +59,14 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 			}
 			if (isset($data['title']) && trim($data['title']) != '') {
 				$data['title'] = trim($data['title']);
-				if (mb_strlen($data['title']) < 2 || mb_strlen($data['title']) > 255) {
+				if (!\EntityValidation::isTitleLengthValid($data['title'])) {
 					$this->error = \T::Docker_Edit_NameLengthError();
 					break;
 				}
 				$params['title'] = $data['title'];
 			}
 			if (isset($data['status']) && trim($data['status']) != '') {
-				$data['status'] = trim($data['status']);
-				if ($data['status'] == 'true') {
-					$data['status'] = 1;
-				} else {
-					$data['status'] = 0;
-				}
-				$params['status'] = intval($data['status']);
+				$params['status'] = \EntityValidation::normalizeSwitchStatus(trim($data['status']));
 			} else {
 				$data['status'] = 0;
 				$params['status'] = 0;
@@ -87,8 +81,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 
 			if (isset($data['repeat_seconds'])) {
 				$data['repeat_seconds'] = trim($data['repeat_seconds']);
-				$params['repeat_seconds'] = intval($data['repeat_seconds']);
-				if ($params['repeat_seconds'] < 60) $params['repeat_seconds'] = 60;
+				$params['repeat_seconds'] = \EntityValidation::clampRepeatSeconds(intval($data['repeat_seconds']));
 			}
 			if (isset($data['timeout'])) {
 				$data['timeout'] = trim($data['timeout']);
@@ -122,7 +115,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 						$this->error = \T::Docker_Edit_TlsError();
 						break;
 					}
-					if (!isset($_FILES['tls_ca_file']['type']) || $_FILES['tls_ca_file']['type'] != 'application/x-x509-ca-cert') {
+					if (!isset($_FILES['tls_ca_file']['type']) || !\EntityValidation::isTlsCertMimeValid(strval($_FILES['tls_ca_file']['type']))) {
 						$this->error = \T::Docker_Edit_TlsError();
 						break;
 					}
@@ -133,7 +126,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 						$this->error = \T::Docker_Edit_TlsError();
 						break;
 					}
-					if (!isset($_FILES['tls_certificate']['type']) || $_FILES['tls_certificate']['type'] != 'application/x-x509-ca-cert') {
+					if (!isset($_FILES['tls_certificate']['type']) || !\EntityValidation::isTlsCertMimeValid(strval($_FILES['tls_certificate']['type']))) {
 						$this->error = \T::Docker_Edit_TlsError();
 						break;
 					}
@@ -144,7 +137,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 						$this->error = \T::Docker_Edit_TlsError();
 						break;
 					}
-					if (!isset($_FILES['tls_key']['type']) || $_FILES['tls_key']['type'] != 'application/x-x509-ca-cert') {
+					if (!isset($_FILES['tls_key']['type']) || !\EntityValidation::isTlsCertMimeValid(strval($_FILES['tls_key']['type']))) {
 						$this->error = \T::Docker_Edit_TlsError();
 						break;
 					}

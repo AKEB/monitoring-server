@@ -219,13 +219,21 @@ class ExternalMonitors {
 	}
 
 	/**
+	 * @param string $hash 64-char hex external callback hash
+	 */
+	static public function isValidHash(string $hash): bool {
+		$hash = trim($hash);
+		return $hash !== '' && strlen($hash) === 64 && ctype_xdigit($hash);
+	}
+
+	/**
 	 * Flip desired status from a public callback and persist a log row immediately.
 	 *
 	 * @param string|null $log null = leave previous external_log; on OK always cleared
 	 */
 	static public function applyCallback(string $hash, int $status, ?string $log = null): array|false {
 		$hash = trim($hash);
-		if ($hash === '' || strlen($hash) !== 64 || !ctype_xdigit($hash)) {
+		if (!static::isValidHash($hash)) {
 			return false;
 		}
 		if ($status !== \MonitoringLogs::STATUS_GOOD && $status !== \MonitoringLogs::STATUS_FAIL) {

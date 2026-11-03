@@ -30,8 +30,10 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 		$this->save_worker($data);
 	}
 
-	private function save_worker($data) {
-		if (!isset($data)) return;
+	/**
+	 * @param array<string,mixed> $data
+	 */
+	private function save_worker(array $data): void {
 		if (!$data) return;
 
 		if (!empty($data['restart_worker']) && !empty($data['id'])) {
@@ -66,7 +68,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 			}
 			if (isset($data['title']) && $data['title'] && $data['title'] != '') {
 				$data['title'] = trim($data['title']);
-				if (mb_strlen($data['title']) < 2 || mb_strlen($data['title']) > 255) {
+				if (!\EntityValidation::isTitleLengthValid($data['title'])) {
 					$this->error = \T::Worker_Edit_NameLengthError();
 					break;
 				}
@@ -263,7 +265,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				if (!\Sessions::in_group(\Groups::ADMIN_GROUP_ID, intval(\Sessions::currentUser()['id']))) {
 					$permissions = \Workers::permissions_hash();
 					foreach($permissions as $permission => $_) {
-						$ObjectPermissions = [
+						$object_permission = [
 							'object' => 'user',
 							'object_id' => intval(\Sessions::currentUser()['id']),
 							'subject' => $permission,
@@ -278,8 +280,8 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 							'update_time' => time(),
 							'_mode' => \DB\Common::CSMODE_INSERT,
 						];
-						$ObjectPermissions['id'] = \ObjectPermissions::save($ObjectPermissions);
-						$log_id = \Logs::create_log(\ObjectPermissions::LOGS_OBJECT, $ObjectPermissions['id'], $ObjectPermissions);
+						$object_permission['id'] = \ObjectPermissions::save($object_permission);
+						$log_id = \Logs::create_log(\ObjectPermissions::LOGS_OBJECT, $object_permission['id'], $object_permission);
 						\Logs::add_tag($log_id, \Workers::LOGS_OBJECT, $worker_id);
 					}
 				}

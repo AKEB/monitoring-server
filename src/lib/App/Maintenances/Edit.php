@@ -44,7 +44,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 			}
 			if (isset($data['title']) && trim($data['title']) != '') {
 				$data['title'] = trim($data['title']);
-				if (mb_strlen($data['title']) < 2 || mb_strlen($data['title']) > 255) {
+				if (!\EntityValidation::isTitleLengthValid($data['title'])) {
 					$this->error = \T::Maintenances_Edit_NameLengthError();
 					break;
 				}
@@ -53,18 +53,15 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 			if (isset($data['start_time']) && trim($data['start_time']) != '') {
 				$data['start_time'] = trim($data['start_time']);
 				$params['start_time'] = strtotime($data['start_time']);
-				// $params['start_date'] = date('Y-m-d H:i:s', $params['start_time']);
 			}
 			if (isset($data['finish_time']) && trim($data['finish_time']) != '') {
 				$data['finish_time'] = trim($data['finish_time']);
 				$params['finish_time'] = strtotime($data['finish_time']);
-				// $params['finish_date'] = date('Y-m-d H:i:s', $params['finish_time']);
 			}
-			if (!$params['finish_time'] || !$params['start_time']) {
-				$this->error = \T::Maintenances_Edit_TimeError();
-				break;
-			}
-			if ($params['finish_time'] < $params['start_time']) {
+			if (\EntityValidation::maintenanceTimeError(
+				isset($params['start_time']) ? intval($params['start_time']) : null,
+				isset($params['finish_time']) ? intval($params['finish_time']) : null
+			) !== null) {
 				$this->error = \T::Maintenances_Edit_TimeError();
 				break;
 			}
