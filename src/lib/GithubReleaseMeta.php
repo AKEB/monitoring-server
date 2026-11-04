@@ -71,6 +71,8 @@ class GithubReleaseMeta extends \DB\MySQLObject {
 	 */
 	static private function upsert(string $product, array $meta): void {
 		$now = time();
+		// Table PK is (product, version, arch) — no `id` column. Framework save()
+		// always injects $ref_name (default `id`), so pass an existing column.
 		static::save([
 			'product' => $product,
 			'version' => $meta['version'],
@@ -85,7 +87,7 @@ class GithubReleaseMeta extends \DB\MySQLObject {
 				$meta['sha256'],
 				$now
 			),
-		]);
+		], '', 'product');
 	}
 
 	/**
