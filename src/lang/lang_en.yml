@@ -59,6 +59,7 @@ Worker:
   Update:
     GlobalTitle: "Worker target version"
     GlobalHint: "Go workers with AUTO_UPDATE=true pull this GitHub release tag when their reported version differs. Leave empty to disable. Per-worker override wins when set."
+    OpenButton: "Target version"
     DesiredVersion: "Desired version"
     SaveGlobal: "Save target version"
     GlobalSaved: "Target worker version saved"
@@ -136,6 +137,7 @@ Monitor:
     JSONExpectedType: "Expected JSON value type"
     Workers: "Workers"
     Value: "Greater than (%%)"
+    ValueMbps: "Greater than (Mbps)"
     ChangeButton: "Update"
     CreateButton: "Create"
     ParentFolder: "Parent folder"
@@ -185,6 +187,8 @@ Monitor:
     ServerMemory: "Server memory"
     ServerDisk: "Server disk"
     ServerContainer: "Server Docker container"
+    ServerNetRx: "Server network download"
+    ServerNetTx: "Server network upload"
 
 
 
@@ -418,6 +422,7 @@ Server:
   Update:
     GlobalTitle: "Agent target version"
     GlobalHint: "Agents with AUTO_UPDATE=true pull this GitHub release tag when their reported version differs. Leave empty to disable forced updates. Per-server override wins when set."
+    OpenButton: "Target version"
     DesiredVersion: "Desired version"
     SaveGlobal: "Save target version"
     GlobalSaved: "Target agent version saved"

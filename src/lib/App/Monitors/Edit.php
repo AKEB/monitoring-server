@@ -357,14 +357,16 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 						break;
 					}
 				}
+				$typeInt = intval($data['type']);
 				if (isset($data['value'])) {
 					$params['value'] = intval(trim(strval($data['value'])));
-				} elseif (intval($data['type']) === \Monitors::TYPE_SERVER_OFFLINE) {
+				} elseif ($typeInt === \Monitors::TYPE_SERVER_OFFLINE) {
 					$params['value'] = 3;
+				} elseif (\Monitors::is_server_net_type($typeInt)) {
+					$params['value'] = 100;
 				} else {
 					$params['value'] = 90;
 				}
-				$typeInt = intval($data['type']);
 				if ($typeInt === \Monitors::TYPE_SERVER_DISK) {
 					$params['container'] = isset($data['disk_mount'])
 						? trim(strval($data['disk_mount']))
@@ -942,18 +944,18 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 						'global-id' => 'container-div',
 					]);
 
-					$server_type_class = 'type-dependence type-'.\Monitors::TYPE_SERVER_OFFLINE.' type-'.\Monitors::TYPE_SERVER_CPU.' type-'.\Monitors::TYPE_SERVER_MEMORY.' type-'.\Monitors::TYPE_SERVER_DISK.' type-'.\Monitors::TYPE_SERVER_CONTAINER;
+					$server_type_class = 'type-dependence type-'.\Monitors::TYPE_SERVER_OFFLINE.' type-'.\Monitors::TYPE_SERVER_CPU.' type-'.\Monitors::TYPE_SERVER_MEMORY.' type-'.\Monitors::TYPE_SERVER_DISK.' type-'.\Monitors::TYPE_SERVER_CONTAINER.' type-'.\Monitors::TYPE_SERVER_NET_RX.' type-'.\Monitors::TYPE_SERVER_NET_TX;
 					echo $this->template?->html_select('server', \Servers::options_hash_for_user(), $this->monitor['server']??0, \T::Monitor_Edit_Server(), false,[
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
 						'global-class' => $server_type_class,
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 
-					echo $this->template?->html_select('disk_mount', [], $this->monitor['container']??'', \T::Monitor_Edit_DiskMount(), false,[
+					$disk_mount_options = ['' => \T::Monitor_Edit_DiskMountMax()];
+					echo $this->template?->html_select('disk_mount', $disk_mount_options, $this->monitor['container']??'', \T::Monitor_Edit_DiskMount(), false,[
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
 						'global-class' => 'type-dependence type-'.\Monitors::TYPE_SERVER_DISK,
 						'readonly' => !($this->can_write || $this->can_create),
-						'with-undefined' => true,
 						'global-id' => 'server-disk-div',
 					]);
 
@@ -977,12 +979,16 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 
-					$offlineDefault = (intval($this->monitor['type'] ?? -1) === \Monitors::TYPE_SERVER_OFFLINE)
+					$curType = intval($this->monitor['type'] ?? -1);
+					$offlineDefault = ($curType === \Monitors::TYPE_SERVER_OFFLINE)
 						? strval($this->monitor['value'] ?? '3')
 						: '3';
-					$pctDefault = (intval($this->monitor['type'] ?? -1) === \Monitors::TYPE_SERVER_OFFLINE)
-						? '90'
-						: strval($this->monitor['value'] ?? '80');
+					$pctDefault = in_array($curType, [\Monitors::TYPE_SERVER_CPU, \Monitors::TYPE_SERVER_MEMORY, \Monitors::TYPE_SERVER_DISK, \Monitors::TYPE_EXPORTER_DISK, \Monitors::TYPE_EXPORTER_MEMORY, \Monitors::TYPE_EXPORTER_CPU], true)
+						? strval($this->monitor['value'] ?? '80')
+						: '90';
+					$netDefault = \Monitors::is_server_net_type($curType)
+						? strval($this->monitor['value'] ?? '100')
+						: '100';
 					echo $this->template->html_input("value", $offlineDefault, \T::Monitor_Edit_OfflineMinutes(), false, [
 						'id' => 'value_offline',
 						'type' => 'number',
@@ -998,6 +1004,14 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 						'max' => '100',
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
 						'global-class' => 'type-dependence type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU.' type-'.\Monitors::TYPE_SERVER_CPU.' type-'.\Monitors::TYPE_SERVER_MEMORY.' type-'.\Monitors::TYPE_SERVER_DISK,
+						'readonly' => !($this->can_write || $this->can_create),
+					]);
+					echo $this->template->html_input("value", $netDefault, \T::Monitor_Edit_ValueMbps(), false, [
+						'id' => 'value_net',
+						'type' => 'number',
+						'min' => '1',
+						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_SERVER_NET_RX.' type-'.\Monitors::TYPE_SERVER_NET_TX,
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 
@@ -1038,7 +1052,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					echo $this->template->html_input("send_repeat_minute", $this->monitor['send_repeat_minute']??0, \T::Monitor_Edit_SendRepeatMinute(), false, [
 						'type' => 'number',
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
-						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_HTTP_JSON.' type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_PING.' type-'.\Monitors::TYPE_DOCKER.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU.' type-'.\Monitors::TYPE_EXTERNAL.' type-'.\Monitors::TYPE_SERVER_OFFLINE.' type-'.\Monitors::TYPE_SERVER_CPU.' type-'.\Monitors::TYPE_SERVER_MEMORY.' type-'.\Monitors::TYPE_SERVER_DISK.' type-'.\Monitors::TYPE_SERVER_CONTAINER,
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_HTTP_JSON.' type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_PING.' type-'.\Monitors::TYPE_DOCKER.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU.' type-'.\Monitors::TYPE_EXTERNAL.' type-'.\Monitors::TYPE_SERVER_OFFLINE.' type-'.\Monitors::TYPE_SERVER_CPU.' type-'.\Monitors::TYPE_SERVER_MEMORY.' type-'.\Monitors::TYPE_SERVER_DISK.' type-'.\Monitors::TYPE_SERVER_CONTAINER.' type-'.\Monitors::TYPE_SERVER_NET_RX.' type-'.\Monitors::TYPE_SERVER_NET_TX,
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 					echo $this->template?->html_select('alert_fail_mode', \Monitors::alert_fail_mode_hash(), intval($this->monitor['alert_fail_mode']??\Monitors::ALERT_FAIL_MODE_MAJORITY), \T::Monitor_Edit_AlertFailMode(), false,[
@@ -1098,7 +1112,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 
-					$signature_type_class = 'type-dependence type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_PING.' type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_HTTP_JSON.' type-'.\Monitors::TYPE_DOCKER.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU.' type-'.\Monitors::TYPE_EXTERNAL.' type-'.\Monitors::TYPE_SERVER_OFFLINE.' type-'.\Monitors::TYPE_SERVER_CPU.' type-'.\Monitors::TYPE_SERVER_MEMORY.' type-'.\Monitors::TYPE_SERVER_DISK.' type-'.\Monitors::TYPE_SERVER_CONTAINER;
+					$signature_type_class = 'type-dependence type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_PING.' type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_HTTP_JSON.' type-'.\Monitors::TYPE_DOCKER.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU.' type-'.\Monitors::TYPE_EXTERNAL.' type-'.\Monitors::TYPE_SERVER_OFFLINE.' type-'.\Monitors::TYPE_SERVER_CPU.' type-'.\Monitors::TYPE_SERVER_MEMORY.' type-'.\Monitors::TYPE_SERVER_DISK.' type-'.\Monitors::TYPE_SERVER_CONTAINER.' type-'.\Monitors::TYPE_SERVER_NET_RX.' type-'.\Monitors::TYPE_SERVER_NET_TX;
 					$signatures_list = \Signatures::active_list();
 					$current_signature_id = intval($this->monitor['signature_id'] ?? 0);
 					if ($current_signature_id > 0 && !isset($signatures_list[$current_signature_id])) {
@@ -1202,6 +1216,25 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 	private function print_javascript() {
 		?>
 		<script nonce="<?=\CSP::nonceRandom();?>">
+			let monitorDockerXhr = null;
+			let monitorDisksXhr = null;
+			let monitorContainersXhr = null;
+			let monitorDisksReqSeq = 0;
+			let monitorContainersReqSeq = 0;
+
+			function monitor_apply_select_options($el, html) {
+				if (!$el || !$el.length) return;
+				if (typeof html !== 'string' || html.indexOf('<option') === -1) return;
+				const hadPicker = !!$el.data('selectpicker');
+				if (hadPicker) {
+					$el.selectpicker('destroy');
+				}
+				$el.html(html);
+				if (!$el.hasClass('selectpicker')) {
+					$el.addClass('selectpicker');
+				}
+				$el.selectpicker();
+			}
 
 			function monitor_type_select() {
 				const selected_type = $('#type').val();
@@ -1232,22 +1265,25 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 			}
 
 			function monitor_docker_select() {
+				const $container = $('#container');
+				if (!$container.length) return;
 				const selected_docker = $('#docker').val();
 				const selected_container = <?=json_encode(strval($this->monitor['container'] ?? ''), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);?>;
-				$('#container').load(
-					'?',
+				if (monitorDockerXhr && monitorDockerXhr.readyState !== 4) {
+					monitorDockerXhr.abort();
+				}
+				monitorDockerXhr = $.post(
+					window.location.pathname,
 					{
 						selectedDocker: selected_docker,
 						selectedContainer: selected_container,
 						ajax: '1',
 						method: 'ajaxDockerContainers',
 						<?=json_encode(\Csrf::FIELD);?>: <?=json_encode(\Csrf::token(), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);?>
-					},
-					function(response, status, xhr) {
-						// $('#container').val('').change();
-						$('#container').selectpicker('destroy').selectpicker();
 					}
-				);
+				).done(function(html) {
+					monitor_apply_select_options($container, html);
+				});
 			}
 
 			function monitor_server_disks_select() {
@@ -1258,19 +1294,23 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					(intval($this->monitor['type'] ?? 0) === \Monitors::TYPE_SERVER_DISK) ? strval($this->monitor['container'] ?? '') : '',
 					JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
 				);?>;
-				$mount.load(
-					'?',
+				const reqSeq = ++monitorDisksReqSeq;
+				if (monitorDisksXhr && monitorDisksXhr.readyState !== 4) {
+					monitorDisksXhr.abort();
+				}
+				monitorDisksXhr = $.post(
+					window.location.pathname,
 					{
 						selectedServer: selected_server,
 						selectedMount: selected_mount,
 						ajax: '1',
 						method: 'ajaxServerDisks',
 						<?=json_encode(\Csrf::FIELD);?>: <?=json_encode(\Csrf::token(), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);?>
-					},
-					function() {
-						$mount.selectpicker('destroy').selectpicker();
 					}
-				);
+				).done(function(html) {
+					if (reqSeq !== monitorDisksReqSeq) return;
+					monitor_apply_select_options($mount, html);
+				});
 			}
 
 			function monitor_server_containers_select() {
@@ -1281,19 +1321,23 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					(intval($this->monitor['type'] ?? 0) === \Monitors::TYPE_SERVER_CONTAINER) ? strval($this->monitor['container'] ?? '') : '',
 					JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
 				);?>;
-				$el.load(
-					'?',
+				const reqSeq = ++monitorContainersReqSeq;
+				if (monitorContainersXhr && monitorContainersXhr.readyState !== 4) {
+					monitorContainersXhr.abort();
+				}
+				monitorContainersXhr = $.post(
+					window.location.pathname,
 					{
 						selectedServer: selected_server,
 						selectedContainer: selected_container,
 						ajax: '1',
 						method: 'ajaxServerContainers',
 						<?=json_encode(\Csrf::FIELD);?>: <?=json_encode(\Csrf::token(), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);?>
-					},
-					function() {
-						$el.selectpicker('destroy').selectpicker();
 					}
-				);
+				).done(function(html) {
+					if (reqSeq !== monitorContainersReqSeq) return;
+					monitor_apply_select_options($el, html);
+				});
 			}
 
 			function monitor_signature_project_value() {
@@ -1365,7 +1409,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 
 			$(document).ready(function(){
 				monitor_type_select();
-				$('#type').change(function(){
+				$('#type').on('changed.bs.select change', function(){
 					monitor_type_select();
 				});
 				$('#api_enabled').on('change', function(){
@@ -1373,12 +1417,12 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				});
 
 				monitor_docker_select();
-				$('#docker').change(function(){
+				$('#docker').on('changed.bs.select change', function(){
 					monitor_docker_select();
 				});
 
-				monitor_server_disks_select();
-				monitor_server_containers_select();
+				// Disks/containers load only via monitor_type_select / #server change —
+				// an eager request here races and can overwrite a later server-specific response.
 				$('#server').on('changed.bs.select change', function(){
 					const t = $('#type').val();
 					if (t == '<?=intval(\Monitors::TYPE_SERVER_DISK);?>') {

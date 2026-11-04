@@ -287,7 +287,9 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 			</div>
 
 			<?php if (!empty($this->server['id'])) {
-				$this->print_install_docs();
+				if (empty($this->server['online'])) {
+					$this->print_install_docs();
+				}
 				$this->print_status_cards();
 				$this->print_charts();
 				$this->print_docker();
@@ -349,7 +351,7 @@ cat >/opt/monitoring-agent/.env <<EOF
 TZ=Europe/Moscow
 SERVER_HOST={$serverHost}
 AGENT_KEY_HASH={$agentKey}
-REPORT_INTERVAL_SEC=60
+REPORT_INTERVAL_SEC=30
 EOF
 
 systemctl daemon-reload
@@ -400,16 +402,18 @@ SH;
 				<?php } ?>
 				<?php if ($network) { ?>
 					<h5 class="mt-3"><?=\T::Server_Edit_Network();?></h5>
-					<table class="table table-sm table-transparent"><thead><tr><th>Iface</th><th>IPs</th><th>Rx B/s</th><th>Tx B/s</th></tr></thead><tbody>
+					<table class="table table-sm table-transparent"><thead><tr><th>Iface</th><th>IPs</th><th>Download Mbps</th><th>Upload Mbps</th></tr></thead><tbody>
 					<?php foreach ($network as $n) {
 						if (!is_array($n)) continue;
 						$addrs = is_array($n['addrs'] ?? null) ? $n['addrs'] : [];
+						$rxMbps = floatval($n['rx_bps'] ?? 0) * 8.0 / 1000000.0;
+						$txMbps = floatval($n['tx_bps'] ?? 0) * 8.0 / 1000000.0;
 						?>
 						<tr>
 							<td><?=htmlspecialchars(strval($n['name'] ?? ''));?></td>
 							<td><small><?=htmlspecialchars(implode(', ', $addrs));?></small></td>
-							<td><?=number_format(floatval($n['rx_bps'] ?? 0), 0);?></td>
-							<td><?=number_format(floatval($n['tx_bps'] ?? 0), 0);?></td>
+							<td><?=number_format($rxMbps, 2);?></td>
+							<td><?=number_format($txMbps, 2);?></td>
 						</tr>
 					<?php } ?>
 					</tbody></table>
@@ -427,17 +431,22 @@ SH;
 		$cpu = [];
 		$mem = [];
 		$disk = [];
+		$netRx = [];
+		$netTx = [];
 		foreach ($this->metrics as $m) {
 			$labels[] = date('H:i', intval($m['collected_at'] ?? 0));
 			$cpu[] = floatval($m['cpu_usage_pct'] ?? 0);
 			$mem[] = floatval($m['mem_used_pct'] ?? 0);
 			$disk[] = floatval($m['disk_used_pct_max'] ?? 0);
+			$netRx[] = round(floatval($m['net_rx_bps'] ?? 0) * 8.0 / 1000000.0, 3);
+			$netTx[] = round(floatval($m['net_tx_bps'] ?? 0) * 8.0 / 1000000.0, 3);
 		}
 		?>
 		<div class="card bg-transparent col-xl-10 p-4 mt-2 mb-3">
 			<div class="card-header bg-transparent"><h4><?=\T::Server_Edit_ChartsTitle();?></h4></div>
 			<div class="card-body">
 				<div id="serverMetricsChart" style="width:100%;height:320px;"></div>
+				<div id="serverNetworkChart" class="mt-4" style="width:100%;height:280px;"></div>
 			</div>
 		</div>
 		<script nonce="<?=\CSP::nonceRandom();?>">
@@ -456,6 +465,21 @@ SH;
 						{ name: 'Disk %', type: 'line', showSymbol: false, data: <?=json_encode($disk);?> }
 					]
 				});
+				const netEl = document.getElementById('serverNetworkChart');
+				if (netEl) {
+					const netChart = echarts.init(netEl);
+					netChart.setOption({
+						tooltip: { trigger: 'axis' },
+						legend: { data: ['Download Mbps', 'Upload Mbps'] },
+						xAxis: { type: 'category', data: <?=json_encode($labels);?> },
+						yAxis: { type: 'value', min: 0, name: 'Mbps' },
+						series: [
+							{ name: 'Download Mbps', type: 'line', showSymbol: false, data: <?=json_encode($netRx);?> },
+							{ name: 'Upload Mbps', type: 'line', showSymbol: false, data: <?=json_encode($netTx);?> }
+						]
+					});
+					window.addEventListener('resize', function(){ netChart.resize(); });
+				}
 				window.addEventListener('resize', function(){ chart.resize(); });
 			})();
 		</script>

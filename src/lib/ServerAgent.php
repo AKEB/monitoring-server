@@ -165,11 +165,21 @@ class ServerAgent {
 			if (!\Monitors::is_server_type($type)) {
 				continue;
 			}
+			$monitorId = intval($monitor['id'] ?? 0);
+			$repeat = max(1, intval($monitor['repeat_seconds'] ?? 60));
+			$job = \MonitoringJobs::get([
+				'monitor_id' => $monitorId,
+				'worker_id' => \Servers::SERVER_WORKER_ID,
+			]);
+			// Agents may push every 30s; keep monitor checks at repeat_seconds (default 60).
+			if ($job && ($now - intval($job['update_time'] ?? 0)) < $repeat) {
+				continue;
+			}
 			[$status, $statusCode, $error, $result] = static::evalOne($type, $monitor, $server, $payload, true);
-			$log = static::writeLog(intval($monitor['id']), $status, $statusCode, $error, $result, $now);
+			$log = static::writeLog($monitorId, $status, $statusCode, $error, $result, $now);
 			if ($log) {
 				\MonitorsEvents::updateEvent($log);
-				$notificationCheck[intval($monitor['id'])] = true;
+				$notificationCheck[$monitorId] = true;
 			}
 		}
 		if ($notificationCheck) {
@@ -243,6 +253,24 @@ class ServerAgent {
 			}
 			return static::evalContainer($name, $src);
 		}
+		if (\Monitors::is_server_net_type($type)) {
+			$src = $payload;
+			if (!$src) {
+				$decoded = @json_decode(strval($server['last_payload'] ?? ''), true);
+				$src = is_array($decoded) ? $decoded : [];
+			}
+			$bps = static::netBpsFromPayload($src, $type === \Monitors::TYPE_SERVER_NET_RX ? 'rx' : 'tx');
+			$mbps = $bps * 8.0 / 1000000.0;
+			$limit = $threshold > 0 ? $threshold : 100.0;
+			$ok = $mbps < $limit;
+			$dir = $type === \Monitors::TYPE_SERVER_NET_RX ? 'download' : 'upload';
+			return [
+				$ok ? \MonitoringLogs::STATUS_GOOD : \MonitoringLogs::STATUS_FAIL,
+				$ok ? 200 : 500,
+				$ok ? '' : 'network '.$dir.' threshold exceeded',
+				strval(round($mbps, 2)),
+			];
+		}
 		$cpu = floatval($server['cpu_usage_pct'] ?? 0);
 		$mem = floatval($server['mem_used_pct'] ?? 0);
 		$disk = floatval($server['disk_used_pct_max'] ?? 0);
@@ -281,6 +309,25 @@ class ServerAgent {
 			$ok ? '' : $failMsg,
 			strval(round($value, 2)),
 		];
+	}
+
+	/**
+	 * Sum interface throughput from agent payload (bytes/sec).
+	 *
+	 * @param array<string,mixed> $payload
+	 */
+	static private function netBpsFromPayload(array $payload, string $direction): float {
+		$network = is_array($payload['network'] ?? null) ? $payload['network'] : [];
+		$ifaces = is_array($network['interfaces'] ?? null) ? $network['interfaces'] : [];
+		$key = $direction === 'tx' ? 'tx_bps' : 'rx_bps';
+		$sum = 0.0;
+		foreach ($ifaces as $iface) {
+			if (!is_array($iface)) {
+				continue;
+			}
+			$sum += floatval($iface[$key] ?? 0);
+		}
+		return max(0.0, $sum);
 	}
 
 	/**

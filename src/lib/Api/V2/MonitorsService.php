@@ -395,7 +395,11 @@ class MonitorsService {
 				$row['server'] = $serverId;
 			}
 			if ($creating || array_key_exists('value', $payload)) {
-				$default = $type === \Monitors::TYPE_SERVER_OFFLINE ? 3 : 90;
+				$default = match (true) {
+					$type === \Monitors::TYPE_SERVER_OFFLINE => 3,
+					\Monitors::is_server_net_type($type) => 100,
+					default => 90,
+				};
 				$row['value'] = intval($payload['value'] ?? $default);
 			}
 			if ($type === \Monitors::TYPE_SERVER_DISK && ($creating || array_key_exists('disk_mount', $payload) || array_key_exists('container', $payload))) {

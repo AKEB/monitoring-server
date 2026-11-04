@@ -26,6 +26,8 @@ class Monitors extends \DB\MySQLObject implements \PermissionSubject_Interface {
 	const TYPE_SERVER_MEMORY     = 12;
 	const TYPE_SERVER_DISK       = 13;
 	const TYPE_SERVER_CONTAINER  = 14;
+	const TYPE_SERVER_NET_RX     = 15;
+	const TYPE_SERVER_NET_TX     = 16;
 
 	/** Virtual worker_id for push-based External monitors (never a real Workers row). */
 	const EXTERNAL_WORKER_ID = -1;
@@ -70,6 +72,8 @@ class Monitors extends \DB\MySQLObject implements \PermissionSubject_Interface {
 			static::TYPE_SERVER_MEMORY => \T::Monitor_Type_ServerMemory(),
 			static::TYPE_SERVER_DISK => \T::Monitor_Type_ServerDisk(),
 			static::TYPE_SERVER_CONTAINER => \T::Monitor_Type_ServerContainer(),
+			static::TYPE_SERVER_NET_RX => \T::Monitor_Type_ServerNetRx(),
+			static::TYPE_SERVER_NET_TX => \T::Monitor_Type_ServerNetTx(),
 			// static::TYPE_EXPORTER_CPU => \T::Monitor_Type_ExporterCPU(),
 		];
 	}
@@ -82,7 +86,14 @@ class Monitors extends \DB\MySQLObject implements \PermissionSubject_Interface {
 			static::TYPE_SERVER_MEMORY,
 			static::TYPE_SERVER_DISK,
 			static::TYPE_SERVER_CONTAINER,
+			static::TYPE_SERVER_NET_RX,
+			static::TYPE_SERVER_NET_TX,
 		];
+	}
+
+	/** Server network types that alert on Mbps thresholds. */
+	static public function is_server_net_type(int $type): bool {
+		return $type === static::TYPE_SERVER_NET_RX || $type === static::TYPE_SERVER_NET_TX;
 	}
 
 	static public function is_server_type(int $type): bool {

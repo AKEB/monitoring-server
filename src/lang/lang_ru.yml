@@ -58,6 +58,7 @@ Worker:
   Update:
     GlobalTitle: "Целевая версия обработчика"
     GlobalHint: "Go-воркеры с AUTO_UPDATE=true скачают этот тег с GitHub Releases, если версия другая. Пусто — не принуждать. Override на воркере имеет приоритет."
+    OpenButton: "Целевая версия"
     DesiredVersion: "Целевая версия"
     SaveGlobal: "Сохранить целевую версию"
     GlobalSaved: "Целевая версия обработчика сохранена"
@@ -140,6 +141,7 @@ Monitor:
     Notify: "Уведомления"
     Docker: "Docker"
     Value: "Больше чем (%%)"
+    ValueMbps: "Больше чем (Mbps)"
     Container: "Контейнер"
     Server: "Сервер"
     ServerNotFound: "Сервер не найден"
@@ -184,6 +186,8 @@ Monitor:
     ServerMemory: "Сервер память"
     ServerDisk: "Сервер диск"
     ServerContainer: "Сервер Docker-контейнер"
+    ServerNetRx: "Сервер сеть скачивание"
+    ServerNetTx: "Сервер сеть отдача"
 
 Dashboard:
   Response: "Ответ"
@@ -413,6 +417,7 @@ Server:
   Update:
     GlobalTitle: "Целевая версия агента"
     GlobalHint: "Агенты с AUTO_UPDATE=true скачают этот тег с GitHub Releases, если их версия другая. Пусто — не принуждать. Override на сервере имеет приоритет."
+    OpenButton: "Целевая версия"
     DesiredVersion: "Целевая версия"
     SaveGlobal: "Сохранить целевую версию"
     GlobalSaved: "Целевая версия агента сохранена"

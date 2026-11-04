@@ -25,9 +25,9 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 
 		$this->template = new \Template('Servers');
 		$this->print_header();
-		$this->print_global_desired_version();
 		$this->print_table();
 		$this->print_modal();
+		$this->print_desired_version_modal();
 		$this->print_javascript();
 	}
 
@@ -124,42 +124,54 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 	}
 
 	private function print_header() {
+		$current = \AppOptions::getDesiredAgentVersion();
+		$currentLabel = $current !== '' ? $current : '—';
 		?>
 		<div class="float-start"><h2><i class="bi bi-hdd-rack"></i> <?=\T::Server_PageTitle();?></h2></div>
-		<?php if ($this->can_create) { ?>
-			<div class="float-end">
-				<h3 class="pointer text-info">
+		<div class="float-end d-flex align-items-center gap-3">
+			<button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#desiredAgentVersionModal" title="<?=\T::Server_Update_GlobalTitle();?>">
+				<i class="bi bi-tags"></i> <?=\T::Server_Update_OpenButton();?>
+				<span class="badge text-bg-secondary ms-1"><?=htmlspecialchars($currentLabel, ENT_QUOTES, 'UTF-8');?></span>
+			</button>
+			<?php if ($this->can_create) { ?>
+				<h3 class="pointer text-info mb-0">
 					<i class="bi bi-plus-circle createActionButton"> <?=\T::Framework_Common_Create();?></i>
 				</h3>
-			</div>
-		<?php } ?>
+			<?php } ?>
+		</div>
 		<div class="clearfix"></div>
 		<?php
 	}
 
-	private function print_global_desired_version() {
+	private function print_desired_version_modal() {
 		$canManage = $this->can_create || \Sessions::in_group(\Groups::ADMIN_GROUP_ID, intval(\Sessions::currentUser()['id'] ?? 0));
 		$current = htmlspecialchars(\AppOptions::getDesiredAgentVersion(), ENT_QUOTES, 'UTF-8');
 		?>
-		<div class="row d-flex justify-content-center mb-3">
-			<div class="card bg-transparent col-xl-10 p-3">
-				<div class="card-header bg-transparent"><h4 class="mb-0"><?=\T::Server_Update_GlobalTitle();?></h4></div>
-				<div class="card-body">
-					<p class="text-muted mb-2"><?=\T::Server_Update_GlobalHint();?></p>
-					<?php if ($canManage) { ?>
-						<form method="post" class="row g-2 align-items-end">
-							<?= \Csrf::field(); ?>
-							<div class="col-auto">
+		<div class="modal" id="desiredAgentVersionModal" tabindex="-1" aria-labelledby="desiredAgentVersionModalLabel">
+			<div class="modal-dialog">
+				<div class="modal-content">
+					<div class="modal-header border-secondary">
+						<h5 class="modal-title" id="desiredAgentVersionModalLabel"><?=\T::Server_Update_GlobalTitle();?></h5>
+						<button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+					</div>
+					<div class="modal-body">
+						<p class="text-muted"><?=\T::Server_Update_GlobalHint();?></p>
+						<?php if ($canManage) { ?>
+							<form method="post" id="desiredAgentVersionForm">
+								<?= \Csrf::field(); ?>
 								<label class="form-label" for="desired_agent_version"><?=\T::Server_Update_DesiredVersion();?></label>
 								<input type="text" class="form-control" id="desired_agent_version" name="desired_agent_version" value="<?=$current;?>" placeholder="v1.0.1" pattern="v?[0-9].*" />
-							</div>
-							<div class="col-auto">
-								<button type="submit" class="btn btn-primary" name="saveGlobalDesiredAgentVersion" value="true"><?=\T::Server_Update_SaveGlobal();?></button>
-							</div>
-						</form>
-					<?php } else { ?>
-						<p class="mb-0"><strong><?=\T::Server_Update_DesiredVersion();?>:</strong> <?=($current !== '' ? $current : '—');?></p>
-					<?php } ?>
+							</form>
+						<?php } else { ?>
+							<p class="mb-0"><strong><?=\T::Server_Update_DesiredVersion();?>:</strong> <?=($current !== '' ? $current : '—');?></p>
+						<?php } ?>
+					</div>
+					<div class="modal-footer border-secondary">
+						<button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><?=\T::Framework_Common_Cancel();?></button>
+						<?php if ($canManage) { ?>
+							<button type="submit" class="btn btn-primary" form="desiredAgentVersionForm" name="saveGlobalDesiredAgentVersion" value="true"><?=\T::Server_Update_SaveGlobal();?></button>
+						<?php } ?>
+					</div>
 				</div>
 			</div>
 		</div>
