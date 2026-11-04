@@ -143,12 +143,7 @@ class ServerAgent {
 		$notificationCheck = [];
 		foreach ($monitors as $monitor) {
 			$type = intval($monitor['type'] ?? -1);
-			if (!in_array($type, [
-				\Monitors::TYPE_SERVER_OFFLINE,
-				\Monitors::TYPE_SERVER_CPU,
-				\Monitors::TYPE_SERVER_MEMORY,
-				\Monitors::TYPE_SERVER_DISK,
-			], true)) {
+			if (!\Monitors::is_server_type($type)) {
 				continue;
 			}
 			[$status, $statusCode, $error, $result] = static::evalOne($type, $monitor, $server, $payload, true);
@@ -220,15 +215,33 @@ class ServerAgent {
 				strval(round($age, 2)),
 			];
 		}
+		if ($type === \Monitors::TYPE_SERVER_CONTAINER) {
+			$name = trim(strval($monitor['container'] ?? ''));
+			$src = $payload;
+			if (!$src) {
+				$decoded = @json_decode(strval($server['last_payload'] ?? ''), true);
+				$src = is_array($decoded) ? $decoded : [];
+			}
+			return static::evalContainer($name, $src);
+		}
 		$cpu = floatval($server['cpu_usage_pct'] ?? 0);
 		$mem = floatval($server['mem_used_pct'] ?? 0);
 		$disk = floatval($server['disk_used_pct_max'] ?? 0);
+		$mount = trim(strval($monitor['container'] ?? ''));
 		if ($payload) {
 			if (isset($payload['cpu']['usage_pct'])) {
 				$cpu = floatval($payload['cpu']['usage_pct']);
 			}
 			if (isset($payload['memory']['used_pct'])) {
 				$mem = floatval($payload['memory']['used_pct']);
+			}
+			if ($type === \Monitors::TYPE_SERVER_DISK) {
+				$disk = static::diskUsedPctFromPayload($payload, $mount, $disk);
+			}
+		} elseif ($type === \Monitors::TYPE_SERVER_DISK && $mount !== '') {
+			$decoded = @json_decode(strval($server['last_payload'] ?? ''), true);
+			if (is_array($decoded)) {
+				$disk = static::diskUsedPctFromPayload($decoded, $mount, $disk);
 			}
 		}
 		$value = match ($type) {
@@ -239,12 +252,83 @@ class ServerAgent {
 		};
 		$limit = $threshold > 0 ? $threshold : 90.0;
 		$ok = $value < $limit;
+		$failMsg = 'threshold exceeded';
+		if ($type === \Monitors::TYPE_SERVER_DISK && $mount !== '') {
+			$failMsg = 'threshold exceeded ('.$mount.')';
+		}
 		return [
 			$ok ? \MonitoringLogs::STATUS_GOOD : \MonitoringLogs::STATUS_FAIL,
 			$ok ? 200 : 500,
-			$ok ? '' : 'threshold exceeded',
+			$ok ? '' : $failMsg,
 			strval(round($value, 2)),
 		];
+	}
+
+	/**
+	 * @param array<string,mixed> $payload
+	 * @return array{0:int,1:int,2:string,3:string}
+	 */
+	static private function evalContainer(string $name, array $payload): array {
+		if ($name === '') {
+			return [\MonitoringLogs::STATUS_FAIL, 404, 'container not set', '0'];
+		}
+		$docker = is_array($payload['docker'] ?? null) ? $payload['docker'] : [];
+		if (empty($docker['available'])) {
+			return [\MonitoringLogs::STATUS_FAIL, 503, 'docker unavailable', '0'];
+		}
+		$containers = is_array($docker['containers'] ?? null) ? $docker['containers'] : [];
+		$found = null;
+		foreach ($containers as $c) {
+			if (!is_array($c)) {
+				continue;
+			}
+			if (strval($c['name'] ?? '') === $name) {
+				$found = $c;
+				break;
+			}
+		}
+		if (!$found) {
+			return [\MonitoringLogs::STATUS_FAIL, 404, 'container not found: '.$name, '0'];
+		}
+		$state = strtolower(trim(strval($found['state'] ?? '')));
+		$ok = $state === 'running';
+		$statusText = trim(strval($found['status'] ?? $state));
+		return [
+			$ok ? \MonitoringLogs::STATUS_GOOD : \MonitoringLogs::STATUS_FAIL,
+			$ok ? 200 : 500,
+			$ok ? '' : 'container '.$name.' is '.$statusText,
+			$state,
+		];
+	}
+
+	/**
+	 * @param array<string,mixed> $payload
+	 */
+	static private function diskUsedPctFromPayload(array $payload, string $mount, float $fallback): float {
+		$disks = is_array($payload['disks'] ?? null) ? $payload['disks'] : [];
+		if ($mount !== '') {
+			foreach ($disks as $d) {
+				if (!is_array($d)) {
+					continue;
+				}
+				if (strval($d['mount'] ?? '') === $mount) {
+					return floatval($d['used_pct'] ?? 0);
+				}
+			}
+			// selected mount missing from report — treat as full / fail-friendly
+			return 100.0;
+		}
+		$max = 0.0;
+		foreach ($disks as $d) {
+			if (!is_array($d)) {
+				continue;
+			}
+			$pct = floatval($d['used_pct'] ?? 0);
+			if ($pct > $max) {
+				$max = $pct;
+			}
+		}
+		return $disks ? $max : $fallback;
 	}
 
 	/** @return array<string,mixed>|null */

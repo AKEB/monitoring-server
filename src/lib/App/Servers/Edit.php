@@ -230,6 +230,8 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 						echo $this->template->html_input("create_date", $this->server['create_date'] ?? '', \T::Server_Edit_CreateTime(), false, ['readonly' => true]);
 						echo $this->template->html_input("last_seen_date", $this->server['last_seen_date'] ?? '', \T::Server_Edit_LastSeen(), false, ['readonly' => true]);
 						echo '<p class="mb-2 text-muted">'.\T::Server_Edit_PermissionsHint().'</p>';
+					} else {
+						echo '<p class="mb-3 text-muted">'.\T::Server_Edit_CreateInstallHint().'</p>';
 					}
 					?>
 					<div class="d-flex flex-row-reverse">
@@ -239,6 +241,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 			</div>
 
 			<?php if (!empty($this->server['id'])) {
+				$this->print_install_docs();
 				$this->print_status_cards();
 				$this->print_charts();
 				$this->print_docker();
@@ -247,6 +250,68 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 			} ?>
 		</div>
 		<?php
+	}
+
+	private function print_install_docs() {
+		$key = $this->can_secrets ? strval($this->server['agent_key_hash'] ?? '') : '***';
+		$serverHost = rtrim(strval(\Config::getInstance()->app_base_url ?? ''), '/');
+		if ($serverHost === '') {
+			$scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+			$host = strval($_SERVER['HTTP_HOST'] ?? 'monitoring.example.com');
+			$serverHost = $scheme.'://'.$host;
+		}
+		$script = $this->agentInstallScript($serverHost, $key);
+		?>
+		<div class="card bg-transparent col-xl-10 p-4 mt-2 mb-3">
+			<div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+				<h4 class="mb-0"><?=\T::Server_Edit_InstallTitle();?></h4>
+				<button class="btn btn-outline-secondary btn-sm copy-agent-install" type="button" title="Copy">
+					<i class="bi bi-clipboard"></i> <?=\T::Server_Edit_InstallCopy();?>
+				</button>
+			</div>
+			<div class="card-body">
+				<p class="text-muted"><?=\T::Server_Edit_InstallHint();?></p>
+				<pre class="bg-dark text-light p-3 rounded" id="agent-install-script" style="white-space:pre-wrap;"><?=htmlspecialchars($script, ENT_QUOTES, 'UTF-8');?></pre>
+			</div>
+		</div>
+		<?php
+	}
+
+	private function agentInstallScript(string $serverHost, string $agentKey): string {
+		$serverHost = rtrim($serverHost, '/').'/';
+		$version = 'v1.0.1';
+		return <<<SH
+#!/bin/bash
+set -euo pipefail
+
+VERSION="{$version}"
+ARCH="\$(uname -m)"
+case "\$ARCH" in
+  x86_64|amd64) BINARY="monitoring-agent-linux-amd64" ;;
+  aarch64|arm64) BINARY="monitoring-agent-linux-arm64" ;;
+  *) echo "Unsupported arch: \$ARCH"; exit 1 ;;
+esac
+
+mkdir -p /opt/monitoring-agent
+cd /opt/monitoring-agent
+
+wget -q -O "\$BINARY" "https://github.com/AKEB/monitoring-agent/releases/download/\${VERSION}/\${BINARY}"
+wget -q -O monitoring-agent.service "https://raw.githubusercontent.com/AKEB/monitoring-agent/refs/heads/main/deploy/monitoring-agent.service"
+chmod +x "\$BINARY"
+mv -f "\$BINARY" monitoring-agent
+cp -f monitoring-agent.service /etc/systemd/system/monitoring-agent.service
+
+cat >/opt/monitoring-agent/.env <<EOF
+TZ=Europe/Moscow
+SERVER_HOST={$serverHost}
+AGENT_KEY_HASH={$agentKey}
+REPORT_INTERVAL_SEC=60
+EOF
+
+systemctl daemon-reload
+systemctl enable --now monitoring-agent
+systemctl --no-pager --full status monitoring-agent || true
+SH;
 	}
 
 	private function print_status_cards() {
@@ -446,5 +511,31 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 		<?php
 	}
 
-	private function print_javascript() {}
+	private function print_javascript() {
+		?>
+		<script nonce="<?=\CSP::nonceRandom();?>">
+			$(document).ready(function(){
+				$('body').on('click', '.copy-agent-install', function() {
+					const text = ($('#agent-install-script').text() || '').toString();
+					if (!text) return;
+					const $btn = $(this);
+					const done = function() {
+						const $icon = $btn.find('i');
+						$icon.removeClass('bi-clipboard').addClass('bi-clipboard-check');
+						setTimeout(function() {
+							$icon.removeClass('bi-clipboard-check').addClass('bi-clipboard');
+						}, 1500);
+					};
+					if (navigator.clipboard && navigator.clipboard.writeText) {
+						navigator.clipboard.writeText(text).then(done).catch(function() {
+							done();
+						});
+					} else {
+						done();
+					}
+				});
+			});
+		</script>
+		<?php
+	}
 }

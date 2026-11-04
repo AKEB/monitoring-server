@@ -398,6 +398,16 @@ class MonitorsService {
 				$default = $type === \Monitors::TYPE_SERVER_OFFLINE ? 3 : 90;
 				$row['value'] = intval($payload['value'] ?? $default);
 			}
+			if ($type === \Monitors::TYPE_SERVER_DISK && ($creating || array_key_exists('disk_mount', $payload) || array_key_exists('container', $payload))) {
+				$row['container'] = trim(strval($payload['disk_mount'] ?? $payload['container'] ?? ''));
+			} elseif ($type === \Monitors::TYPE_SERVER_CONTAINER && ($creating || array_key_exists('agent_container', $payload) || array_key_exists('container', $payload))) {
+				$row['container'] = trim(strval($payload['agent_container'] ?? $payload['container'] ?? ''));
+				if ($row['container'] === '') {
+					return ['error' => 'Container required', 'http' => 422];
+				}
+			} elseif ($creating || !in_array($type, [\Monitors::TYPE_SERVER_DISK, \Monitors::TYPE_SERVER_CONTAINER], true)) {
+				$row['container'] = '';
+			}
 		}
 
 		if ($existing && intval($existing['type'] ?? 0) === \Monitors::TYPE_EXTERNAL && $type !== \Monitors::TYPE_EXTERNAL) {

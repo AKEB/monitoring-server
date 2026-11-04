@@ -133,6 +133,11 @@ Monitor:
     Container: "Container"
     Server: "Server"
     ServerNotFound: "Server not found"
+    OfflineMinutes: "Minutes without report"
+    DiskMount: "Disk mount"
+    DiskMountMax: "Any (max used %)"
+    AgentContainer: "Docker container"
+    ContainerRequired: "Select a Docker container"
     SignatureProject: "Signature project"
     SignatureTitle: "Alert signature"
     SignatureText: "Signature text"
@@ -168,6 +173,7 @@ Monitor:
     ServerCPU: "Server CPU"
     ServerMemory: "Server memory"
     ServerDisk: "Server disk"
+    ServerContainer: "Server Docker container"
 
 
 
@@ -387,6 +393,10 @@ Server:
     PermissionDenied: "You don't have permission to edit this server"
     NotingChanged: "Nothing changed"
     PermissionsHint: "Grant access via Admin → Users/Groups → Permissions (subject type Servers)."
+    CreateInstallHint: "After create you will get AGENT_KEY_HASH and an install script for the host agent."
+    InstallTitle: "Install agent on the server"
+    InstallHint: "Run as root on the target host (amd64 or arm64 is detected automatically). The key below is already filled in."
+    InstallCopy: "Copy script"
     StatusTitle: "Current status"
     Disks: "Disks"
     Network: "Network"

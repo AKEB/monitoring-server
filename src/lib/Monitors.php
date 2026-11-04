@@ -21,10 +21,11 @@ class Monitors extends \DB\MySQLObject implements \PermissionSubject_Interface {
 	const TYPE_EXPORTER_CPU    = 7;
 	const TYPE_HTTP_JSON       = 8;
 	const TYPE_EXTERNAL        = 9;
-	const TYPE_SERVER_OFFLINE  = 10;
-	const TYPE_SERVER_CPU      = 11;
-	const TYPE_SERVER_MEMORY   = 12;
-	const TYPE_SERVER_DISK     = 13;
+	const TYPE_SERVER_OFFLINE    = 10;
+	const TYPE_SERVER_CPU        = 11;
+	const TYPE_SERVER_MEMORY     = 12;
+	const TYPE_SERVER_DISK       = 13;
+	const TYPE_SERVER_CONTAINER  = 14;
 
 	/** Virtual worker_id for push-based External monitors (never a real Workers row). */
 	const EXTERNAL_WORKER_ID = -1;
@@ -68,6 +69,7 @@ class Monitors extends \DB\MySQLObject implements \PermissionSubject_Interface {
 			static::TYPE_SERVER_CPU => \T::Monitor_Type_ServerCPU(),
 			static::TYPE_SERVER_MEMORY => \T::Monitor_Type_ServerMemory(),
 			static::TYPE_SERVER_DISK => \T::Monitor_Type_ServerDisk(),
+			static::TYPE_SERVER_CONTAINER => \T::Monitor_Type_ServerContainer(),
 			// static::TYPE_EXPORTER_CPU => \T::Monitor_Type_ExporterCPU(),
 		];
 	}
@@ -79,6 +81,7 @@ class Monitors extends \DB\MySQLObject implements \PermissionSubject_Interface {
 			static::TYPE_SERVER_CPU,
 			static::TYPE_SERVER_MEMORY,
 			static::TYPE_SERVER_DISK,
+			static::TYPE_SERVER_CONTAINER,
 		];
 	}
 
