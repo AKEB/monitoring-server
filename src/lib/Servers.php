@@ -71,6 +71,28 @@ class Servers extends \DB\MySQLObject implements \PermissionSubject_Interface {
 	}
 
 	/**
+	 * @param array<string,mixed> $server
+	 */
+	static public function effectiveDesiredAgentVersion(array $server): string {
+		return \AgentUpdate::desiredForServer($server);
+	}
+
+	/**
+	 * @param array<string,mixed> $server
+	 */
+	static public function agentNeedsUpdate(array $server): bool {
+		$desired = static::effectiveDesiredAgentVersion($server);
+		if ($desired === '') {
+			return false;
+		}
+		$current = trim(strval($server['agent_version'] ?? ''));
+		if ($current === '') {
+			return true;
+		}
+		return !\AgentUpdate::versionsEqual($current, $desired);
+	}
+
+	/**
 	 * @return array<int,string>
 	 */
 	static public function options_hash_for_user(): array {

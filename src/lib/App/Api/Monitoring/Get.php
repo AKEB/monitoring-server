@@ -57,9 +57,30 @@ class Get extends \Routing_Parent implements \Routing_Interface {
 			$save_data['protocol_version'] = $this->data['protocol_version'];
 			$save_data['update_time'] = time();
 		}
-		if (isset($this->data['worker_version']) && $this->data['worker_version'] && $this->data['worker_version'] != $this->worker['worker_version']) {
-			$save_data['worker_version'] = $this->data['worker_version'];
+		$workerVersion = isset($this->data['worker_version']) ? mb_substr(strval($this->data['worker_version']), 0, 64) : '';
+		if ($workerVersion !== '' && $workerVersion != ($this->worker['worker_version'] ?? '')) {
+			$save_data['worker_version'] = $workerVersion;
 			$save_data['update_time'] = time();
+		}
+		if (isset($this->data['arch'])) {
+			$arch = \GithubReleaseMeta::normalizeArch(strval($this->data['arch']));
+			if ($arch !== '' && $arch !== strval($this->worker['arch'] ?? '')) {
+				$save_data['arch'] = $arch;
+				$save_data['update_time'] = time();
+			}
+		}
+		$updateError = mb_substr(trim(strval($this->data['update_error'] ?? '')), 0, 512);
+		if ($updateError !== '') {
+			$save_data['update_error'] = $updateError;
+			$save_data['update_time'] = time();
+		} elseif ($workerVersion !== '') {
+			$merged = array_merge($this->worker, $save_data);
+			$desired = \WorkerUpdate::desiredForWorker($merged);
+			if ($desired !== '' && \WorkerUpdate::versionsEqual($workerVersion, $desired)) {
+				$save_data['update_error'] = '';
+				$save_data['update_requested_at'] = 0;
+				$save_data['update_time'] = time();
+			}
 		}
 		if ($this->worker['last_active_time'] + 60 < time()) {
 			$save_data['last_active_time'] = time();
@@ -68,6 +89,7 @@ class Get extends \Routing_Parent implements \Routing_Interface {
 			$save_data['id'] = $this->worker['id'];
 			$save_data['_mode'] = \DB\Common::CSMODE_UPDATE;
 			\Workers::save($save_data);
+			$this->worker = array_merge($this->worker, $save_data);
 		}
 	}
 
@@ -82,6 +104,11 @@ class Get extends \Routing_Parent implements \Routing_Interface {
 		];
 		if (!empty($this->worker['restart_requested'])) {
 			$data['restart'] = 'true';
+		}
+		$updateCmd = \WorkerUpdate::buildCommand($this->worker, is_array($this->data) ? $this->data : [], false);
+		if ($updateCmd) {
+			\WorkerUpdate::markRequested($this->worker);
+			$data['update'] = $updateCmd;
 		}
 		return $data;
 	}

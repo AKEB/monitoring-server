@@ -30,7 +30,29 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 
 	protected function handlePostData(array $data) {
 		if (!$data) return;
+		if (!empty($data['requestAgentUpdate']) && !empty($data['id'])) {
+			$this->request_agent_update(intval($data['id']));
+			return;
+		}
 		$this->save_server($data);
+	}
+
+	private function request_agent_update(int $id): void {
+		if ($id < 1 || !\Sessions::checkPermission(\Servers::PERMISSION_ACCESS, $id, WRITE)) {
+			$this->error = \T::Server_Edit_PermissionDenied();
+			return;
+		}
+		$server = \Servers::get(['id' => $id]);
+		if (!$server) {
+			$this->error = \T::Server_Edit_NotFound();
+			return;
+		}
+		$override = \AppOptions::normalizeVersion(strval($this->server['desired_agent_version'] ?? $server['desired_agent_version'] ?? ''));
+		if (isset($_POST['desired_agent_version'])) {
+			$override = \AppOptions::normalizeVersion(strval($_POST['desired_agent_version']));
+		}
+		\AgentUpdate::requestNow($id, $override);
+		$this->success = \T::Server_Update_Requested();
 	}
 
 	/** @param array<string,mixed> $data */
@@ -57,6 +79,9 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 			} else {
 				$params['status'] = 0;
 			}
+			if (array_key_exists('desired_agent_version', $data)) {
+				$params['desired_agent_version'] = \AppOptions::normalizeVersion(strval($data['desired_agent_version']));
+			}
 
 			if (!empty($params['id'])) {
 				if (!\Sessions::checkPermission(\Servers::PERMISSION_ACCESS, $params['id'], WRITE)) {
@@ -75,6 +100,12 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 						break;
 					}
 					$params['agent_key_hash'] = \Servers::generateAgentKeyHash();
+				}
+				if (isset($params['desired_agent_version'])
+					&& strval($params['desired_agent_version']) !== strval($old['desired_agent_version'] ?? '')
+				) {
+					$params['update_requested_at'] = 0;
+					$params['update_error'] = '';
 				}
 				foreach ($params as $k => $v) {
 					if (($old[$k] ?? null) == $v && $k !== 'id') {
@@ -229,6 +260,18 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 						}
 						echo $this->template->html_input("create_date", $this->server['create_date'] ?? '', \T::Server_Edit_CreateTime(), false, ['readonly' => true]);
 						echo $this->template->html_input("last_seen_date", $this->server['last_seen_date'] ?? '', \T::Server_Edit_LastSeen(), false, ['readonly' => true]);
+						$currentAgent = htmlspecialchars(strval($this->server['agent_version'] ?? ''), ENT_QUOTES, 'UTF-8');
+						$effectiveDesired = htmlspecialchars(\Servers::effectiveDesiredAgentVersion($this->server), ENT_QUOTES, 'UTF-8');
+						echo $this->template->html_input("agent_version_display", $currentAgent !== '' ? $currentAgent : '—', \T::Server_Table_AgentVersion(), false, ['readonly' => true]);
+						echo $this->template->html_input("desired_agent_version", htmlspecialchars(strval($this->server['desired_agent_version'] ?? ''), ENT_QUOTES, 'UTF-8'), \T::Server_Update_OverrideVersion(), false, [
+							'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+							'readonly' => !$this->can_write,
+							'placeholder' => \T::Server_Update_OverridePlaceholder(),
+						]);
+						echo '<p class="mb-2 text-muted">'.\T::Server_Update_EffectiveDesired($effectiveDesired !== '' ? $effectiveDesired : '—').'</p>';
+						if (!empty($this->server['update_error'])) {
+							echo '<p class="mb-2 text-danger"><i class="bi bi-exclamation-triangle"></i> '.htmlspecialchars(strval($this->server['update_error']), ENT_QUOTES, 'UTF-8').'</p>';
+						}
 						echo '<p class="mb-2 text-muted">'.\T::Server_Edit_PermissionsHint().'</p>';
 					} else {
 						echo '<p class="mb-3 text-muted">'.\T::Server_Edit_CreateInstallHint().'</p>';
@@ -236,6 +279,9 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					?>
 					<div class="d-flex flex-row-reverse">
 						<button type="submit" class="btn btn-primary me-2" name="<?=!empty($this->server['id']) ? 'editServer' : 'createServer';?>" value="true"><?=(!empty($this->server['id']) ? \T::Server_Edit_ChangeButton() : \T::Server_Edit_CreateButton());?></button>
+						<?php if (!empty($this->server['id']) && $this->can_write) { ?>
+							<button type="submit" class="btn btn-outline-warning me-2" name="requestAgentUpdate" value="true"><?=\T::Server_Update_RequestNow();?></button>
+						<?php } ?>
 					</div>
 				</form>
 			</div>
@@ -277,7 +323,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 
 	private function agentInstallScript(string $serverHost, string $agentKey): string {
 		$serverHost = rtrim($serverHost, '/').'/';
-		$version = 'v1.0.1';
+		$version = 'v1.1.0';
 		return <<<SH
 #!/bin/bash
 set -euo pipefail

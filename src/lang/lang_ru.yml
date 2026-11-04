@@ -55,7 +55,18 @@ Worker:
     PermissionDenied: "У вас нет прав на редактирование этого обработчика"
     NotingChanged: "Ничего не изменилось"
     RestartButton: "Перезапустить"
-    
+  Update:
+    GlobalTitle: "Целевая версия обработчика"
+    GlobalHint: "Go-воркеры с AUTO_UPDATE=true скачают этот тег с GitHub Releases, если версия другая. Пусто — не принуждать. Override на воркере имеет приоритет."
+    DesiredVersion: "Целевая версия"
+    SaveGlobal: "Сохранить целевую версию"
+    GlobalSaved: "Целевая версия обработчика сохранена"
+    OverrideVersion: "Целевая версия обработчика (override)"
+    OverridePlaceholder: "пусто = глобальная"
+    EffectiveDesired: "Эффективная цель: %s"
+    RequestNow: "Обновить обработчик сейчас"
+    Requested: "Обновление поставлено в очередь — воркер подтянет на следующей синхронизации задач"
+
   Create:
     PermissionDenied: "У вас нет прав на создание обработчика"
 
@@ -399,6 +410,17 @@ Server:
     DockerTitle: "Docker-контейнеры"
     ProcessesTitle: "Процессы"
     AuthTitle: "Авторизации"
+  Update:
+    GlobalTitle: "Целевая версия агента"
+    GlobalHint: "Агенты с AUTO_UPDATE=true скачают этот тег с GitHub Releases, если их версия другая. Пусто — не принуждать. Override на сервере имеет приоритет."
+    DesiredVersion: "Целевая версия"
+    SaveGlobal: "Сохранить целевую версию"
+    GlobalSaved: "Целевая версия агента сохранена"
+    OverrideVersion: "Целевая версия агента (override)"
+    OverridePlaceholder: "пусто = глобальная"
+    EffectiveDesired: "Эффективная цель: %s"
+    RequestNow: "Обновить агент сейчас"
+    Requested: "Обновление поставлено в очередь — агент подтянет на следующем отчёте"
 
 Maintenances:
   Menu: "Тех. работы"

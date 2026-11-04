@@ -27,7 +27,29 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 	protected function handlePostData(array $data) {
 		// Обработка POST данных
 		if (!isset($data)) return;
+		if (!empty($data['requestWorkerUpdate']) && !empty($data['id'])) {
+			$this->request_worker_update(intval($data['id']), $data);
+			return;
+		}
 		$this->save_worker($data);
+	}
+
+	/**
+	 * @param array<string,mixed> $data
+	 */
+	private function request_worker_update(int $id, array $data): void {
+		if ($id < 1 || !\Sessions::checkPermission(\Workers::PERMISSION_ACCESS, $id, WRITE)) {
+			$this->error = \T::Worker_Edit_PermissionDenied();
+			return;
+		}
+		$worker = \Workers::get(['id' => $id]);
+		if (!$worker) {
+			$this->error = \T::Worker_Edit_WorkerNotFound();
+			return;
+		}
+		$override = \AppOptions::normalizeVersion(strval($data['desired_worker_version'] ?? $worker['desired_worker_version'] ?? ''));
+		\WorkerUpdate::requestNow($id, $override);
+		$this->success = \T::Worker_Update_Requested();
 	}
 
 	/**
@@ -95,6 +117,9 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				$data['logs_write_timeout'] = trim($data['logs_write_timeout']);
 				$params['logs_write_timeout'] = intval($data['logs_write_timeout']);
 			}
+			if (array_key_exists('desired_worker_version', $data)) {
+				$params['desired_worker_version'] = \AppOptions::normalizeVersion(strval($data['desired_worker_version']));
+			}
 
 			$old_worker = [];
 			$update_jobs = [];
@@ -117,6 +142,12 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				if (!$old_worker) {
 					$this->error = \T::Worker_Edit_WorkerNotFound();
 					break;
+				}
+				if (isset($params['desired_worker_version'])
+					&& strval($params['desired_worker_version']) !== strval($old_worker['desired_worker_version'] ?? '')
+				) {
+					$params['update_requested_at'] = 0;
+					$params['update_error'] = '';
 				}
 				$allowed_monitors = [];
 				$all_monitors = \Monitors::data(false, sql_pholder(' AND `type` NOT IN (?@)', [\Monitors::TYPE_FOLDER, \Monitors::TYPE_DOCKER]), '`id`');
@@ -411,6 +442,16 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 
 						echo $this->template->html_input("protocol_version", $this->worker['protocol_version']??'', \T::Worker_Edit_ProtocolVersion(), false, ['readonly' => true]);
 						echo $this->template->html_input("worker_version", $this->worker['worker_version']??'', \T::Worker_Edit_WorkerVersion(), false, ['readonly' => true]);
+						$effectiveDesired = htmlspecialchars(\Workers::effectiveDesiredWorkerVersion($this->worker), ENT_QUOTES, 'UTF-8');
+						echo $this->template->html_input("desired_worker_version", htmlspecialchars(strval($this->worker['desired_worker_version'] ?? ''), ENT_QUOTES, 'UTF-8'), \T::Worker_Update_OverrideVersion(), false, [
+							'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+							'readonly' => !$this->can_write,
+							'placeholder' => \T::Worker_Update_OverridePlaceholder(),
+						]);
+						echo '<p class="mb-2 text-muted">'.\T::Worker_Update_EffectiveDesired($effectiveDesired !== '' ? $effectiveDesired : '—').'</p>';
+						if (!empty($this->worker['update_error'])) {
+							echo '<p class="mb-2 text-danger"><i class="bi bi-exclamation-triangle"></i> '.htmlspecialchars(strval($this->worker['update_error']), ENT_QUOTES, 'UTF-8').'</p>';
+						}
 
 						echo $this->template->html_input("last_active_date", $status, \T::Worker_Edit_LastActiveTime(), false, [
 							'readonly' => true,
@@ -462,6 +503,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 						<div class="d-flex flex-row-reverse gap-2">
 							<button type="submit" class="btn btn-primary" name="<?=$this->worker['id'] ? 'editWorker' : 'createWorker';?>" value="true"><?=($this->worker['id'] ? \T::Worker_Edit_ChangeButton() : \T::Worker_Edit_CreateButton());?></button>
 							<?php if ($this->worker['id'] && $this->can_write) { ?>
+								<button type="submit" class="btn btn-outline-info" name="requestWorkerUpdate" value="true"><?=\T::Worker_Update_RequestNow();?></button>
 								<button type="submit" class="btn btn-outline-warning" name="restart_worker" value="1"><?=\T::Worker_Edit_RestartButton();?></button>
 							<?php } ?>
 						</div>

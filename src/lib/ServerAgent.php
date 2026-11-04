@@ -77,12 +77,14 @@ class ServerAgent {
 			$collectedAt = $now;
 		}
 
+		$agentVersion = mb_substr(strval($data['agent_version'] ?? ''), 0, 64);
+		$updateError = mb_substr(trim(strval($data['update_error'] ?? '')), 0, 512);
 		$patch = [
 			'id' => $serverId,
 			'hostname' => mb_substr(strval($host['hostname'] ?? ''), 0, 255),
 			'os' => mb_substr(trim(strval($host['platform'] ?? $host['os'] ?? '') . ' ' . strval($host['platform_version'] ?? '')), 0, 64),
 			'arch' => mb_substr(strval($host['arch'] ?? ''), 0, 32),
-			'agent_version' => mb_substr(strval($data['agent_version'] ?? ''), 0, 64),
+			'agent_version' => $agentVersion,
 			'last_seen_time' => $now,
 			'last_success_time' => $now,
 			'cpu_usage_pct' => round(floatval($cpu['usage_pct'] ?? 0), 2),
@@ -94,7 +96,17 @@ class ServerAgent {
 			'update_time' => $now,
 			'_mode' => \DB\Common::CSMODE_UPDATE,
 		];
+		if ($updateError !== '') {
+			$patch['update_error'] = $updateError;
+		} else {
+			$desired = \AgentUpdate::desiredForServer($server);
+			if ($desired !== '' && \AgentUpdate::versionsEqual($agentVersion, $desired)) {
+				$patch['update_error'] = '';
+				$patch['update_requested_at'] = 0;
+			}
+		}
 		\Servers::save($patch);
+		$server = array_merge($server, $patch);
 
 		\ServerMetrics::save([
 			'server_id' => $serverId,
@@ -126,8 +138,15 @@ class ServerAgent {
 			]);
 		}
 
-		static::evaluateMonitors($serverId, array_merge($server, $patch), $data);
-		return ['server_id' => $serverId];
+		static::evaluateMonitors($serverId, $server, $data);
+
+		$response = ['server_id' => $serverId];
+		$updateCmd = \AgentUpdate::buildCommand($server, $data, false);
+		if ($updateCmd) {
+			\AgentUpdate::markRequested($server);
+			$response['update'] = $updateCmd;
+		}
+		return $response;
 	}
 
 	/**

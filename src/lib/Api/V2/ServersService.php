@@ -157,6 +157,17 @@ class ServersService {
 		if ($creating || array_key_exists('status', $payload)) {
 			$row['status'] = \EntityValidation::normalizeSwitchStatus($payload['status'] ?? 1);
 		}
+		if ($creating || array_key_exists('desired_agent_version', $payload)) {
+			$row['desired_agent_version'] = \AppOptions::normalizeVersion(strval($payload['desired_agent_version'] ?? ''));
+			if (!$creating && array_key_exists('desired_agent_version', $payload)) {
+				$row['update_requested_at'] = 0;
+				$row['update_error'] = '';
+			}
+		}
+		if (!empty($payload['request_agent_update'])) {
+			$row['update_requested_at'] = 0;
+			$row['update_error'] = '';
+		}
 		return $row;
 	}
 
@@ -169,6 +180,8 @@ class ServersService {
 		unset($row['_mode']);
 		$id = intval($row['id'] ?? 0);
 		$row['online'] = \Servers::isOnline($row);
+		$row['effective_desired_agent_version'] = \Servers::effectiveDesiredAgentVersion($row);
+		$row['agent_needs_update'] = \Servers::agentNeedsUpdate($row);
 		$canKey = !empty($user['__agent_key_hash'])
 			|| Runtime::$bypassAcl
 			|| ($id > 0 && Acl::can($user, \Servers::PERMISSION_SECRETS, $id, READ));

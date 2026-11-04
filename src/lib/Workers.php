@@ -40,4 +40,26 @@ class Workers extends \DB\MySQLObject implements \PermissionSubject_Interface {
 		return [];
 	}
 
+	/**
+	 * @param array<string,mixed> $worker
+	 */
+	static public function effectiveDesiredWorkerVersion(array $worker): string {
+		return \WorkerUpdate::desiredForWorker($worker);
+	}
+
+	/**
+	 * @param array<string,mixed> $worker
+	 */
+	static public function workerNeedsUpdate(array $worker): bool {
+		$desired = static::effectiveDesiredWorkerVersion($worker);
+		if ($desired === '') {
+			return false;
+		}
+		$current = trim(strval($worker['worker_version'] ?? ''));
+		if ($current === '') {
+			return true;
+		}
+		return !\WorkerUpdate::versionsEqual($current, $desired);
+	}
+
 }

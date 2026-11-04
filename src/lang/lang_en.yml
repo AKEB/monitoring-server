@@ -56,7 +56,18 @@ Worker:
     PermissionDenied: "You don't have permission to edit this worker"
     NotingChanged: "Nothing changed"
     RestartButton: "Restart"
-    
+  Update:
+    GlobalTitle: "Worker target version"
+    GlobalHint: "Go workers with AUTO_UPDATE=true pull this GitHub release tag when their reported version differs. Leave empty to disable. Per-worker override wins when set."
+    DesiredVersion: "Desired version"
+    SaveGlobal: "Save target version"
+    GlobalSaved: "Target worker version saved"
+    OverrideVersion: "Desired worker version (override)"
+    OverridePlaceholder: "empty = use global"
+    EffectiveDesired: "Effective target: %s"
+    RequestNow: "Update worker now"
+    Requested: "Update queued — worker will pull on the next jobs sync"
+
   Create:
     PermissionDenied: "You don't have permission to create a worker"
 
@@ -404,6 +415,17 @@ Server:
     DockerTitle: "Docker containers"
     ProcessesTitle: "Processes"
     AuthTitle: "Auth events"
+  Update:
+    GlobalTitle: "Agent target version"
+    GlobalHint: "Agents with AUTO_UPDATE=true pull this GitHub release tag when their reported version differs. Leave empty to disable forced updates. Per-server override wins when set."
+    DesiredVersion: "Desired version"
+    SaveGlobal: "Save target version"
+    GlobalSaved: "Target agent version saved"
+    OverrideVersion: "Desired agent version (override)"
+    OverridePlaceholder: "empty = use global"
+    EffectiveDesired: "Effective target: %s"
+    RequestNow: "Update agent now"
+    Requested: "Update queued — agent will pull on the next report"
 
 Maintenances:
   Menu: "Maintenances"

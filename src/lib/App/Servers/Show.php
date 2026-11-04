@@ -14,6 +14,7 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 	public function Run($action = 'list', $server_id = null) {
 		$this->check_auth();
 		$this->check_permissions();
+		$this->processRequest();
 
 		if ($action == 'delete' && $server_id) {
 			\Csrf::requirePost();
@@ -24,9 +25,43 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 
 		$this->template = new \Template('Servers');
 		$this->print_header();
+		$this->print_global_desired_version();
 		$this->print_table();
 		$this->print_modal();
 		$this->print_javascript();
+	}
+
+	protected function handlePostData(array $data) {
+		if (!$data) {
+			return;
+		}
+		if (!empty($data['saveGlobalDesiredAgentVersion'])) {
+			$this->saveGlobalDesiredAgentVersion($data);
+		}
+	}
+
+	/** @param array<string,mixed> $data */
+	private function saveGlobalDesiredAgentVersion(array $data): void {
+		if (!$this->can_create && !\Sessions::in_group(\Groups::ADMIN_GROUP_ID, intval(\Sessions::currentUser()['id'] ?? 0))) {
+			$this->error = \T::Server_Edit_PermissionDenied();
+			return;
+		}
+		$version = \AppOptions::normalizeVersion(strval($data['desired_agent_version'] ?? ''));
+		\AppOptions::setDesiredAgentVersion($version);
+		// Reset cooldown so next reports pick up the new target.
+		foreach (\Servers::data() ?: [] as $row) {
+			$id = intval($row['id'] ?? 0);
+			if ($id < 1) {
+				continue;
+			}
+			\Servers::save([
+				'id' => $id,
+				'update_requested_at' => 0,
+				'update_time' => time(),
+				'_mode' => \DB\Common::CSMODE_UPDATE,
+			]);
+		}
+		$this->success = \T::Server_Update_GlobalSaved();
 	}
 
 	private function check_permissions() {
@@ -102,6 +137,35 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 		<?php
 	}
 
+	private function print_global_desired_version() {
+		$canManage = $this->can_create || \Sessions::in_group(\Groups::ADMIN_GROUP_ID, intval(\Sessions::currentUser()['id'] ?? 0));
+		$current = htmlspecialchars(\AppOptions::getDesiredAgentVersion(), ENT_QUOTES, 'UTF-8');
+		?>
+		<div class="row d-flex justify-content-center mb-3">
+			<div class="card bg-transparent col-xl-10 p-3">
+				<div class="card-header bg-transparent"><h4 class="mb-0"><?=\T::Server_Update_GlobalTitle();?></h4></div>
+				<div class="card-body">
+					<p class="text-muted mb-2"><?=\T::Server_Update_GlobalHint();?></p>
+					<?php if ($canManage) { ?>
+						<form method="post" class="row g-2 align-items-end">
+							<?= \Csrf::field(); ?>
+							<div class="col-auto">
+								<label class="form-label" for="desired_agent_version"><?=\T::Server_Update_DesiredVersion();?></label>
+								<input type="text" class="form-control" id="desired_agent_version" name="desired_agent_version" value="<?=$current;?>" placeholder="v1.0.1" pattern="v?[0-9].*" />
+							</div>
+							<div class="col-auto">
+								<button type="submit" class="btn btn-primary" name="saveGlobalDesiredAgentVersion" value="true"><?=\T::Server_Update_SaveGlobal();?></button>
+							</div>
+						</form>
+					<?php } else { ?>
+						<p class="mb-0"><strong><?=\T::Server_Update_DesiredVersion();?>:</strong> <?=($current !== '' ? $current : '—');?></p>
+					<?php } ?>
+				</div>
+			</div>
+		</div>
+		<?php
+	}
+
 	private function print_table() {
 		?>
 		<div class="row d-flex justify-content-center">
@@ -136,6 +200,19 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 					$can_write = \Sessions::checkPermission(\Servers::PERMISSION_ACCESS, $id, WRITE);
 					$can_delete = \Sessions::checkPermission(\Servers::PERMISSION_ACCESS, $id, DELETE);
 					$title = htmlspecialchars(trim(strval($item['title'] ?? '')));
+					$currentVer = trim(strval($item['agent_version'] ?? ''));
+					$desiredVer = \Servers::effectiveDesiredAgentVersion($item);
+					$needsUpdate = \Servers::agentNeedsUpdate($item);
+					$updateError = trim(strval($item['update_error'] ?? ''));
+					$versionLabel = htmlspecialchars($currentVer !== '' ? $currentVer : '—', ENT_QUOTES, 'UTF-8');
+					if ($desiredVer !== '' && $needsUpdate) {
+						$versionLabel .= ' <span class="badge text-bg-warning">→ '.htmlspecialchars($desiredVer, ENT_QUOTES, 'UTF-8').'</span>';
+					} elseif ($desiredVer !== '' && !$needsUpdate) {
+						$versionLabel .= ' <span class="badge text-bg-success">ok</span>';
+					}
+					if ($updateError !== '') {
+						$versionLabel .= ' <i class="bi bi-exclamation-triangle text-danger" title="'.htmlspecialchars($updateError, ENT_QUOTES, 'UTF-8').'"></i>';
+					}
 					?>
 					<tr>
 						<th scope="row" class="align-middle"><?=$id;?></th>
@@ -151,7 +228,7 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 						<td class="align-middle text-center"><?=number_format(floatval($item['disk_used_pct_max'] ?? 0), 1);?>%</td>
 						<td class="align-middle text-center"><?=number_format(floatval($item['load1'] ?? 0), 2);?></td>
 						<td class="align-middle"><small><?=htmlspecialchars(implode(', ', array_slice($ips, 0, 3)));?></small></td>
-						<td class="align-middle text-center"><?=htmlspecialchars(strval($item['agent_version'] ?? ''));?></td>
+						<td class="align-middle text-center"><?=$versionLabel;?></td>
 						<td class="align-middle text-center"><?= !empty($item['last_seen_time']) ? date('Y-m-d H:i:s', intval($item['last_seen_time'])) : '';?></td>
 						<td class="align-middle text-center">
 							<?php if ($can_write) { ?>

@@ -202,6 +202,8 @@ class WorkersService {
 			$out['monitors'] = array_values(array_unique($monitors));
 			$out['dockers'] = array_values(array_unique($dockers));
 		}
+		$out['effective_desired_worker_version'] = \Workers::effectiveDesiredWorkerVersion($out);
+		$out['worker_needs_update'] = \Workers::workerNeedsUpdate($out);
 		unset($out['_mode']);
 		return $out;
 	}
@@ -216,6 +218,17 @@ class WorkersService {
 			if ($creating || array_key_exists($field, $payload)) {
 				$row[$field] = intval($payload[$field] ?? 0);
 			}
+		}
+		if ($creating || array_key_exists('desired_worker_version', $payload)) {
+			$row['desired_worker_version'] = \AppOptions::normalizeVersion(strval($payload['desired_worker_version'] ?? ''));
+			if (!$creating && array_key_exists('desired_worker_version', $payload)) {
+				$row['update_requested_at'] = 0;
+				$row['update_error'] = '';
+			}
+		}
+		if (!empty($payload['request_worker_update'])) {
+			$row['update_requested_at'] = 0;
+			$row['update_error'] = '';
 		}
 		return $row;
 	}
