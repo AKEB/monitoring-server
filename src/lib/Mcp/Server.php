@@ -10,6 +10,7 @@ use Api\V2\MaintenancesService;
 use Api\V2\MonitorsService;
 use Api\V2\NotifyService;
 use Api\V2\PermissionsService;
+use Api\V2\ServersService;
 use Api\V2\SignaturesService;
 use Api\V2\UsersService;
 use Api\V2\WorkersService;
@@ -34,7 +35,7 @@ class Server {
 			],
 			'serverInfo' => [
 				'name' => 'monitoring',
-				'version' => '0.1.0',
+				'version' => '0.2.0',
 			],
 			'instructions' => static::instructions(),
 		];
@@ -47,7 +48,8 @@ class Server {
 			'GET /api/v1/status/ is a separate opt-in feed (api_enabled flag); do not enable it for every monitor.',
 			'Prefer reading an object before updating. Validate required fields for the monitor type.',
 			'When fields, types, or response shapes are unclear, call api_docs (optionally with tag/path/operation) — same OpenAPI as /api/docs/.',
-			'Never expose notify/worker secrets unless the user explicitly needs them and has rights.',
+			'Never expose notify/worker/server agent secrets unless the user explicitly needs them and has rights.',
+			'Servers are host agents (monitoring-agent): create returns agent_key_hash for install; regenerate_key rotates it.',
 			'For maintenances, ensure finish_time >= start_time and only attach readable monitors.',
 		]);
 	}
@@ -92,6 +94,11 @@ class Server {
 			['name' => 'dockers_create', 'description' => 'Create a Docker host entry.', 'inputSchema' => ['type' => 'object', 'properties' => ['title' => ['type' => 'string'], 'host' => ['type' => 'string']], 'required' => ['title']]],
 			['name' => 'dockers_update', 'description' => 'Update a Docker host.', 'inputSchema' => ['type' => 'object', 'properties' => ['id' => ['type' => 'integer']], 'required' => ['id']]],
 			['name' => 'dockers_delete', 'description' => 'Delete a Docker host.', 'inputSchema' => $idSchema],
+			['name' => 'servers_list', 'description' => 'List host servers (monitoring-agent).', 'inputSchema' => $empty],
+			['name' => 'servers_get', 'description' => 'Get a host server. agent_key_hash is redacted without secrets permission; payload is decoded last report.', 'inputSchema' => $idSchema],
+			['name' => 'servers_create', 'description' => 'Create a host server entry and agent_key_hash for monitoring-agent install.', 'inputSchema' => ['type' => 'object', 'properties' => ['title' => ['type' => 'string'], 'status' => ['type' => 'integer'], 'desired_agent_version' => ['type' => 'string']], 'required' => ['title']]],
+			['name' => 'servers_update', 'description' => 'Update a host server. regenerate_key rotates agent_key_hash; request_agent_update clears update error state.', 'inputSchema' => ['type' => 'object', 'properties' => ['id' => ['type' => 'integer'], 'title' => ['type' => 'string'], 'status' => ['type' => 'integer'], 'desired_agent_version' => ['type' => 'string'], 'regenerate_key' => ['type' => 'boolean'], 'request_agent_update' => ['type' => 'boolean']], 'required' => ['id']]],
+			['name' => 'servers_delete', 'description' => 'Delete a host server and its derived monitors/metrics.', 'inputSchema' => $idSchema],
 			['name' => 'users_list', 'description' => 'List users (read-only).', 'inputSchema' => $empty],
 			['name' => 'groups_list', 'description' => 'List groups (read-only).', 'inputSchema' => $empty],
 			['name' => 'logs_list', 'description' => 'Read audit logs like /admin/logs/{from}/{to}/. Requires from/to YYYY-MM-DD.', 'inputSchema' => ['type' => 'object', 'properties' => ['from' => ['type' => 'string'], 'to' => ['type' => 'string']], 'required' => ['from', 'to']]],
@@ -137,6 +144,11 @@ class Server {
 			'dockers_create' => DockersService::create($user, $arguments),
 			'dockers_update' => DockersService::update($user, intval($arguments['id'] ?? 0), $arguments),
 			'dockers_delete' => DockersService::delete($user, intval($arguments['id'] ?? 0)),
+			'servers_list' => ServersService::list($user, $arguments),
+			'servers_get' => ServersService::get($user, intval($arguments['id'] ?? 0)),
+			'servers_create' => ServersService::create($user, $arguments),
+			'servers_update' => ServersService::update($user, intval($arguments['id'] ?? 0), $arguments),
+			'servers_delete' => ServersService::delete($user, intval($arguments['id'] ?? 0)),
 			'users_list' => UsersService::list($user),
 			'groups_list' => GroupsService::list($user),
 			'logs_list' => LogsService::list($user, $arguments),
@@ -162,6 +174,10 @@ class Server {
 			[
 				'name' => 'status_api_vs_management_api',
 				'description' => 'Explains /api/v1/status/ opt-in (api_enabled) vs full /api/v2 management access.',
+			],
+			[
+				'name' => 'how_to_add_host_agent',
+				'description' => 'Guide for creating a server entry, copying agent_key_hash, and installing monitoring-agent.',
 			],
 		];
 	}

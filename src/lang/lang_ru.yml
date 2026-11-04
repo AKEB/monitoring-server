@@ -147,7 +147,7 @@ Monitor:
     ServerNotFound: "Сервер не найден"
     OfflineMinutes: "Минут без отчёта"
     DiskMount: "Точка монтирования"
-    DiskMountMax: "Любой (макс. занятость %)"
+    DiskMountMax: "Любой (макс. занятость %%)"
     AgentContainer: "Docker-контейнер"
     ContainerRequired: "Выберите Docker-контейнер"
     SignatureProject: "Проект подписи"

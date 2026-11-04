@@ -148,7 +148,7 @@ Monitor:
     ServerNotFound: "Server not found"
     OfflineMinutes: "Minutes without report"
     DiskMount: "Disk mount"
-    DiskMountMax: "Any (max used %)"
+    DiskMountMax: "Any (max used %%)"
     AgentContainer: "Docker container"
     ContainerRequired: "Select a Docker container"
     SignatureProject: "Signature project"

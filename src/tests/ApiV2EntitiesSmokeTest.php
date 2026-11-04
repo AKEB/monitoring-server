@@ -57,6 +57,19 @@ class ApiV2EntitiesSmokeTest extends ApiV2TestCase {
 		$this->assertIsArray($result['data']);
 	}
 
+	function test_servers_crud_contract() {
+		$user = $this->user() + ['__agent_key_hash' => true];
+		$created = \Api\V2\ServersService::create($user, ['title' => 'Host A', 'status' => 1]);
+		$this->assertSame(0, $created['status'], json_encode($created));
+		$id = intval($created['data']['id']);
+		$this->assertNotEmpty($created['data']['agent_key_hash'] ?? '');
+		$this->assertSame(0, \Api\V2\ServersService::get($user, $id)['status']);
+		$this->assertSame(0, \Api\V2\ServersService::update($user, $id, ['title' => 'Host B'])['status']);
+		$list = \Api\V2\ServersService::list($user);
+		$this->assertSame(0, $list['status'], json_encode($list));
+		$this->assertSame(0, \Api\V2\ServersService::delete($user, $id)['status']);
+	}
+
 	function test_users_and_groups_are_read_only_list() {
 		$users = \Api\V2\UsersService::list($this->user());
 		$this->assertSame(0, $users['status'], json_encode($users));

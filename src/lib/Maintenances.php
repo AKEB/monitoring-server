@@ -30,7 +30,7 @@ class Maintenances extends \DB\MySQLObject implements \PermissionSubject_Interfa
 	}
 	static public function permissions_hash(): array {
 		return [
-			static::PERMISSION_ACCESS => \T::Maintenance_Permissions_Access(),
+			static::PERMISSION_ACCESS => \T::Maintenances_Permissions_Access(),
 		];
 	}
 

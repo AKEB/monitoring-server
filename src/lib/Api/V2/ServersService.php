@@ -47,17 +47,18 @@ class ServersService {
 		}
 		$row = static::normalizeFields($payload, true);
 		$row['title'] = $title;
-		$row['agent_key_hash'] = \Servers::generateAgentKeyHash();
 		$row['create_time'] = time();
 		$row['update_time'] = time();
 
 		$store = Runtime::store();
 		if ($store) {
+			$row['agent_key_hash'] = static::newAgentKeyHash(true);
 			return Envelope::ok(static::serialize($store->insert('servers', $row), $user));
 		}
 		if (!Acl::canCreate($user, \Servers::PERMISSION_CREATE)) {
 			return Envelope::error('Forbidden') + ['http' => 403];
 		}
+		$row['agent_key_hash'] = static::newAgentKeyHash(false);
 		$row['_mode'] = \DB\Common::CSMODE_INSERT;
 		$id = \Servers::save($row);
 		if (!$id) {
@@ -86,7 +87,7 @@ class ServersService {
 				$patch['title'] = $title;
 			}
 			if (!empty($payload['regenerate_key'])) {
-				$patch['agent_key_hash'] = \Servers::generateAgentKeyHash();
+				$patch['agent_key_hash'] = static::newAgentKeyHash(true);
 			}
 			$patch['update_time'] = time();
 			return Envelope::ok(static::serialize($store->update('servers', $id, $patch) ?? [], $user));
@@ -107,7 +108,7 @@ class ServersService {
 			$patch['title'] = $title;
 		}
 		if (!empty($payload['regenerate_key'])) {
-			$patch['agent_key_hash'] = \Servers::generateAgentKeyHash();
+			$patch['agent_key_hash'] = static::newAgentKeyHash(false);
 		}
 		$patch['id'] = $id;
 		$patch['update_time'] = time();
@@ -148,6 +149,14 @@ class ServersService {
 		return Envelope::ok(['id' => $id, 'deleted' => true]);
 	}
 
+	/** Generate agent key; $memoryOnly skips DB uniqueness check (unit tests). */
+	static private function newAgentKeyHash(bool $memoryOnly): string {
+		if ($memoryOnly) {
+			return hash('sha512', random_bytes(32));
+		}
+		return \Servers::generateAgentKeyHash();
+	}
+
 	/**
 	 * @param array<string,mixed> $payload
 	 * @return array<string,mixed>
@@ -180,8 +189,16 @@ class ServersService {
 		unset($row['_mode']);
 		$id = intval($row['id'] ?? 0);
 		$row['online'] = \Servers::isOnline($row);
-		$row['effective_desired_agent_version'] = \Servers::effectiveDesiredAgentVersion($row);
-		$row['agent_needs_update'] = \Servers::agentNeedsUpdate($row);
+		// Memory-store unit tests have no MySQL; use row override only.
+		if (Runtime::store()) {
+			$desired = \AppOptions::normalizeVersion(strval($row['desired_agent_version'] ?? ''));
+			$row['effective_desired_agent_version'] = $desired;
+			$current = trim(strval($row['agent_version'] ?? ''));
+			$row['agent_needs_update'] = $desired !== '' && ($current === '' || !\AgentUpdate::versionsEqual($current, $desired));
+		} else {
+			$row['effective_desired_agent_version'] = \Servers::effectiveDesiredAgentVersion($row);
+			$row['agent_needs_update'] = \Servers::agentNeedsUpdate($row);
+		}
 		$canKey = !empty($user['__agent_key_hash'])
 			|| Runtime::$bypassAcl
 			|| ($id > 0 && Acl::can($user, \Servers::PERMISSION_SECRETS, $id, READ));

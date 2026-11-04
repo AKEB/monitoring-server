@@ -15,6 +15,7 @@ class MemoryStore {
 		'workers' => [],
 		'maintenances' => [],
 		'dockers' => [],
+		'servers' => [],
 		'users' => [],
 		'groups' => [],
 		'logs' => [],

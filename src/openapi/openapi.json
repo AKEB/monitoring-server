@@ -1417,7 +1417,9 @@
         "properties": {
           "title": {"type": "string"},
           "status": {"type": "integer"},
-          "regenerate_key": {"type": "boolean", "description": "If true, rotate agent_key_hash"}
+          "desired_agent_version": {"type": "string", "description": "Per-server GitHub release tag override; empty clears"},
+          "regenerate_key": {"type": "boolean", "description": "If true, rotate agent_key_hash"},
+          "request_agent_update": {"type": "boolean", "description": "If true, clear update_error / update_requested_at so agent can retry"}
         }
       },
       "PermissionsSet": {

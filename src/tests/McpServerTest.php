@@ -25,6 +25,7 @@ class McpServerTest extends ApiV2TestCase {
 			'workers_list', 'workers_get', 'workers_create', 'workers_update', 'workers_delete',
 			'maintenances_list', 'maintenances_create', 'maintenances_update', 'maintenances_delete',
 			'dockers_list', 'dockers_get', 'dockers_create', 'dockers_update', 'dockers_delete',
+			'servers_list', 'servers_get', 'servers_create', 'servers_update', 'servers_delete',
 			'users_list', 'groups_list', 'logs_list',
 			'permissions_get', 'permissions_set',
 		] as $required) {
@@ -78,6 +79,32 @@ class McpServerTest extends ApiV2TestCase {
 		$this->assertContains('how_to_create_http_monitor', $names);
 		$this->assertContains('how_to_schedule_maintenance', $names);
 		$this->assertContains('status_api_vs_management_api', $names);
+		$this->assertContains('how_to_add_host_agent', $names);
+	}
+
+	function test_call_tool_servers_crud_envelope() {
+		$user = ['id' => 1, 'status' => \Users::STATUS_ACTIVE, '__agent_key_hash' => true];
+		$created = \Mcp\Server::callTool($user, 'servers_create', ['title' => 'mcp-host']);
+		$this->assertSame(0, $created['status'], json_encode($created));
+		$id = intval($created['data']['id'] ?? 0);
+		$this->assertGreaterThan(0, $id);
+		$this->assertNotEmpty($created['data']['agent_key_hash'] ?? '');
+
+		$list = \Mcp\Server::callTool($user, 'servers_list', []);
+		$this->assertSame(0, $list['status'], json_encode($list));
+		$this->assertNotEmpty($list['data']);
+
+		$got = \Mcp\Server::callTool($user, 'servers_get', ['id' => $id]);
+		$this->assertSame(0, $got['status'], json_encode($got));
+		$this->assertSame('mcp-host', $got['data']['title'] ?? null);
+
+		$updated = \Mcp\Server::callTool($user, 'servers_update', ['id' => $id, 'title' => 'mcp-host-2']);
+		$this->assertSame(0, $updated['status'], json_encode($updated));
+		$this->assertSame('mcp-host-2', $updated['data']['title'] ?? null);
+
+		$deleted = \Mcp\Server::callTool($user, 'servers_delete', ['id' => $id]);
+		$this->assertSame(0, $deleted['status'], json_encode($deleted));
+		$this->assertTrue(!empty($deleted['data']['deleted']));
 	}
 
 	function test_call_tool_monitors_list_returns_envelope() {
