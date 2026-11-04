@@ -254,12 +254,10 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 
 	private function print_install_docs() {
 		$key = $this->can_secrets ? strval($this->server['agent_key_hash'] ?? '') : '***';
-		$serverHost = rtrim(strval(\Config::getInstance()->app_base_url ?? ''), '/');
-		if ($serverHost === '') {
-			$scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-			$host = strval($_SERVER['HTTP_HOST'] ?? 'monitoring.example.com');
-			$serverHost = $scheme.'://'.$host;
-		}
+		// Prefer APP_BASE_URL; else request scheme (incl. X-Forwarded-Proto behind proxy).
+		$serverHost = function_exists('common_app_base_url')
+			? common_app_base_url()
+			: rtrim(strval(\Config::getInstance()->app_base_url ?? ''), '/');
 		$script = $this->agentInstallScript($serverHost, $key);
 		?>
 		<div class="card bg-transparent col-xl-10 p-4 mt-2 mb-3">
