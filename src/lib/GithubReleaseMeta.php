@@ -96,33 +96,30 @@ class GithubReleaseMeta extends \DB\MySQLObject {
 		$repo = $cfg['repo'];
 		$assetName = $cfg['asset'].$arch;
 		$shaName = $assetName.'.sha256';
+		$binURL = 'https://github.com/'.$repo.'/releases/download/'.$version.'/'.$assetName;
+		$shaURL = 'https://github.com/'.$repo.'/releases/download/'.$version.'/'.$shaName;
+
+		// Prefer GitHub API when available (resolves asset CDN urls), but do not
+		// hard-fail on 403 rate limits — public release download URLs still work.
 		$apiURL = 'https://api.github.com/repos/'.$repo.'/releases/tags/'.rawurlencode($version);
 		$release = static::httpGetJSON($apiURL);
-		if (!is_array($release)) {
-			return null;
-		}
-		$assets = is_array($release['assets'] ?? null) ? $release['assets'] : [];
-		$binURL = '';
-		$shaURL = '';
-		foreach ($assets as $asset) {
-			if (!is_array($asset)) {
-				continue;
-			}
-			$name = strval($asset['name'] ?? '');
-			$url = strval($asset['browser_download_url'] ?? '');
-			if ($name === $assetName) {
-				$binURL = $url;
-			} elseif ($name === $shaName) {
-				$shaURL = $url;
+		if (is_array($release)) {
+			$assets = is_array($release['assets'] ?? null) ? $release['assets'] : [];
+			foreach ($assets as $asset) {
+				if (!is_array($asset)) {
+					continue;
+				}
+				$name = strval($asset['name'] ?? '');
+				$url = strval($asset['browser_download_url'] ?? '');
+				if ($name === $assetName && $url !== '') {
+					$binURL = $url;
+				} elseif ($name === $shaName && $url !== '') {
+					$shaURL = $url;
+				}
 			}
 		}
-		if ($binURL === '') {
-			$binURL = 'https://github.com/'.$repo.'/releases/download/'.$version.'/'.$assetName;
-		}
-		$sha256 = '';
-		if ($shaURL !== '') {
-			$sha256 = static::parseSha256(static::httpGetBody($shaURL));
-		}
+
+		$sha256 = static::parseSha256(static::httpGetBody($shaURL));
 		if ($sha256 === '') {
 			$checksumsURL = 'https://github.com/'.$repo.'/releases/download/'.$version.'/checksums.txt';
 			$sha256 = static::parseSha256FromChecksums(static::httpGetBody($checksumsURL), $assetName);
