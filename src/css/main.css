@@ -114,6 +114,16 @@ div.text-success>input {
 	height: 25rem;
 }
 
+.ServerMetricsChart {
+	width: 100%;
+	height: 320px;
+}
+
+.ServerNetworkChart {
+	width: 100%;
+	height: 280px;
+}
+
 .fs-7 {
 	font-size: 0.875rem;
 }

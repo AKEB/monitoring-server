@@ -445,42 +445,81 @@ SH;
 		<div class="card bg-transparent col-xl-10 p-4 mt-2 mb-3">
 			<div class="card-header bg-transparent"><h4><?=\T::Server_Edit_ChartsTitle();?></h4></div>
 			<div class="card-body">
-				<div id="serverMetricsChart" style="width:100%;height:320px;"></div>
-				<div id="serverNetworkChart" class="mt-4" style="width:100%;height:280px;"></div>
+				<div id="serverMetricsChart" class="ServerMetricsChart"></div>
+				<div id="serverNetworkChart" class="ServerNetworkChart mt-4"></div>
 			</div>
 		</div>
 		<script nonce="<?=\CSP::nonceRandom();?>">
 			(function(){
-				const el = document.getElementById('serverMetricsChart');
-				if (!el || typeof echarts === 'undefined') return;
-				const chart = echarts.init(el);
-				chart.setOption({
-					tooltip: { trigger: 'axis' },
-					legend: { data: ['CPU %', 'RAM %', 'Disk %'] },
-					xAxis: { type: 'category', data: <?=json_encode($labels);?> },
-					yAxis: { type: 'value', min: 0, max: 100 },
-					series: [
-						{ name: 'CPU %', type: 'line', showSymbol: false, data: <?=json_encode($cpu);?> },
-						{ name: 'RAM %', type: 'line', showSymbol: false, data: <?=json_encode($mem);?> },
-						{ name: 'Disk %', type: 'line', showSymbol: false, data: <?=json_encode($disk);?> }
-					]
-				});
-				const netEl = document.getElementById('serverNetworkChart');
-				if (netEl) {
-					const netChart = echarts.init(netEl);
-					netChart.setOption({
-						tooltip: { trigger: 'axis' },
-						legend: { data: ['Download Mbps', 'Upload Mbps'] },
-						xAxis: { type: 'category', data: <?=json_encode($labels);?> },
-						yAxis: { type: 'value', min: 0, name: 'Mbps' },
-						series: [
-							{ name: 'Download Mbps', type: 'line', showSymbol: false, data: <?=json_encode($netRx);?> },
-							{ name: 'Upload Mbps', type: 'line', showSymbol: false, data: <?=json_encode($netTx);?> }
-						]
-					});
-					window.addEventListener('resize', function(){ netChart.resize(); });
+				const labels = <?=json_encode($labels, JSON_UNESCAPED_UNICODE);?>;
+				const cpu = <?=json_encode($cpu);?>;
+				const mem = <?=json_encode($mem);?>;
+				const disk = <?=json_encode($disk);?>;
+				const netRx = <?=json_encode($netRx);?>;
+				const netTx = <?=json_encode($netTx);?>;
+
+				function isDarkTheme() {
+					const theme = (document.documentElement.getAttribute('data-bs-theme') || '').toLowerCase();
+					if (theme === 'dark') return true;
+					if (theme === 'light') return false;
+					return window.matchMedia('(prefers-color-scheme: dark)').matches;
 				}
-				window.addEventListener('resize', function(){ chart.resize(); });
+
+				function baseOption(extra) {
+					const isDark = isDarkTheme();
+					return Object.assign({
+						backgroundColor: 'rgba(0,0,0,0)',
+						darkMode: isDark,
+						tooltip: { trigger: 'axis' },
+						grid: { left: '3%', right: '4%', bottom: '12%', top: '18%', containLabel: true },
+						xAxis: { type: 'category', data: labels, boundaryGap: false },
+					}, extra);
+				}
+
+				function initServerCharts() {
+					if (typeof echarts === 'undefined') return;
+					const theme = isDarkTheme() ? 'dark' : 'light';
+					const el = document.getElementById('serverMetricsChart');
+					const netEl = document.getElementById('serverNetworkChart');
+					const charts = [];
+
+					if (el) {
+						const chart = echarts.init(el, theme);
+						chart.setOption(baseOption({
+							legend: { data: ['CPU %', 'RAM %', 'Disk %'] },
+							yAxis: { type: 'value', min: 0, max: 100, name: '%' },
+							series: [
+								{ name: 'CPU %', type: 'line', showSymbol: false, data: cpu },
+								{ name: 'RAM %', type: 'line', showSymbol: false, data: mem },
+								{ name: 'Disk %', type: 'line', showSymbol: false, data: disk }
+							]
+						}));
+						charts.push(chart);
+					}
+
+					if (netEl) {
+						const netChart = echarts.init(netEl, theme);
+						netChart.setOption(baseOption({
+							legend: { data: ['Download Mbps', 'Upload Mbps'] },
+							yAxis: { type: 'value', min: 0, name: 'Mbps' },
+							series: [
+								{ name: 'Download Mbps', type: 'line', showSymbol: false, data: netRx },
+								{ name: 'Upload Mbps', type: 'line', showSymbol: false, data: netTx }
+							]
+						}));
+						charts.push(netChart);
+					}
+
+					const resize = function(){ charts.forEach(function(c){ c.resize(); }); };
+					window.addEventListener('resize', resize);
+					requestAnimationFrame(resize);
+				}
+
+				if (document.readyState === 'loading') {
+					document.addEventListener('DOMContentLoaded', initServerCharts);
+				} else {
+					initServerCharts();
+				}
 			})();
 		</script>
 		<?php
