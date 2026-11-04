@@ -364,6 +364,7 @@ class MonitoringApiStatus {
 			}
 		}
 		$hash[\Monitors::EXTERNAL_WORKER_ID] = \ExternalMonitors::workerTitle();
+		$hash[\Servers::SERVER_WORKER_ID] = \Servers::workerTitle();
 		return $hash;
 	}
 

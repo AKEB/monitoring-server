@@ -100,6 +100,43 @@ class Monitors extends \DB\MySQLObject implements \PermissionSubject_Interface {
 		return in_array($type, static::server_types(), true);
 	}
 
+	/** Types that store a numeric metric in response_error (not HTTP latency). */
+	static public function is_metric_value_type(int $type): bool {
+		return in_array($type, [
+			static::TYPE_EXPORTER_DISK,
+			static::TYPE_EXPORTER_MEMORY,
+			static::TYPE_EXPORTER_CPU,
+			static::TYPE_SERVER_OFFLINE,
+			static::TYPE_SERVER_CPU,
+			static::TYPE_SERVER_MEMORY,
+			static::TYPE_SERVER_DISK,
+			static::TYPE_SERVER_NET_RX,
+			static::TYPE_SERVER_NET_TX,
+		], true);
+	}
+
+	/** Hide response-time KPIs (latency is meaningless or unused). */
+	static public function hides_response_time_ui(int $type): bool {
+		return $type === static::TYPE_EXTERNAL
+			|| static::is_server_type($type)
+			|| in_array($type, [
+				static::TYPE_EXPORTER_DISK,
+				static::TYPE_EXPORTER_MEMORY,
+				static::TYPE_EXPORTER_CPU,
+			], true);
+	}
+
+	/** Y-axis unit for metric-value charts. */
+	static public function metric_chart_unit(int $type): string {
+		if (static::is_server_net_type($type)) {
+			return 'Mbps';
+		}
+		if ($type === static::TYPE_SERVER_OFFLINE) {
+			return 'min';
+		}
+		return '%';
+	}
+
 	static public function proxy_type_hash(): array {
 		return [
 			CURLPROXY_HTTP => 'CURLPROXY_HTTP',

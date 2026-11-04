@@ -407,7 +407,7 @@ class ServerAgent {
 			'worker_id' => \Servers::SERVER_WORKER_ID,
 			'status' => $status,
 			'status_code' => $statusCode,
-			'response_error' => mb_substr($error !== '' ? $error : ($result !== '' ? 'value='.$result : ''), 0, 255),
+			'response_error' => \MonitoringLogs::formatMetricLogMessage($result, $error),
 			'response_error_num' => $status === \MonitoringLogs::STATUS_GOOD ? 0 : 1,
 			'total_time_us' => 0,
 			'update_time' => $now,

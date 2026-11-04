@@ -109,4 +109,32 @@ class Servers extends \DB\MySQLObject implements \PermissionSubject_Interface {
 		}
 		return $out;
 	}
+
+	/** Fallback label for the virtual server-agent worker_id. */
+	static public function workerTitle(): string {
+		return \T::Monitor_Edit_Server();
+	}
+
+	/**
+	 * Prefer linked server title/hostname for monitor detail UI.
+	 *
+	 * @param array<string,mixed> $monitor
+	 */
+	static public function workerTitleForMonitor(array $monitor): string {
+		$serverId = intval($monitor['server'] ?? 0);
+		if ($serverId > 0) {
+			$server = static::get(['id' => $serverId]);
+			if ($server) {
+				$title = trim(strval($server['title'] ?? ''));
+				if ($title !== '') {
+					return $title;
+				}
+				$hostname = trim(strval($server['hostname'] ?? ''));
+				if ($hostname !== '') {
+					return $hostname;
+				}
+			}
+		}
+		return static::workerTitle();
+	}
 }

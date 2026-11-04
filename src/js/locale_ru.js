@@ -11,6 +11,8 @@ var Dashboard_30Days="30 дней"
 var Dashboard_CertExpire="Сертификат истекает"
 
 var Dashboard_Charts_ResponseTime="Время ответа"
+var Dashboard_Charts_Value="Значение"
+var Dashboard_Charts_UnitMin="мин"
 var Dashboard_Charts_30Minutes="30 минут"
 var Dashboard_Charts_1Hour="1 час"
 var Dashboard_Charts_4Hours="4 часа"

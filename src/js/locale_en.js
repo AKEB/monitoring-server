@@ -11,6 +11,8 @@ var Dashboard_30Days="30 days"
 var Dashboard_CertExpire="Certificate expires"
 
 var Dashboard_Charts_ResponseTime="Response time"
+var Dashboard_Charts_Value="Value"
+var Dashboard_Charts_UnitMin="min"
 var Dashboard_Charts_30Minutes="30 minutes"
 var Dashboard_Charts_1Hour="1 hour"
 var Dashboard_Charts_4Hours="4 hours"

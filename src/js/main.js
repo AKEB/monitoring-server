@@ -13,6 +13,45 @@ function isExternalMonitor(monitor) {
 }
 
 /**
+ * Prefer backend hide_response_time; fallback covers external/server/exporter types
+ * (disk %, CPU/RAM %, net Mbps, offline min, exporters).
+ */
+function hidesResponseTimeUi(dataOrMonitor) {
+	if (!dataOrMonitor) return false;
+	if (typeof dataOrMonitor.hide_response_time !== 'undefined') {
+		return !!dataOrMonitor.hide_response_time;
+	}
+	const monitor = dataOrMonitor.monitor || dataOrMonitor;
+	if (!monitor) return false;
+	if (isExternalMonitor(monitor)) return true;
+	const t = Number(monitor.type);
+	// Exporters 5–7; server 10–16 (offline/cpu/mem/disk/container/net)
+	return (t >= 5 && t <= 7) || (t >= 10 && t <= 16);
+}
+
+function isValueChartMonitor(data) {
+	return data && data.chart_mode === 'value';
+}
+
+function chartUnitLabel(unit) {
+	if (unit === '%') return '%';
+	if (unit === 'Mbps') return 'Mbps';
+	if (unit === 'min') return (typeof Dashboard_Charts_UnitMin !== 'undefined' ? Dashboard_Charts_UnitMin : 'min');
+	return unit || '';
+}
+
+function formatChartValue(value, unit) {
+	if (value == null || Number.isNaN(Number(value))) return '';
+	const n = Number(value);
+	if (unit === 'ms') {
+		return n >= 1000 ? (n / 1000).toFixed(2) + ' s' : n + ' ms';
+	}
+	const rounded = Number.isInteger(n) ? String(n) : n.toFixed(2);
+	const label = chartUnitLabel(unit);
+	return label ? (rounded + ' ' + label) : rounded;
+}
+
+/**
  * Escape a string for use inside an HTML attribute (e.g. data-bs-title).
  * With data-bs-html="true", entities are decoded once by the browser before
  * Bootstrap renders the tooltip, so intentional markup like &lt;br/&gt; still works.
@@ -356,11 +395,11 @@ function updateMonitorWorkersLogs(data) {
  */
 function updateMonitorLastInfo(data) {
 	const container = $('#monitor-last-info');
-	const external = isExternalMonitor(data.monitor);
+	const hideLatency = hidesResponseTimeUi(data);
 	HTML = '';
 	HTML += '<div class="card monitor-info mb-3">';
 	HTML += '<div class="card-body row">';
-		if (!external) {
+		if (!hideLatency) {
 			HTML += '<div class="center col-4 col-lg mb-3">';
 				HTML += Dashboard_Response+'<br/>';
 				HTML += '<span class="text-secondary fs-7">('+Dashboard_Last+')</span><br/>';
@@ -385,7 +424,7 @@ function updateMonitorLastInfo(data) {
 			HTML += (data['uptime_30'] ? data['uptime_30']+'%' : '');
 		HTML += '</div>';
 
-		if (!external && data['cert_expire']) {
+		if (!hideLatency && data['cert_expire']) {
 			HTML += '<div class="center col-4 col-lg mb-3">'+Dashboard_CertExpire+'<br/>';
 			HTML += '<span class="text-secondary fs-7">('+(data['cert_expire'] ? data['cert_expire'] : '')+')</span><br/>';
 			HTML += (data['cert_expire_days'] ? data['cert_expire_days'] : '')+'</div>';
@@ -524,7 +563,7 @@ function printMonitorData(data, period) {
 		
 		if (data.monitor.id && !isExternalMonitor(data.monitor)) {
 			$('#chart-period').selectpicker('render');
-			initECharts();
+			initECharts(data);
 		}
 
 	}
@@ -540,8 +579,9 @@ function printMonitorData(data, period) {
 
 /**
  * Инициализирует график ECharts с базовыми настройками.
+ * @param {Object} [data] - Данные монитора (chart_mode / chart_unit).
  */
-function initECharts() {
+function initECharts(data) {
 	// Определяем тему в зависимости от системных настроек
 	const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
 	const chartDom = document.getElementById('MonitorEChart');
@@ -554,6 +594,11 @@ function initECharts() {
 		return;
 	}
 	monitorChart = echarts.init(chartDom, isDark ? 'dark' : 'light');
+	const valueMode = isValueChartMonitor(data);
+	const unit = (data && data.chart_unit) ? data.chart_unit : 'ms';
+	const yName = valueMode
+		? ((typeof Dashboard_Charts_Value !== 'undefined' ? Dashboard_Charts_Value : 'Value') + (unit ? ' (' + chartUnitLabel(unit) + ')' : ''))
+		: Dashboard_Charts_ResponseTime;
 	
 	// Базовые опции для графика
 	const option = {
@@ -573,10 +618,7 @@ function initECharts() {
 				let result = params[0].axisValue + '<br/>';
 				params.forEach(function(item) {
 					if (item.value != null) {
-						let valueText = item.value >= 1000 ? 
-							(item.value / 1000).toFixed(2) + ' s' : 
-							item.value + ' ms';
-						result += item.seriesName + ': ' + valueText + '<br/>';
+						result += item.seriesName + ': ' + formatChartValue(item.value, unit) + '<br/>';
 					}
 				});
 				return result;
@@ -603,16 +645,14 @@ function initECharts() {
 		// Настройки оси Y
 		yAxis: {
 			type: 'value',
+			min: valueMode && unit === '%' ? 0 : undefined,
+			max: valueMode && unit === '%' ? 100 : undefined,
 			axisLabel: {
 				formatter: function(value) {
-					if (value >= 1000) {
-						return (value / 1000) + ' s';
-					} else {
-						return value + ' ms';
-					}
+					return formatChartValue(value, unit);
 				}
 			},
-			name: Dashboard_Charts_ResponseTime,
+			name: yName,
 			nameLocation: 'end',
 			nameGap: 15
 		},
@@ -743,9 +783,12 @@ function updateECharts(data) {
 	}
 
 	// Получаем отсортированные ключи времени
-	const timeKeys = Object.keys(data.logs_chart).sort((a, b) => a - b);
-
-
+	const timeKeys = Object.keys(data.logs_chart || {}).sort((a, b) => a - b);
+	const valueMode = isValueChartMonitor(data);
+	const unit = data.chart_unit || (valueMode ? '%' : 'ms');
+	const yName = valueMode
+		? ((typeof Dashboard_Charts_Value !== 'undefined' ? Dashboard_Charts_Value : 'Value') + (unit ? ' (' + chartUnitLabel(unit) + ')' : ''))
+		: Dashboard_Charts_ResponseTime;
 
 	// Подготовка данных для ECharts
 	for (let worker_id in data.workers) {
@@ -762,20 +805,23 @@ function updateECharts(data) {
 				const date = new Date(time * 1000);
 				xAxisData.push(date.toLocaleTimeString());
 			}
-			
+
 			const log_workers = data.logs_chart[time];
-			let log = log_workers[worker_id];
-			
+			let log = log_workers ? log_workers[worker_id] : null;
+
 			if (!log) {
 				log = {
 					'status': 0,
-					'time': null
+					'time': null,
+					'value': null
 				};
 			}
-			
-			// Если есть данные о времени выполнения, добавляем их
-			if (log && log['time'] != null) {
-				workerData.push(log['time']);
+
+			const point = valueMode ? log['value'] : log['time'];
+
+			// Если есть данные о времени выполнения / метрике, добавляем их
+			if (log && point != null) {
+				workerData.push(point);
 				if (log['status'] == 1) {
 					lastError = false;
 				}
@@ -808,7 +854,7 @@ function updateECharts(data) {
 			}
 			statusData.push(Number(log['status'] ? log['status'] : 0));
 			// Если статус 0 (ошибка), добавляем "Error" линию
-			if (Number(log['status']) == 0 && log['time'] != null) {
+			if (Number(log['status']) == 0 && point != null) {
 				if (!lastError) {
 					noDataPeriods.push([
 						{
@@ -837,7 +883,7 @@ function updateECharts(data) {
 
 		series.push({
 			// Настройки для одной серии (одного воркера)
-			name: worker.title,
+			name: worker.title || ('#' + worker_id),
 			type: 'line',
 			data: workerData,
 			symbol: 'circle',
@@ -859,9 +905,34 @@ function updateECharts(data) {
 	// Обновляем опции графика с новыми данными
 	const option = {
 		legend: {
-			data: Object.values(data.workers).map(w => w.title),
+			data: Object.values(data.workers).map(w => w.title || ''),
 			top: 10,
 			type: 'scroll'
+		},
+		yAxis: {
+			type: 'value',
+			min: valueMode && unit === '%' ? 0 : undefined,
+			max: valueMode && unit === '%' ? 100 : undefined,
+			axisLabel: {
+				formatter: function(value) {
+					return formatChartValue(value, unit);
+				}
+			},
+			name: yName,
+			nameLocation: 'end',
+			nameGap: 15
+		},
+		tooltip: {
+			formatter: function(params) {
+				if (!params || !params.length) return '';
+				let result = params[0].axisValue + '<br/>';
+				params.forEach(function(item) {
+					if (item.value != null) {
+						result += item.seriesName + ': ' + formatChartValue(item.value, unit) + '<br/>';
+					}
+				});
+				return result;
+			}
 		},
 		xAxis: {
 			type: 'category',

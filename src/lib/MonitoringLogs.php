@@ -16,6 +16,42 @@ class MonitoringLogs extends \DB\MySQLObject {
 	const STATE_SUCCESS = 1;
 	const STATE_ERROR = 2;
 
+	/**
+	 * Persist metric + optional error for server-agent / value monitors.
+	 * Always keeps value=… so charts can plot history on both OK and FAIL.
+	 */
+	static public function formatMetricLogMessage(string $result, string $error = ''): string {
+		$parts = [];
+		if ($result !== '') {
+			$parts[] = 'value='.$result;
+		}
+		if ($error !== '') {
+			$parts[] = $error;
+		}
+		return mb_substr(implode('; ', $parts), 0, 255);
+	}
+
+	/**
+	 * Extract a numeric metric from monitoring_logs.response_error.
+	 * Supports "value=12.3", "value=12.3; threshold exceeded", or a bare number (exporters).
+	 */
+	static public function parseMetricValue(?string $responseError): ?float {
+		if ($responseError === null) {
+			return null;
+		}
+		$text = trim($responseError);
+		if ($text === '') {
+			return null;
+		}
+		if (preg_match('/(?:^|[;\s])value=(-?\d+(?:\.\d+)?)/i', $text, $m)) {
+			return floatval($m[1]);
+		}
+		if (is_numeric($text)) {
+			return floatval($text);
+		}
+		return null;
+	}
+
 
 	/**
 	 * Рекурсивно обходит дерево мониторов и рассчитывает состояние родительских
@@ -428,21 +464,32 @@ class MonitoringLogs extends \DB\MySQLObject {
 
 			$workers_hash = [];
 			$worker_data_for_charts = [];
+			$monitorType = intval($monitor['type'] ?? 0);
+			$metricChart = \Monitors::is_metric_value_type($monitorType);
+			$return['chart_mode'] = $metricChart ? 'value' : 'response';
+			$return['chart_unit'] = $metricChart ? \Monitors::metric_chart_unit($monitorType) : 'ms';
+			$return['hide_response_time'] = \Monitors::hides_response_time_ui($monitorType);
 			foreach($jobs as $item) {
 				$workers_hash[$item['worker_id']] = $item;
 				$worker_data_for_charts[$item['worker_id']] = [
 					'status' => null,
-					'time' => null
+					'time' => null,
+					'value' => null,
 				];
 			}
 			if ($workers_hash) {
 				$real_worker_ids = [];
 				foreach (array_keys($workers_hash) as $worker_id) {
-					if (intval($worker_id) === \Monitors::EXTERNAL_WORKER_ID) {
+					$wid = intval($worker_id);
+					if ($wid === \Monitors::EXTERNAL_WORKER_ID) {
 						$workers_hash[$worker_id]['title'] = \ExternalMonitors::workerTitle();
 						continue;
 					}
-					$real_worker_ids[] = intval($worker_id);
+					if ($wid === \Servers::SERVER_WORKER_ID) {
+						$workers_hash[$worker_id]['title'] = \Servers::workerTitleForMonitor($monitor);
+						continue;
+					}
+					$real_worker_ids[] = $wid;
 				}
 				if ($real_worker_ids) {
 					$start_time = microtime(true);
@@ -514,6 +561,9 @@ class MonitoringLogs extends \DB\MySQLObject {
 			$fields = '`worker_id`, ';
 			$fields .= 'FLOOR(`update_time` / '.intval($interval).') * '.intval($interval).' as `interval_time`,';
 			$fields .= '`total_time_us`, `status`';
+			if ($metricChart) {
+				$fields .= ', `response_error`';
+			}
 			$start_time = microtime(true);
 			$logs = static::data(false, $sql, $fields);
 			$return['mysql_time']['MonitoringLogs::data_logs_chart'] = round(microtime(true) - $start_time,3);
@@ -525,13 +575,21 @@ class MonitoringLogs extends \DB\MySQLObject {
 			}
 			foreach($logs as $item) {
 				if ($item['interval_time'] == $current_time) continue;
+				$metricValue = $metricChart ? static::parseMetricValue($item['response_error'] ?? null) : null;
+				$responseMs = ceil(floatval($item['total_time_us'] ?? 0) / 1000);
 				if (isset($logs_hash[$item['interval_time']][$item['worker_id']])) {
-					$logs_hash[$item['interval_time']][$item['worker_id']]['status'] = min($logs_hash[$item['interval_time']][$item['worker_id']]['status']??\MonitoringLogs::STATUS_GOOD, intval($item['status']));
-					$logs_hash[$item['interval_time']][$item['worker_id']]['time'] = max($logs_hash[$item['interval_time']][$item['worker_id']]['time'], ceil($item['total_time_us']/1000));
+					$slot = &$logs_hash[$item['interval_time']][$item['worker_id']];
+					$slot['status'] = min($slot['status'] ?? \MonitoringLogs::STATUS_GOOD, intval($item['status']));
+					$slot['time'] = max($slot['time'] ?? 0, $responseMs);
+					if ($metricValue !== null) {
+						$slot['value'] = $slot['value'] === null ? $metricValue : max($slot['value'], $metricValue);
+					}
+					unset($slot);
 				} else {
 					$logs_hash[$item['interval_time']][$item['worker_id']] = [
 						'status' => intval($item['status']),
-						'time' => ceil($item['total_time_us']/1000)
+						'time' => $responseMs,
+						'value' => $metricValue,
 					];
 				}
 			}
