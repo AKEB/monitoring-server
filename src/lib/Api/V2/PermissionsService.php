@@ -80,8 +80,6 @@ class PermissionsService {
 				'subject_id' => $subjectId,
 				'object' => strval($row['object'] ?? 'user'),
 				'object_id' => intval($row['object_id'] ?? 0),
-				'user_id' => strval($row['object'] ?? 'user') === 'user' ? intval($row['object_id'] ?? 0) : 0,
-				'group_id' => strval($row['object'] ?? '') === 'group' ? intval($row['object_id'] ?? 0) : 0,
 				READ => intval($row['read'] ?? $row[READ] ?? 0),
 				WRITE => intval($row['write'] ?? $row[WRITE] ?? 0),
 				DELETE => intval($row['delete'] ?? $row[DELETE] ?? 0),
