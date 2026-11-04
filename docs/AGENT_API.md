@@ -25,6 +25,25 @@ No CSRF. Auth via `agent_key_hash` in the JSON body (create a Server in Admin â†
   "disks": [{ "mount": "/", "device": "/dev/sda1", "fstype": "ext4", "total_bytes": 1, "used_bytes": 1, "free_bytes": 1, "used_pct": 55.0 }],
   "network": { "interfaces": [{ "name": "eth0", "addrs": ["1.2.3.4/24"], "rx_bytes": 1, "tx_bytes": 1, "rx_bps": 100, "tx_bps": 50 }] },
   "docker": { "available": true, "containers": [] },
+  "proxmox": {
+    "available": true,
+    "node": "pve",
+    "guests": [
+      {
+        "vmid": 100,
+        "name": "web",
+        "type": "qemu",
+        "status": "running",
+        "cpus": 2,
+        "cpu": 0.05,
+        "mem_bytes": 512000000,
+        "maxmem_bytes": 2147483648,
+        "disk_bytes": 0,
+        "maxdisk_bytes": 34359738368,
+        "uptime_sec": 3600
+      }
+    ]
+  },
   "auth_events": [],
   "processes": []
 }

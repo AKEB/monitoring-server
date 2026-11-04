@@ -385,6 +385,94 @@ class T {
 	public static function Worker_Edit_RestartButton(...$argv): string { return ''; }
 
 	/**
+	 * Worker_Update_GlobalTitle
+	 * 
+	 * @return string "Worker target version"
+	 * @return string "Целевая версия обработчика"
+	 */
+	public static function Worker_Update_GlobalTitle(...$argv): string { return ''; }
+
+	/**
+	 * Worker_Update_GlobalHint
+	 * 
+	 * @return string "Go workers with AUTO_UPDATE=true pull this GitHub release tag when their reported version differs. Leave empty to disable. Per-worker override wins when set."
+	 * @return string "Go-воркеры с AUTO_UPDATE=true скачают этот тег с GitHub Releases, если версия другая. Пусто — не принуждать. Override на воркере имеет приоритет."
+	 */
+	public static function Worker_Update_GlobalHint(...$argv): string { return ''; }
+
+	/**
+	 * Worker_Update_OpenButton
+	 * 
+	 * @return string "Target version"
+	 * @return string "Целевая версия"
+	 */
+	public static function Worker_Update_OpenButton(...$argv): string { return ''; }
+
+	/**
+	 * Worker_Update_DesiredVersion
+	 * 
+	 * @return string "Desired version"
+	 * @return string "Целевая версия"
+	 */
+	public static function Worker_Update_DesiredVersion(...$argv): string { return ''; }
+
+	/**
+	 * Worker_Update_SaveGlobal
+	 * 
+	 * @return string "Save target version"
+	 * @return string "Сохранить целевую версию"
+	 */
+	public static function Worker_Update_SaveGlobal(...$argv): string { return ''; }
+
+	/**
+	 * Worker_Update_GlobalSaved
+	 * 
+	 * @return string "Target worker version saved"
+	 * @return string "Целевая версия обработчика сохранена"
+	 */
+	public static function Worker_Update_GlobalSaved(...$argv): string { return ''; }
+
+	/**
+	 * Worker_Update_OverrideVersion
+	 * 
+	 * @return string "Desired worker version (override)"
+	 * @return string "Целевая версия обработчика (override)"
+	 */
+	public static function Worker_Update_OverrideVersion(...$argv): string { return ''; }
+
+	/**
+	 * Worker_Update_OverridePlaceholder
+	 * 
+	 * @return string "empty = use global"
+	 * @return string "пусто = глобальная"
+	 */
+	public static function Worker_Update_OverridePlaceholder(...$argv): string { return ''; }
+
+	/**
+	 * Worker_Update_EffectiveDesired
+	 * 
+	 * @return string "Effective target: %s"
+	 * @return string "Эффективная цель: %s"
+	 */
+	public static function Worker_Update_EffectiveDesired(...$argv): string { return ''; }
+
+	/**
+	 * Worker_Update_RequestNow
+	 * 
+	 * @return string "Update worker now"
+	 * @return string "Обновить обработчик сейчас"
+	 */
+	public static function Worker_Update_RequestNow(...$argv): string { return ''; }
+
+	/**
+	 * Worker_Update_Requested
+	 * 
+	 * @return string "Update queued — worker will pull on the next jobs sync"
+	 * @return string "Обновление поставлено в очередь — воркер подтянет на следующей синхронизации задач"
+	 */
+	public static function Worker_Update_Requested(...$argv): string { return ''; }
+
+	/**
 	 * Worker_Create_PermissionDenied
 	 * 
 	 * @return string "You don\'t have permission to create a worker"
@@ -857,6 +945,14 @@ class T {
 	public static function Monitor_Edit_Value(...$argv): string { return ''; }
 
 	/**
+	 * Monitor_Edit_ValueMbps
+	 * 
+	 * @return string "Greater than (Mbps)"
+	 * @return string "Больше чем (Mbps)"
+	 */
+	public static function Monitor_Edit_ValueMbps(...$argv): string { return ''; }
+
+	/**
 	 * Monitor_Edit_ChangeButton
 	 * 
 	 * @return string "Update"
@@ -903,6 +999,62 @@ class T {
 	 * @return string "Контейнер"
 	 */
 	public static function Monitor_Edit_Container(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_Server
+	 * 
+	 * @return string "Server"
+	 * @return string "Сервер"
+	 */
+	public static function Monitor_Edit_Server(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_ServerNotFound
+	 * 
+	 * @return string "Server not found"
+	 * @return string "Сервер не найден"
+	 */
+	public static function Monitor_Edit_ServerNotFound(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_OfflineMinutes
+	 * 
+	 * @return string "Minutes without report"
+	 * @return string "Минут без отчёта"
+	 */
+	public static function Monitor_Edit_OfflineMinutes(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_DiskMount
+	 * 
+	 * @return string "Disk mount"
+	 * @return string "Точка монтирования"
+	 */
+	public static function Monitor_Edit_DiskMount(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_DiskMountMax
+	 * 
+	 * @return string "Any (max used %%)"
+	 * @return string "Любой (макс. занятость %%)"
+	 */
+	public static function Monitor_Edit_DiskMountMax(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_AgentContainer
+	 * 
+	 * @return string "Docker container"
+	 * @return string "Docker-контейнер"
+	 */
+	public static function Monitor_Edit_AgentContainer(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_ContainerRequired
+	 * 
+	 * @return string "Select a Docker container"
+	 * @return string "Выберите Docker-контейнер"
+	 */
+	public static function Monitor_Edit_ContainerRequired(...$argv): string { return ''; }
 
 	/**
 	 * Monitor_Edit_SignatureProject
@@ -1135,6 +1287,62 @@ class T {
 	 * @return string "External"
 	 */
 	public static function Monitor_Type_External(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Type_ServerOffline
+	 * 
+	 * @return string "Server offline"
+	 * @return string "Сервер offline"
+	 */
+	public static function Monitor_Type_ServerOffline(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Type_ServerCPU
+	 * 
+	 * @return string "Server CPU"
+	 * @return string "Сервер CPU"
+	 */
+	public static function Monitor_Type_ServerCPU(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Type_ServerMemory
+	 * 
+	 * @return string "Server memory"
+	 * @return string "Сервер память"
+	 */
+	public static function Monitor_Type_ServerMemory(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Type_ServerDisk
+	 * 
+	 * @return string "Server disk"
+	 * @return string "Сервер диск"
+	 */
+	public static function Monitor_Type_ServerDisk(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Type_ServerContainer
+	 * 
+	 * @return string "Server Docker container"
+	 * @return string "Сервер Docker-контейнер"
+	 */
+	public static function Monitor_Type_ServerContainer(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Type_ServerNetRx
+	 * 
+	 * @return string "Server network download"
+	 * @return string "Сервер сеть скачивание"
+	 */
+	public static function Monitor_Type_ServerNetRx(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Type_ServerNetTx
+	 * 
+	 * @return string "Server network upload"
+	 * @return string "Сервер сеть отдача"
+	 */
+	public static function Monitor_Type_ServerNetTx(...$argv): string { return ''; }
 
 	/**
 	 * Dashboard_Response
@@ -2391,6 +2599,478 @@ class T {
 	 * @return string "Container ID"
 	 */
 	public static function Docker_Container_Table_Id(...$argv): string { return ''; }
+
+	/**
+	 * Server_Menu
+	 * 
+	 * @return string "Servers"
+	 * @return string "Серверы"
+	 */
+	public static function Server_Menu(...$argv): string { return ''; }
+
+	/**
+	 * Server_PageTitle
+	 * 
+	 * @return string "Servers"
+	 * @return string "Серверы"
+	 */
+	public static function Server_PageTitle(...$argv): string { return ''; }
+
+	/**
+	 * Server_Status_Disabled
+	 * 
+	 * @return string "Disabled"
+	 * @return string "Выключен"
+	 */
+	public static function Server_Status_Disabled(...$argv): string { return ''; }
+
+	/**
+	 * Server_Status_Enabled
+	 * 
+	 * @return string "Enabled"
+	 * @return string "Включён"
+	 */
+	public static function Server_Status_Enabled(...$argv): string { return ''; }
+
+	/**
+	 * Server_Permissions_Access
+	 * 
+	 * @return string "Access"
+	 * @return string "Доступ"
+	 */
+	public static function Server_Permissions_Access(...$argv): string { return ''; }
+
+	/**
+	 * Server_Permissions_Secret
+	 * 
+	 * @return string "Agent key hash"
+	 * @return string "Ключ агента"
+	 */
+	public static function Server_Permissions_Secret(...$argv): string { return ''; }
+
+	/**
+	 * Server_Permissions_Create
+	 * 
+	 * @return string "Create server"
+	 * @return string "Создание сервера"
+	 */
+	public static function Server_Permissions_Create(...$argv): string { return ''; }
+
+	/**
+	 * Server_Delete_Title
+	 * 
+	 * @return string "Removing the server"
+	 * @return string "Удаление сервера"
+	 */
+	public static function Server_Delete_Title(...$argv): string { return ''; }
+
+	/**
+	 * Server_Delete_Confirmation
+	 * 
+	 * @return string "Are you sure you want to delete the server {title}?"
+	 * @return string "Удалить сервер {title}?"
+	 */
+	public static function Server_Delete_Confirmation(...$argv): string { return ''; }
+
+	/**
+	 * Server_Delete_NotFound
+	 * 
+	 * @return string "Server not found"
+	 * @return string "Сервер не найден"
+	 */
+	public static function Server_Delete_NotFound(...$argv): string { return ''; }
+
+	/**
+	 * Server_Delete_PermissionDenied
+	 * 
+	 * @return string "You don\'t have permission to delete this server"
+	 * @return string "Нет прав на удаление сервера"
+	 */
+	public static function Server_Delete_PermissionDenied(...$argv): string { return ''; }
+
+	/**
+	 * Server_Table_Title
+	 * 
+	 * @return string "Title"
+	 * @return string "Название"
+	 */
+	public static function Server_Table_Title(...$argv): string { return ''; }
+
+	/**
+	 * Server_Table_Online
+	 * 
+	 * @return string "Online"
+	 * @return string "Онлайн"
+	 */
+	public static function Server_Table_Online(...$argv): string { return ''; }
+
+	/**
+	 * Server_Table_Hostname
+	 * 
+	 * @return string "Hostname"
+	 * @return string "Hostname"
+	 */
+	public static function Server_Table_Hostname(...$argv): string { return ''; }
+
+	/**
+	 * Server_Table_Load
+	 * 
+	 * @return string "Load"
+	 * @return string "Load"
+	 */
+	public static function Server_Table_Load(...$argv): string { return ''; }
+
+	/**
+	 * Server_Table_Ips
+	 * 
+	 * @return string "IPs"
+	 * @return string "IP"
+	 */
+	public static function Server_Table_Ips(...$argv): string { return ''; }
+
+	/**
+	 * Server_Table_AgentVersion
+	 * 
+	 * @return string "Agent"
+	 * @return string "Агент"
+	 */
+	public static function Server_Table_AgentVersion(...$argv): string { return ''; }
+
+	/**
+	 * Server_Table_LastSeen
+	 * 
+	 * @return string "Last seen"
+	 * @return string "Последний отчёт"
+	 */
+	public static function Server_Table_LastSeen(...$argv): string { return ''; }
+
+	/**
+	 * Server_Table_Actions
+	 * 
+	 * @return string "Actions"
+	 * @return string "Действия"
+	 */
+	public static function Server_Table_Actions(...$argv): string { return ''; }
+
+	/**
+	 * Server_Table_Delete
+	 * 
+	 * @return string "Delete"
+	 * @return string "Удалить"
+	 */
+	public static function Server_Table_Delete(...$argv): string { return ''; }
+
+	/**
+	 * Server_Table_Edit
+	 * 
+	 * @return string "Edit"
+	 * @return string "Редактировать"
+	 */
+	public static function Server_Table_Edit(...$argv): string { return ''; }
+
+	/**
+	 * Server_Edit_CreateTitle
+	 * 
+	 * @return string "Create server"
+	 * @return string "Создать сервер"
+	 */
+	public static function Server_Edit_CreateTitle(...$argv): string { return ''; }
+
+	/**
+	 * Server_Edit_EditTitle
+	 * 
+	 * @return string "Edit server &quot;%s&quot; [ID=%d]"
+	 * @return string "Редактирование сервера &quot;%s&quot; [ID=%d]"
+	 */
+	public static function Server_Edit_EditTitle(...$argv): string { return ''; }
+
+	/**
+	 * Server_Edit_Title
+	 * 
+	 * @return string "Title"
+	 * @return string "Название"
+	 */
+	public static function Server_Edit_Title(...$argv): string { return ''; }
+
+	/**
+	 * Server_Edit_Status
+	 * 
+	 * @return string "Status"
+	 * @return string "Статус"
+	 */
+	public static function Server_Edit_Status(...$argv): string { return ''; }
+
+	/**
+	 * Server_Edit_AgentKeyHash
+	 * 
+	 * @return string "AGENT_KEY_HASH"
+	 * @return string "AGENT_KEY_HASH"
+	 */
+	public static function Server_Edit_AgentKeyHash(...$argv): string { return ''; }
+
+	/**
+	 * Server_Edit_RegenerateKey
+	 * 
+	 * @return string "Regenerate agent key"
+	 * @return string "Перевыпустить ключ агента"
+	 */
+	public static function Server_Edit_RegenerateKey(...$argv): string { return ''; }
+
+	/**
+	 * Server_Edit_CreateTime
+	 * 
+	 * @return string "Create time"
+	 * @return string "Создан"
+	 */
+	public static function Server_Edit_CreateTime(...$argv): string { return ''; }
+
+	/**
+	 * Server_Edit_LastSeen
+	 * 
+	 * @return string "Last seen"
+	 * @return string "Последний отчёт"
+	 */
+	public static function Server_Edit_LastSeen(...$argv): string { return ''; }
+
+	/**
+	 * Server_Edit_ChangeButton
+	 * 
+	 * @return string "Update"
+	 * @return string "Сохранить"
+	 */
+	public static function Server_Edit_ChangeButton(...$argv): string { return ''; }
+
+	/**
+	 * Server_Edit_CreateButton
+	 * 
+	 * @return string "Create"
+	 * @return string "Создать"
+	 */
+	public static function Server_Edit_CreateButton(...$argv): string { return ''; }
+
+	/**
+	 * Server_Edit_NameLengthError
+	 * 
+	 * @return string "Name length must be between 2 and 255 characters"
+	 * @return string "Длина названия должна быть от 2 до 255 символов"
+	 */
+	public static function Server_Edit_NameLengthError(...$argv): string { return ''; }
+
+	/**
+	 * Server_Edit_NotFound
+	 * 
+	 * @return string "Server not found"
+	 * @return string "Сервер не найден"
+	 */
+	public static function Server_Edit_NotFound(...$argv): string { return ''; }
+
+	/**
+	 * Server_Edit_PermissionDenied
+	 * 
+	 * @return string "You don\'t have permission to edit this server"
+	 * @return string "Нет прав на редактирование сервера"
+	 */
+	public static function Server_Edit_PermissionDenied(...$argv): string { return ''; }
+
+	/**
+	 * Server_Edit_NotingChanged
+	 * 
+	 * @return string "Nothing changed"
+	 * @return string "Ничего не изменилось"
+	 */
+	public static function Server_Edit_NotingChanged(...$argv): string { return ''; }
+
+	/**
+	 * Server_Edit_PermissionsHint
+	 * 
+	 * @return string "Grant access via Admin → Users/Groups → Permissions (subject type Servers)."
+	 * @return string "Доступ выдаётся в Админ → Пользователи/Группы → Права (тип Servers)."
+	 */
+	public static function Server_Edit_PermissionsHint(...$argv): string { return ''; }
+
+	/**
+	 * Server_Edit_CreateInstallHint
+	 * 
+	 * @return string "After create you will get AGENT_KEY_HASH and an install script for the host agent."
+	 * @return string "После создания появится AGENT_KEY_HASH и скрипт установки агента на хост."
+	 */
+	public static function Server_Edit_CreateInstallHint(...$argv): string { return ''; }
+
+	/**
+	 * Server_Edit_InstallTitle
+	 * 
+	 * @return string "Install agent on the server"
+	 * @return string "Установка агента на сервер"
+	 */
+	public static function Server_Edit_InstallTitle(...$argv): string { return ''; }
+
+	/**
+	 * Server_Edit_InstallHint
+	 * 
+	 * @return string "Run as root on the target host (amd64 or arm64 is detected automatically). The key below is already filled in."
+	 * @return string "Запусти от root на целевом хосте (amd64/arm64 определится сам). Ключ уже подставлен."
+	 */
+	public static function Server_Edit_InstallHint(...$argv): string { return ''; }
+
+	/**
+	 * Server_Edit_InstallCopy
+	 * 
+	 * @return string "Copy script"
+	 * @return string "Скопировать скрипт"
+	 */
+	public static function Server_Edit_InstallCopy(...$argv): string { return ''; }
+
+	/**
+	 * Server_Edit_StatusTitle
+	 * 
+	 * @return string "Current status"
+	 * @return string "Текущее состояние"
+	 */
+	public static function Server_Edit_StatusTitle(...$argv): string { return ''; }
+
+	/**
+	 * Server_Edit_Disks
+	 * 
+	 * @return string "Disks"
+	 * @return string "Диски"
+	 */
+	public static function Server_Edit_Disks(...$argv): string { return ''; }
+
+	/**
+	 * Server_Edit_Network
+	 * 
+	 * @return string "Network"
+	 * @return string "Сеть"
+	 */
+	public static function Server_Edit_Network(...$argv): string { return ''; }
+
+	/**
+	 * Server_Edit_ChartsTitle
+	 * 
+	 * @return string "Last 24 hours"
+	 * @return string "Последние 24 часа"
+	 */
+	public static function Server_Edit_ChartsTitle(...$argv): string { return ''; }
+
+	/**
+	 * Server_Edit_DockerTitle
+	 * 
+	 * @return string "Docker containers"
+	 * @return string "Docker-контейнеры"
+	 */
+	public static function Server_Edit_DockerTitle(...$argv): string { return ''; }
+
+	/**
+	 * Server_Edit_ProxmoxTitle
+	 * 
+	 * @return string "Proxmox guests"
+	 * @return string "Гости Proxmox"
+	 */
+	public static function Server_Edit_ProxmoxTitle(...$argv): string { return ''; }
+
+	/**
+	 * Server_Edit_ProcessesTitle
+	 * 
+	 * @return string "Processes"
+	 * @return string "Процессы"
+	 */
+	public static function Server_Edit_ProcessesTitle(...$argv): string { return ''; }
+
+	/**
+	 * Server_Edit_AuthTitle
+	 * 
+	 * @return string "Auth events"
+	 * @return string "Авторизации"
+	 */
+	public static function Server_Edit_AuthTitle(...$argv): string { return ''; }
+
+	/**
+	 * Server_Update_GlobalTitle
+	 * 
+	 * @return string "Agent target version"
+	 * @return string "Целевая версия агента"
+	 */
+	public static function Server_Update_GlobalTitle(...$argv): string { return ''; }
+
+	/**
+	 * Server_Update_GlobalHint
+	 * 
+	 * @return string "Agents with AUTO_UPDATE=true pull this GitHub release tag when their reported version differs. Leave empty to disable forced updates. Per-server override wins when set."
+	 * @return string "Агенты с AUTO_UPDATE=true скачают этот тег с GitHub Releases, если их версия другая. Пусто — не принуждать. Override на сервере имеет приоритет."
+	 */
+	public static function Server_Update_GlobalHint(...$argv): string { return ''; }
+
+	/**
+	 * Server_Update_OpenButton
+	 * 
+	 * @return string "Target version"
+	 * @return string "Целевая версия"
+	 */
+	public static function Server_Update_OpenButton(...$argv): string { return ''; }
+
+	/**
+	 * Server_Update_DesiredVersion
+	 * 
+	 * @return string "Desired version"
+	 * @return string "Целевая версия"
+	 */
+	public static function Server_Update_DesiredVersion(...$argv): string { return ''; }
+
+	/**
+	 * Server_Update_SaveGlobal
+	 * 
+	 * @return string "Save target version"
+	 * @return string "Сохранить целевую версию"
+	 */
+	public static function Server_Update_SaveGlobal(...$argv): string { return ''; }
+
+	/**
+	 * Server_Update_GlobalSaved
+	 * 
+	 * @return string "Target agent version saved"
+	 * @return string "Целевая версия агента сохранена"
+	 */
+	public static function Server_Update_GlobalSaved(...$argv): string { return ''; }
+
+	/**
+	 * Server_Update_OverrideVersion
+	 * 
+	 * @return string "Desired agent version (override)"
+	 * @return string "Целевая версия агента (override)"
+	 */
+	public static function Server_Update_OverrideVersion(...$argv): string { return ''; }
+
+	/**
+	 * Server_Update_OverridePlaceholder
+	 * 
+	 * @return string "empty = use global"
+	 * @return string "пусто = глобальная"
+	 */
+	public static function Server_Update_OverridePlaceholder(...$argv): string { return ''; }
+
+	/**
+	 * Server_Update_EffectiveDesired
+	 * 
+	 * @return string "Effective target: %s"
+	 * @return string "Эффективная цель: %s"
+	 */
+	public static function Server_Update_EffectiveDesired(...$argv): string { return ''; }
+
+	/**
+	 * Server_Update_RequestNow
+	 * 
+	 * @return string "Update agent now"
+	 * @return string "Обновить агент сейчас"
+	 */
+	public static function Server_Update_RequestNow(...$argv): string { return ''; }
+
+	/**
+	 * Server_Update_Requested
+	 * 
+	 * @return string "Update queued — agent will pull on the next report"
+	 * @return string "Обновление поставлено в очередь — агент подтянет на следующем отчёте"
+	 */
+	public static function Server_Update_Requested(...$argv): string { return ''; }
 
 	/**
 	 * Maintenances_Menu

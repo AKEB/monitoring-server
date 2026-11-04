@@ -417,6 +417,7 @@ Server:
     Network: "Network"
     ChartsTitle: "Last 24 hours"
     DockerTitle: "Docker containers"
+    ProxmoxTitle: "Proxmox guests"
     ProcessesTitle: "Processes"
     AuthTitle: "Auth events"
   Update:

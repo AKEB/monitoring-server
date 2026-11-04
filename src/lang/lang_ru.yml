@@ -412,6 +412,7 @@ Server:
     Network: "Сеть"
     ChartsTitle: "Последние 24 часа"
     DockerTitle: "Docker-контейнеры"
+    ProxmoxTitle: "Гости Proxmox"
     ProcessesTitle: "Процессы"
     AuthTitle: "Авторизации"
   Update:

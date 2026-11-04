@@ -293,6 +293,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				$this->print_status_cards();
 				$this->print_charts();
 				$this->print_docker();
+				$this->print_proxmox();
 				$this->print_processes();
 				$this->print_auth();
 			} ?>
@@ -325,7 +326,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 
 	private function agentInstallScript(string $serverHost, string $agentKey): string {
 		$serverHost = rtrim($serverHost, '/').'/';
-		$version = 'v1.1.0';
+		$version = 'v1.2.0';
 		return <<<SH
 #!/bin/bash
 set -euo pipefail
@@ -557,6 +558,101 @@ SH;
 			</div>
 		</div>
 		<?php
+	}
+
+	private function print_proxmox() {
+		$proxmox = is_array($this->payload['proxmox'] ?? null) ? $this->payload['proxmox'] : null;
+		if (!$proxmox || empty($proxmox['available'])) {
+			return;
+		}
+		$guests = is_array($proxmox['guests'] ?? null) ? $proxmox['guests'] : [];
+		$node = strval($proxmox['node'] ?? '');
+		$title = \T::Server_Edit_ProxmoxTitle();
+		if ($node !== '') {
+			$title .= ' <small class="text-muted">('.htmlspecialchars($node, ENT_QUOTES, 'UTF-8').')</small>';
+		}
+		?>
+		<div class="card bg-transparent col-xl-10 p-4 mt-2 mb-3">
+			<div class="card-header bg-transparent"><h4><?=$title;?></h4></div>
+			<div class="card-body table-responsive">
+				<table class="table table-sm table-transparent">
+					<thead><tr><th>Type</th><th>VMID</th><th>Name</th><th>Status</th><th>CPU</th><th>RAM</th><th>Disk</th><th>Uptime</th></tr></thead>
+					<tbody>
+					<?php foreach ($guests as $g) {
+						if (!is_array($g)) continue;
+						$status = strval($g['status'] ?? '');
+						$class = $status === 'running' ? 'text-success' : 'text-secondary';
+						$type = strval($g['type'] ?? '');
+						$typeLabel = $type === 'lxc' ? 'LXC' : ($type === 'qemu' ? 'VM' : strtoupper($type));
+						$cpus = intval($g['cpus'] ?? 0);
+						$cpuFrac = floatval($g['cpu'] ?? 0);
+						$cpuPct = $cpuFrac * 100.0;
+						$cpuText = number_format($cpuPct, 1).'%';
+						if ($cpus > 0) {
+							$cpuText .= ' / '.$cpus;
+						}
+						$memUsed = intval($g['mem_bytes'] ?? 0);
+						$memMax = intval($g['maxmem_bytes'] ?? 0);
+						$diskUsed = intval($g['disk_bytes'] ?? 0);
+						$diskMax = intval($g['maxdisk_bytes'] ?? 0);
+						?>
+						<tr>
+							<td><?=htmlspecialchars($typeLabel);?></td>
+							<td><?=intval($g['vmid'] ?? 0);?></td>
+							<td><?=htmlspecialchars(strval($g['name'] ?? ''));?></td>
+							<td class="<?=$class;?>"><?=htmlspecialchars($status);?></td>
+							<td><?=htmlspecialchars($cpuText);?></td>
+							<td><?=htmlspecialchars($this->formatBytesPair($memUsed, $memMax));?></td>
+							<td><?=htmlspecialchars($this->formatBytesPair($diskUsed, $diskMax));?></td>
+							<td><?=htmlspecialchars($this->formatUptime(intval($g['uptime_sec'] ?? 0)));?></td>
+						</tr>
+					<?php } ?>
+					</tbody>
+				</table>
+			</div>
+		</div>
+		<?php
+	}
+
+	private function formatBytesPair(int $used, int $max): string {
+		if ($max <= 0 && $used <= 0) {
+			return '—';
+		}
+		if ($max > 0) {
+			return $this->formatBytes($used).' / '.$this->formatBytes($max);
+		}
+		return $this->formatBytes($used);
+	}
+
+	private function formatBytes(int $bytes): string {
+		if ($bytes <= 0) {
+			return '0';
+		}
+		$units = ['B', 'KB', 'MB', 'GB', 'TB'];
+		$i = 0;
+		$val = floatval($bytes);
+		while ($val >= 1024 && $i < count($units) - 1) {
+			$val /= 1024;
+			$i++;
+		}
+		$precision = $i >= 2 ? 1 : 0;
+		return number_format($val, $precision).' '.$units[$i];
+	}
+
+	private function formatUptime(int $sec): string {
+		if ($sec <= 0) {
+			return '—';
+		}
+		$days = intdiv($sec, 86400);
+		$hours = intdiv($sec % 86400, 3600);
+		$mins = intdiv($sec % 3600, 60);
+		if ($days > 0) {
+			return $days.'d '.$hours.'h';
+		}
+		if ($hours > 0) {
+			return $hours.'h '.$mins.'m';
+		}
+		return $mins.'m';
 	}
 
 	private function print_processes() {
