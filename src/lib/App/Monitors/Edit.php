@@ -275,6 +275,28 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				$params['repeat_seconds'] = 60;
 				$params['timeout'] = 60;
 				$data['workers'] = [];
+			} elseif (\Monitors::is_server_type(intval($data['type']))) {
+				$data['workers'] = [];
+				$params['repeat_seconds'] = 60;
+				$params['timeout'] = 60;
+				if (isset($data['server'])) {
+					$params['server'] = intval(trim(strval($data['server'])));
+					if ($params['server'] < 1 || !\Sessions::checkPermission(\Servers::PERMISSION_ACCESS, $params['server'], READ)) {
+						$this->error = \T::Monitor_Edit_PermissionDenied();
+						break;
+					}
+					if (!\Servers::get(['id' => $params['server']])) {
+						$this->error = \T::Monitor_Edit_ServerNotFound();
+						break;
+					}
+				}
+				if (isset($data['value'])) {
+					$params['value'] = intval(trim(strval($data['value'])));
+				} elseif (intval($data['type']) === \Monitors::TYPE_SERVER_OFFLINE) {
+					$params['value'] = 3;
+				} else {
+					$params['value'] = 90;
+				}
 			}
 
 			if (isset($data['parent_id'])) {
@@ -328,6 +350,11 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					$params['external_hash'] = '';
 					$params['external_status'] = \ExternalMonitors::STATUS_UNSET;
 					$params['external_log'] = '';
+				}
+				if (\Monitors::is_server_type($new_type)) {
+					$data['workers'] = [];
+					$params['repeat_seconds'] = 60;
+					$params['timeout'] = 60;
 				}
 				$old_jobs = get_hash(\MonitoringJobs::data(['monitor_id' => $params['id']]), 'worker_id', 'monitor_id');
 				foreach($old_jobs as $worker_id=>$_) {
@@ -384,6 +411,11 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					$params['external_hash'] = \ExternalMonitors::generateHash();
 					$params['external_status'] = \ExternalMonitors::STATUS_UNSET;
 					$params['external_log'] = '';
+				}
+				if (\Monitors::is_server_type(intval($params['type'] ?? $data['type'] ?? 0))) {
+					$data['workers'] = [];
+					$params['repeat_seconds'] = 60;
+					$params['timeout'] = 60;
 				}
 				if ($data['workers']) {
 					foreach($data['workers'] as $worker_id) {
@@ -539,6 +571,10 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				} else {
 					\ExternalMonitors::removeVirtualJob(intval($monitor_id));
 				}
+				if (\Monitors::is_server_type(intval($monitor['type']))) {
+					\ServerAgent::clearRealJobs(intval($monitor_id));
+					\ServerAgent::ensureVirtualJob(intval($monitor_id));
+				}
 				if ($monitor['type'] == \Monitors::TYPE_FOLDER && !$old_monitor) {
 					common_redirect('/admin/monitors/'.$monitor['id'].'/');
 				} elseif (intval($monitor['type']) == \Monitors::TYPE_EXTERNAL) {
@@ -652,6 +688,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 			$this->monitor['notify'] ??= [];
 			$this->monitor['docker'] ??= 0;
 			$this->monitor['container'] ??= '';
+			$this->monitor['server'] ??= 0;
 			$this->monitor['response_code'] ??= [2];
 			$this->monitor['parent_id'] ??= $this->parent_id;
 			$this->monitor['signature_id'] ??= 0;
@@ -822,6 +859,13 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 						'global-id' => 'container-div',
 					]);
 
+					$server_type_class = 'type-dependence type-'.\Monitors::TYPE_SERVER_OFFLINE.' type-'.\Monitors::TYPE_SERVER_CPU.' type-'.\Monitors::TYPE_SERVER_MEMORY.' type-'.\Monitors::TYPE_SERVER_DISK;
+					echo $this->template?->html_select('server', \Servers::options_hash_for_user(), $this->monitor['server']??0, \T::Monitor_Edit_Server(), false,[
+						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+						'global-class' => $server_type_class,
+						'readonly' => !($this->can_write || $this->can_create),
+					]);
+
 					echo $this->template->html_input("host", $this->monitor['host']??'', \T::Monitor_Edit_Host(), false, [
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
 						'global-class' => 'type-dependence type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_PING.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU,
@@ -836,7 +880,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 
 					echo $this->template->html_input("value", $this->monitor['value']??'80', \T::Monitor_Edit_Value(), false, [
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
-						'global-class' => 'type-dependence type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU,
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU.' type-'.\Monitors::TYPE_SERVER_OFFLINE.' type-'.\Monitors::TYPE_SERVER_CPU.' type-'.\Monitors::TYPE_SERVER_MEMORY.' type-'.\Monitors::TYPE_SERVER_DISK,
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 

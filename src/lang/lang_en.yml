@@ -131,6 +131,8 @@ Monitor:
     Notify: "Notifications"
     Docker: "Docker"
     Container: "Container"
+    Server: "Server"
+    ServerNotFound: "Server not found"
     SignatureProject: "Signature project"
     SignatureTitle: "Alert signature"
     SignatureText: "Signature text"
@@ -162,6 +164,10 @@ Monitor:
     ExporterCPU: "Node Exporter (cpu)"
     HTTPJson: "HTTP(s) JSON check"
     External: "External"
+    ServerOffline: "Server offline"
+    ServerCPU: "Server CPU"
+    ServerMemory: "Server memory"
+    ServerDisk: "Server disk"
 
 
 
@@ -338,6 +344,56 @@ Docker:
       Image: "Image"
       ImageId: "Image ID"
       Id: "Container ID"
+
+Server:
+  Menu: "Servers"
+  PageTitle: "Servers"
+  Status:
+    Disabled: "Disabled"
+    Enabled: "Enabled"
+  Permissions:
+    Access: "Access"
+    Secret: "Agent key hash"
+    Create: "Create server"
+  Delete:
+    Title: "Removing the server"
+    Confirmation: "Are you sure you want to delete the server {title}?"
+    NotFound: "Server not found"
+    PermissionDenied: "You don't have permission to delete this server"
+  Table:
+    Title: "Title"
+    Online: "Online"
+    Hostname: "Hostname"
+    Load: "Load"
+    Ips: "IPs"
+    AgentVersion: "Agent"
+    LastSeen: "Last seen"
+    Actions: "Actions"
+    Delete: "Delete"
+    Edit: "Edit"
+  Edit:
+    CreateTitle: "Create server"
+    EditTitle: "Edit server &quot;%s&quot; [ID=%d]"
+    Title: "Title"
+    Status: "Status"
+    AgentKeyHash: "AGENT_KEY_HASH"
+    RegenerateKey: "Regenerate agent key"
+    CreateTime: "Create time"
+    LastSeen: "Last seen"
+    ChangeButton: "Update"
+    CreateButton: "Create"
+    NameLengthError: "Name length must be between 2 and 255 characters"
+    NotFound: "Server not found"
+    PermissionDenied: "You don't have permission to edit this server"
+    NotingChanged: "Nothing changed"
+    PermissionsHint: "Grant access via Admin → Users/Groups → Permissions (subject type Servers)."
+    StatusTitle: "Current status"
+    Disks: "Disks"
+    Network: "Network"
+    ChartsTitle: "Last 24 hours"
+    DockerTitle: "Docker containers"
+    ProcessesTitle: "Processes"
+    AuthTitle: "Auth events"
 
 Maintenances:
   Menu: "Maintenances"

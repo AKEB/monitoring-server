@@ -97,6 +97,10 @@ class MonitorsService {
 			\ExternalMonitors::ensureVirtualJob($id);
 			\ExternalMonitors::clearRealJobs($id);
 		}
+		if (\Monitors::is_server_type($type)) {
+			\ServerAgent::ensureVirtualJob($id);
+			\ServerAgent::clearRealJobs($id);
+		}
 
 		return Envelope::ok(static::publicRow($monitor ?: $row + ['id' => $id]));
 	}
@@ -203,6 +207,10 @@ class MonitorsService {
 			\ExternalMonitors::clearRealJobs($id);
 		} elseif (intval($existing['type']) === \Monitors::TYPE_EXTERNAL) {
 			\ExternalMonitors::removeVirtualJob($id);
+		}
+		if (\Monitors::is_server_type($type)) {
+			\ServerAgent::ensureVirtualJob($id);
+			\ServerAgent::clearRealJobs($id);
 		}
 
 		$saved = \Monitors::get(['id' => $id]);
@@ -370,6 +378,26 @@ class MonitorsService {
 				$row['external_status'] = \ExternalMonitors::STATUS_UNSET;
 				$row['external_log'] = '';
 			}
+		} elseif (\Monitors::is_server_type($type)) {
+			$row['repeat_seconds'] = 60;
+			$row['timeout'] = 60;
+			if ($creating || array_key_exists('server', $payload)) {
+				$serverId = intval($payload['server'] ?? 0);
+				if ($serverId > 0 && !Acl::can($user, \Servers::PERMISSION_ACCESS, $serverId, READ) && !Runtime::$bypassAcl) {
+					return ['error' => 'Server permission denied', 'http' => 403];
+				}
+				if ($serverId > 0 && !Runtime::store()) {
+					$server = \Servers::get(['id' => $serverId]);
+					if (!$server) {
+						return ['error' => 'Server not found', 'http' => 404];
+					}
+				}
+				$row['server'] = $serverId;
+			}
+			if ($creating || array_key_exists('value', $payload)) {
+				$default = $type === \Monitors::TYPE_SERVER_OFFLINE ? 3 : 90;
+				$row['value'] = intval($payload['value'] ?? $default);
+			}
 		}
 
 		if ($existing && intval($existing['type'] ?? 0) === \Monitors::TYPE_EXTERNAL && $type !== \Monitors::TYPE_EXTERNAL) {
@@ -379,7 +407,7 @@ class MonitorsService {
 		}
 
 		$workers = [];
-		if ($type === \Monitors::TYPE_EXTERNAL) {
+		if ($type === \Monitors::TYPE_EXTERNAL || \Monitors::is_server_type($type)) {
 			$workers = [];
 		} elseif ($creating || array_key_exists('workers', $payload)) {
 			$workers = Relations::intIdList($payload['workers'] ?? []);

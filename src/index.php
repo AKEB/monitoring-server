@@ -21,6 +21,7 @@ require_once("./autoload.php");
 \Permissions::add_permission(\Maintenances::PERMISSION_CREATE, \T::Maintenances_Permissions_Create());
 \Permissions::add_permission(\Dockers::PERMISSION_CREATE, \T::Docker_Permissions_Create());
 \Permissions::add_permission(\Signatures::PERMISSION_CREATE, \T::Signature_Permissions_Create());
+\Permissions::add_permission(\Servers::PERMISSION_CREATE, \T::Server_Permissions_Create());
 
 // Add another permissions subject types
 \Permissions::set_subject_type('worker', '\\Workers', 'Workers');
@@ -29,10 +30,12 @@ require_once("./autoload.php");
 \Permissions::set_subject_type('maintenance', '\\Maintenances', 'Maintenances');
 \Permissions::set_subject_type('docker', '\\Dockers', 'Docker');
 \Permissions::set_subject_type('signature', '\\Signatures', 'Signatures');
+\Permissions::set_subject_type('server', '\\Servers', 'Servers');
 
 \Sessions::session_init(true); // This need to check Permissions and user language
 
 \Logs::add_params_hash_for_print('worker_key_hash', \Logs::PARAM_HASH_SECRET);
+\Logs::add_params_hash_for_print('agent_key_hash', \Logs::PARAM_HASH_SECRET);
 \Logs::add_params_hash_for_print('token_hash', \Logs::PARAM_HASH_SECRET);
 \Logs::add_params_hash_for_print('plaintext', \Logs::PARAM_HASH_SECRET);
 \Logs::add_params_hash_for_print('Authorization', \Logs::PARAM_HASH_SECRET);
@@ -44,6 +47,7 @@ require_once("./autoload.php");
 \Logs::add_object(\MonitoringSubscribe::LOGS_OBJECT, \MonitoringSubscribe::LOGS_OBJECT);
 \Logs::add_object(\Dockers::LOGS_OBJECT, \Dockers::LOGS_OBJECT);
 \Logs::add_object(\MonitoringDockers::LOGS_OBJECT, \MonitoringDockers::LOGS_OBJECT);
+\Logs::add_object(\Servers::LOGS_OBJECT, \Servers::LOGS_OBJECT);
 \Logs::add_object(\Maintenances::LOGS_OBJECT, \Maintenances::LOGS_OBJECT);
 \Logs::add_object(\MonitoringMaintenances::LOGS_OBJECT, \MonitoringMaintenances::LOGS_OBJECT);
 \Logs::add_object(\Notify::LOGS_OBJECT, \Notify::LOGS_OBJECT);
@@ -88,6 +92,10 @@ require_once("./autoload.php");
 	new \MenuPermissionItem(\Dockers::PERMISSION_ACCESS, -1, READ),
 	new \MenuPermissionItem(\Dockers::PERMISSION_CREATE, 0, WRITE),
 ]));
+\Template::addMenuAdminItem(new \MenuItem('bi bi-hdd-rack', \T::Server_Menu(), '/admin/servers/', null, [
+	new \MenuPermissionItem(\Servers::PERMISSION_ACCESS, -1, READ),
+	new \MenuPermissionItem(\Servers::PERMISSION_CREATE, 0, WRITE),
+]));
 
 // Add another Websocket item
 \Websocket::addAction('monitors_update', '\\MonitorsWebsocket');
@@ -105,6 +113,7 @@ require_once("./autoload.php");
 \Routes::addRoute('/mcp/', '\\App\\Mcp\\Endpoint');
 \Routes::addRoute('/mcp', '\\App\\Mcp\\Endpoint');
 \Routes::addRoute('/api/external/(?P<hash>[a-fA-F0-9]{64})/', '\\App\\Api\\External');
+\Routes::addRoute('/api/agent/report/', '\\App\\Api\\Agent\\Report');
 \Routes::addRoute('/api/alert-action/(?P<channel>telegram|mattermost|max)/(?P<token>[a-fA-F0-9]{32})/', '\\App\\Api\\AlertAction');
 \Routes::addRoute('/settings/api/', '\\App\\Settings\\ApiTokens');
 
@@ -140,6 +149,11 @@ require_once("./autoload.php");
 \Routes::addRoute('/admin/dockers/edit/', '\\App\\Dockers\\Edit');
 \Routes::addRoute('/admin/dockers/(?P<action>[^/]+)/(?P<docker_id>\d+)/', '\\App\\Dockers\\Show');
 \Routes::addRoute('/admin/dockers/', '\\App\\Dockers\\Show');
+
+\Routes::addRoute('/admin/servers/edit/(?P<server_id>\d+)/', '\\App\\Servers\\Edit');
+\Routes::addRoute('/admin/servers/edit/', '\\App\\Servers\\Edit');
+\Routes::addRoute('/admin/servers/(?P<action>[^/]+)/(?P<server_id>\d+)/', '\\App\\Servers\\Show');
+\Routes::addRoute('/admin/servers/', '\\App\\Servers\\Show');
 
 \MonitoringSubscribe::init();
 

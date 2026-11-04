@@ -19,6 +19,7 @@
     {"name": "workers", "description": "Check workers / handlers"},
     {"name": "maintenances", "description": "Planned maintenance windows"},
     {"name": "dockers", "description": "Docker hosts"},
+    {"name": "servers", "description": "Host agents (push metrics)"},
     {"name": "users", "description": "Users (read-only)"},
     {"name": "groups", "description": "Groups (read-only)"},
     {"name": "logs", "description": "Audit logs"},
@@ -754,6 +755,125 @@
         }
       }
     },
+    "/api/v2/servers/": {
+      "get": {
+        "tags": ["servers"],
+        "summary": "List host servers",
+        "security": [{"BearerAuth": []}, {"ApiTokenHeader": []}],
+        "responses": {
+          "200": {
+            "description": "List",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/EnvelopeList"}
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["servers"],
+        "summary": "Create host server",
+        "description": "Creates agent_key_hash for monitoring-agent AUTH.",
+        "security": [{"BearerAuth": []}, {"ApiTokenHeader": []}],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {"$ref": "#/components/schemas/ServerWrite"}
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/EnvelopeObject"}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/servers/{id}/": {
+      "parameters": [{"$ref": "#/components/parameters/IdPath"}],
+      "get": {
+        "tags": ["servers"],
+        "summary": "Get host server",
+        "security": [{"BearerAuth": []}, {"ApiTokenHeader": []}],
+        "responses": {
+          "200": {
+            "description": "Server",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/EnvelopeObject"}
+              }
+            }
+          },
+          "404": {"$ref": "#/components/responses/NotFound"}
+        }
+      },
+      "patch": {
+        "tags": ["servers"],
+        "summary": "Update host server",
+        "security": [{"BearerAuth": []}, {"ApiTokenHeader": []}],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {"$ref": "#/components/schemas/ServerWrite"}
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/EnvelopeObject"}
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["servers"],
+        "summary": "Update host server (same as PATCH)",
+        "security": [{"BearerAuth": []}, {"ApiTokenHeader": []}],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {"$ref": "#/components/schemas/ServerWrite"}
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/EnvelopeObject"}
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["servers"],
+        "summary": "Delete host server",
+        "security": [{"BearerAuth": []}, {"ApiTokenHeader": []}],
+        "responses": {
+          "200": {
+            "description": "Deleted",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/EnvelopeDeleted"}
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v2/dockers/{id}/": {
       "parameters": [{"$ref": "#/components/parameters/IdPath"}],
       "get": {
@@ -959,7 +1079,7 @@
           "required": true,
           "schema": {
             "type": "string",
-            "enum": ["monitors", "notify", "signatures", "workers", "maintenances", "dockers"]
+            "enum": ["monitors", "notify", "signatures", "workers", "maintenances", "dockers", "servers"]
           }
         },
         {"$ref": "#/components/parameters/IdPath"}
@@ -1290,6 +1410,14 @@
           "tls_ca_file": {"type": "string"},
           "tls_certificate": {"type": "string"},
           "tls_key": {"type": "string"}
+        }
+      },
+      "ServerWrite": {
+        "type": "object",
+        "properties": {
+          "title": {"type": "string"},
+          "status": {"type": "integer"},
+          "regenerate_key": {"type": "boolean", "description": "If true, rotate agent_key_hash"}
         }
       },
       "PermissionsSet": {
