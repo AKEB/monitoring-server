@@ -410,7 +410,6 @@ class ServerAgent {
 			'response_error' => mb_substr($error !== '' ? $error : ($result !== '' ? 'value='.$result : ''), 0, 255),
 			'response_error_num' => $status === \MonitoringLogs::STATUS_GOOD ? 0 : 1,
 			'total_time_us' => 0,
-			'create_time' => $now,
 			'update_time' => $now,
 			'_mode' => \DB\Common::CSMODE_INSERT,
 		];
