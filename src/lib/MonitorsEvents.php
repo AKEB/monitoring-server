@@ -39,6 +39,27 @@ class MonitorsEvents extends \DB\MySQLObject {
 		return $event_id;
 	}
 
+	/**
+	 * Hash for UI event dedup.
+	 * FAIL: include response_error so changing Log / error text creates a new row.
+	 * OK: omit response_error so metric value=… churn does not spam the events table.
+	 *
+	 * @param array<string,mixed> $event
+	 */
+	static public function eventHash(array $event): string {
+		$payload = [
+			'monitor_id' => $event['monitor_id'] ?? 0,
+			'worker_id' => $event['worker_id'] ?? 0,
+			'status' => $event['status'] ?? 0,
+			'status_code' => $event['status_code'] ?? 0,
+		];
+		if (intval($event['status'] ?? 0) === \MonitoringLogs::STATUS_FAIL) {
+			$payload['response_error_num'] = intval($event['response_error_num'] ?? 0);
+			$payload['response_error'] = strval($event['response_error'] ?? '');
+		}
+		return md5(json_encode($payload));
+	}
+
 	static public function updateEvent($param): bool|int {
 		if (!isset($param['monitor_id']) || !$param['monitor_id']) return false;
 		if (!isset($param['worker_id']) || !$param['worker_id']) return false;
@@ -53,15 +74,7 @@ class MonitorsEvents extends \DB\MySQLObject {
 			'response_error' => $param['response_error'] ?? '',
 			'create_time' => time(),
 		];
-		// Include response_error so Log text changes (External / HTTP(s)) show up as new events in UI.
-		$event['hash'] = md5(json_encode([
-			'monitor_id' => $event['monitor_id'],
-			'worker_id' => $event['worker_id'],
-			'status' => $event['status'],
-			'status_code' => $event['status_code'],
-			'response_error_num' => intval($event['response_error_num']),
-			'response_error' => strval($event['response_error']),
-		]));
+		$event['hash'] = static::eventHash($event);
 		if ($lastEvent) {
 			// Есть какое-то событие, нужно проверить такого же оно состояния или нет
 			if ($lastEvent['hash'] == $event['hash']) {
