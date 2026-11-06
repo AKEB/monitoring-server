@@ -28,6 +28,7 @@ class Monitors extends \DB\MySQLObject implements \PermissionSubject_Interface {
 	const TYPE_SERVER_CONTAINER  = 14;
 	const TYPE_SERVER_NET_RX     = 15;
 	const TYPE_SERVER_NET_TX     = 16;
+	const TYPE_SERVER_PORT       = 17;
 
 	/** Virtual worker_id for push-based External monitors (never a real Workers row). */
 	const EXTERNAL_WORKER_ID = -1;
@@ -74,8 +75,22 @@ class Monitors extends \DB\MySQLObject implements \PermissionSubject_Interface {
 			static::TYPE_SERVER_CONTAINER => \T::Monitor_Type_ServerContainer(),
 			static::TYPE_SERVER_NET_RX => \T::Monitor_Type_ServerNetRx(),
 			static::TYPE_SERVER_NET_TX => \T::Monitor_Type_ServerNetTx(),
+			static::TYPE_SERVER_PORT => \T::Monitor_Type_ServerPort(),
 			// static::TYPE_EXPORTER_CPU => \T::Monitor_Type_ExporterCPU(),
 		];
+	}
+
+	/** @return array<string,string> */
+	static public function port_protocol_hash(): array {
+		return [
+			'tcp' => 'TCP',
+			'udp' => 'UDP',
+		];
+	}
+
+	static public function normalize_port_protocol(mixed $raw): string {
+		$v = strtolower(trim(strval($raw ?? '')));
+		return $v === 'udp' ? 'udp' : 'tcp';
 	}
 
 	/** @return list<int> */
@@ -88,6 +103,7 @@ class Monitors extends \DB\MySQLObject implements \PermissionSubject_Interface {
 			static::TYPE_SERVER_CONTAINER,
 			static::TYPE_SERVER_NET_RX,
 			static::TYPE_SERVER_NET_TX,
+			static::TYPE_SERVER_PORT,
 		];
 	}
 

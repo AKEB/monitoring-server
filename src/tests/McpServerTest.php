@@ -80,6 +80,56 @@ class McpServerTest extends ApiV2TestCase {
 		$this->assertContains('how_to_schedule_maintenance', $names);
 		$this->assertContains('status_api_vs_management_api', $names);
 		$this->assertContains('how_to_add_host_agent', $names);
+		$this->assertContains('how_to_create_server_port_monitor', $names);
+	}
+
+	function test_initialize_mentions_listening_ports() {
+		$init = \Mcp\Server::initializeResult();
+		$this->assertStringContainsString('listeners', $init['instructions']);
+		$this->assertStringContainsString('17', $init['instructions']);
+	}
+
+	function test_monitors_create_schema_includes_port_protocol() {
+		$tools = \Mcp\Server::tools();
+		$byName = [];
+		foreach ($tools as $tool) {
+			$byName[$tool['name']] = $tool;
+		}
+		$create = $byName['monitors_create']['inputSchema']['properties'] ?? [];
+		$this->assertArrayHasKey('port', $create);
+		$this->assertArrayHasKey('port_protocol', $create);
+		$this->assertArrayHasKey('server', $create);
+		$this->assertSame(['tcp', 'udp'], $create['port_protocol']['enum'] ?? null);
+	}
+
+	function test_call_tool_create_server_port_monitor() {
+		$user = ['id' => 1, 'status' => \Users::STATUS_ACTIVE, '__agent_key_hash' => true];
+		$server = \Mcp\Server::callTool($user, 'servers_create', ['title' => 'port-host']);
+		$this->assertSame(0, $server['status'], json_encode($server));
+		$serverId = intval($server['data']['id'] ?? 0);
+		$this->assertGreaterThan(0, $serverId);
+
+		$created = \Mcp\Server::callTool($user, 'monitors_create', [
+			'title' => 'SSH listening',
+			'type' => \Monitors::TYPE_SERVER_PORT,
+			'server' => $serverId,
+			'port' => 22,
+			'port_protocol' => 'tcp',
+		]);
+		$this->assertSame(0, $created['status'], json_encode($created));
+		$this->assertSame(\Monitors::TYPE_SERVER_PORT, intval($created['data']['type'] ?? -1));
+		$this->assertSame(22, intval($created['data']['port'] ?? 0));
+		$this->assertSame('tcp', strval($created['data']['port_protocol'] ?? ''));
+		$this->assertSame($serverId, intval($created['data']['server'] ?? 0));
+
+		$bad = \Mcp\Server::callTool($user, 'monitors_create', [
+			'title' => 'Bad port',
+			'type' => \Monitors::TYPE_SERVER_PORT,
+			'server' => $serverId,
+			'port' => 0,
+		]);
+		$this->assertSame(1, $bad['status']);
+		$this->assertSame(422, $bad['http'] ?? 0);
 	}
 
 	function test_call_tool_servers_crud_envelope() {

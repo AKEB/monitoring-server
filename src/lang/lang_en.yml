@@ -120,6 +120,8 @@ Monitor:
     Url: "URL"
     Host: "Host"
     Port: "Port"
+    PortProtocol: "Port protocol"
+    PortRequired: "Port must be between 1 and 65535"
     Method: "Method"
     RequestHeaders: "HTTP headers (one per line: Key: Value)"
     Timeout: "Request timeout"
@@ -189,6 +191,7 @@ Monitor:
     ServerContainer: "Server Docker container"
     ServerNetRx: "Server network download"
     ServerNetTx: "Server network upload"
+    ServerPort: "Server listening port"
 
 
 
@@ -415,6 +418,13 @@ Server:
     StatusTitle: "Current status"
     Disks: "Disks"
     Network: "Network"
+    ListenersTitle: "Listening ports"
+    ListenersProtocol: "Protocol"
+    ListenersIP: "IP"
+    ListenersPort: "Port"
+    ListenersService: "Service"
+    ListenersProcess: "Process"
+    ListenersPID: "PID"
     ChartsTitle: "Last 24 hours"
     DockerTitle: "Docker containers"
     ProxmoxTitle: "Proxmox guests"

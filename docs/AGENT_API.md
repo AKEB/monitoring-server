@@ -45,9 +45,15 @@ No CSRF. Auth via `agent_key_hash` in the JSON body (create a Server in Admin �
     ]
   },
   "auth_events": [],
-  "processes": []
+  "processes": [],
+  "listeners": [
+    { "protocol": "tcp", "ip": "0.0.0.0", "port": 22, "process": "sshd", "pid": 812, "service": "ssh" },
+    { "protocol": "udp", "ip": "0.0.0.0", "port": 53, "process": "systemd-resolve", "pid": 500, "service": "domain" }
+  ]
 }
 ```
+
+`listeners` (optional): TCP `LISTEN` and UDP bound sockets. Disable with agent `COLLECT_LISTENERS=false`. Used by UI (Servers → Edit) and monitor type **Server listening port** (17).
 
 `update_error` (optional): last self-update failure message from the agent; stored on the server for UI.
 
@@ -83,7 +89,7 @@ See [monitoring-agent README](https://github.com/AKEB/monitoring-agent#install-s
 1. Admin → Servers → Create → copy `AGENT_KEY_HASH`
 2. Install binary + systemd on the host
 3. Set `SERVER_HOST` and `AGENT_KEY_HASH` in `.env`
-4. Optional monitors: types Server offline / CPU / memory / disk / Docker container linked to this server
+4. Optional monitors: types Server offline / CPU / memory / disk / Docker container / listening port linked to this server
 5. Optional: set global/per-server desired agent version for remote updates from GitHub
 
 ## Platforms

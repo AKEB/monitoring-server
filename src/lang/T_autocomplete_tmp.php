@@ -809,6 +809,22 @@ class T {
 	public static function Monitor_Edit_Port(...$argv): string { return ''; }
 
 	/**
+	 * Monitor_Edit_PortProtocol
+	 * 
+	 * @return string "Port protocol"
+	 * @return string "Протокол порта"
+	 */
+	public static function Monitor_Edit_PortProtocol(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_PortRequired
+	 * 
+	 * @return string "Port must be between 1 and 65535"
+	 * @return string "Порт должен быть от 1 до 65535"
+	 */
+	public static function Monitor_Edit_PortRequired(...$argv): string { return ''; }
+
+	/**
 	 * Monitor_Edit_Method
 	 * 
 	 * @return string "Method"
@@ -1343,6 +1359,14 @@ class T {
 	 * @return string "Сервер сеть отдача"
 	 */
 	public static function Monitor_Type_ServerNetTx(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Type_ServerPort
+	 * 
+	 * @return string "Server listening port"
+	 * @return string "Сервер слушающий порт"
+	 */
+	public static function Monitor_Type_ServerPort(...$argv): string { return ''; }
 
 	/**
 	 * Dashboard_Response
@@ -2943,6 +2967,62 @@ class T {
 	 * @return string "Сеть"
 	 */
 	public static function Server_Edit_Network(...$argv): string { return ''; }
+
+	/**
+	 * Server_Edit_ListenersTitle
+	 * 
+	 * @return string "Listening ports"
+	 * @return string "Слушающие порты"
+	 */
+	public static function Server_Edit_ListenersTitle(...$argv): string { return ''; }
+
+	/**
+	 * Server_Edit_ListenersProtocol
+	 * 
+	 * @return string "Protocol"
+	 * @return string "Протокол"
+	 */
+	public static function Server_Edit_ListenersProtocol(...$argv): string { return ''; }
+
+	/**
+	 * Server_Edit_ListenersIP
+	 * 
+	 * @return string "IP"
+	 * @return string "IP"
+	 */
+	public static function Server_Edit_ListenersIP(...$argv): string { return ''; }
+
+	/**
+	 * Server_Edit_ListenersPort
+	 * 
+	 * @return string "Port"
+	 * @return string "Порт"
+	 */
+	public static function Server_Edit_ListenersPort(...$argv): string { return ''; }
+
+	/**
+	 * Server_Edit_ListenersService
+	 * 
+	 * @return string "Service"
+	 * @return string "Сервис"
+	 */
+	public static function Server_Edit_ListenersService(...$argv): string { return ''; }
+
+	/**
+	 * Server_Edit_ListenersProcess
+	 * 
+	 * @return string "Process"
+	 * @return string "Процесс"
+	 */
+	public static function Server_Edit_ListenersProcess(...$argv): string { return ''; }
+
+	/**
+	 * Server_Edit_ListenersPID
+	 * 
+	 * @return string "PID"
+	 * @return string "PID"
+	 */
+	public static function Server_Edit_ListenersPID(...$argv): string { return ''; }
 
 	/**
 	 * Server_Edit_ChartsTitle

@@ -291,6 +291,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					$this->print_install_docs();
 				}
 				$this->print_status_cards();
+				$this->print_listeners();
 				$this->print_charts();
 				$this->print_docker();
 				$this->print_proxmox();
@@ -326,7 +327,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 
 	private function agentInstallScript(string $serverHost, string $agentKey): string {
 		$serverHost = rtrim($serverHost, '/').'/';
-		$version = 'v1.2.0';
+		$version = 'v1.3.0';
 		return <<<SH
 #!/bin/bash
 set -euo pipefail
@@ -419,6 +420,76 @@ SH;
 					<?php } ?>
 					</tbody></table>
 				<?php } ?>
+			</div>
+		</div>
+		<?php
+	}
+
+	private function print_listeners() {
+		$listeners = is_array($this->payload['listeners'] ?? null) ? $this->payload['listeners'] : [];
+		if (!$listeners) {
+			return;
+		}
+		$normalized = [];
+		foreach ($listeners as $l) {
+			if (!is_array($l)) {
+				continue;
+			}
+			$protocol = strtolower(trim(strval($l['protocol'] ?? '')));
+			if ($protocol !== 'tcp' && $protocol !== 'udp') {
+				continue;
+			}
+			$port = intval($l['port'] ?? 0);
+			if ($port < 1 || $port > 65535) {
+				continue;
+			}
+			$normalized[] = [
+				'protocol' => $protocol,
+				'ip' => strval($l['ip'] ?? ''),
+				'port' => $port,
+				'service' => strval($l['service'] ?? ''),
+				'process' => strval($l['process'] ?? ''),
+				'pid' => intval($l['pid'] ?? 0),
+			];
+		}
+		if (!$normalized) {
+			return;
+		}
+		usort($normalized, static function (array $a, array $b): int {
+			if ($a['protocol'] !== $b['protocol']) {
+				return $a['protocol'] <=> $b['protocol'];
+			}
+			if ($a['port'] !== $b['port']) {
+				return $a['port'] <=> $b['port'];
+			}
+			return strcmp($a['ip'], $b['ip']);
+		});
+		?>
+		<div class="card bg-transparent col-xl-10 p-4 mt-2 mb-3">
+			<div class="card-header bg-transparent"><h4><?=\T::Server_Edit_ListenersTitle();?></h4></div>
+			<div class="card-body table-responsive">
+				<table class="table table-sm table-transparent">
+					<thead><tr>
+						<th><?=\T::Server_Edit_ListenersProtocol();?></th>
+						<th><?=\T::Server_Edit_ListenersIP();?></th>
+						<th><?=\T::Server_Edit_ListenersPort();?></th>
+						<th><?=\T::Server_Edit_ListenersService();?></th>
+						<th><?=\T::Server_Edit_ListenersProcess();?></th>
+						<th><?=\T::Server_Edit_ListenersPID();?></th>
+					</tr></thead>
+					<tbody>
+					<?php foreach ($normalized as $l) { ?>
+						<tr>
+							<td><?=htmlspecialchars(strtoupper($l['protocol']));?></td>
+							<td><code><?=htmlspecialchars($l['ip']);?></code></td>
+							<td><?=intval($l['port']);?></td>
+							<td><?=htmlspecialchars($l['service']);?></td>
+							<td><?=htmlspecialchars($l['process']);?></td>
+							<td><?=$l['pid'] > 0 ? intval($l['pid']) : '';?></td>
+						</tr>
+					<?php } ?>
+					</tbody>
+				</table>
 			</div>
 		</div>
 		<?php

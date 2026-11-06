@@ -253,6 +253,16 @@ class ServerAgent {
 			}
 			return static::evalContainer($name, $src);
 		}
+		if ($type === \Monitors::TYPE_SERVER_PORT) {
+			$src = $payload;
+			if (!$src) {
+				$decoded = @json_decode(strval($server['last_payload'] ?? ''), true);
+				$src = is_array($decoded) ? $decoded : [];
+			}
+			$port = intval($monitor['port'] ?? 0);
+			$protocol = \Monitors::normalize_port_protocol($monitor['port_protocol'] ?? 'tcp');
+			return static::evalPortListening($port, $protocol, $src);
+		}
 		if (\Monitors::is_server_net_type($type)) {
 			$src = $payload;
 			if (!$src) {
@@ -364,6 +374,36 @@ class ServerAgent {
 			$ok ? 200 : 500,
 			$ok ? '' : 'container '.$name.' is '.$statusText,
 			$state,
+		];
+	}
+
+	/**
+	 * @param array<string,mixed> $payload
+	 * @return array{0:int,1:int,2:string,3:string}
+	 */
+	static public function evalPortListening(int $port, string $protocol, array $payload): array {
+		if ($port < 1 || $port > 65535) {
+			return [\MonitoringLogs::STATUS_FAIL, 404, 'port not set', '0'];
+		}
+		$protocol = \Monitors::normalize_port_protocol($protocol);
+		$listeners = is_array($payload['listeners'] ?? null) ? $payload['listeners'] : [];
+		foreach ($listeners as $l) {
+			if (!is_array($l)) {
+				continue;
+			}
+			$lPort = intval($l['port'] ?? 0);
+			$lProto = \Monitors::normalize_port_protocol($l['protocol'] ?? '');
+			if ($lPort === $port && $lProto === $protocol) {
+				$ip = trim(strval($l['ip'] ?? ''));
+				$result = $protocol.'/'.$port.($ip !== '' ? '@'.$ip : '');
+				return [\MonitoringLogs::STATUS_GOOD, 200, '', $result];
+			}
+		}
+		return [
+			\MonitoringLogs::STATUS_FAIL,
+			503,
+			'port not listening',
+			$protocol.'/'.$port,
 		];
 	}
 

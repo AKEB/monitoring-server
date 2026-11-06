@@ -412,6 +412,20 @@ class MonitorsService {
 			} elseif ($creating || !in_array($type, [\Monitors::TYPE_SERVER_DISK, \Monitors::TYPE_SERVER_CONTAINER], true)) {
 				$row['container'] = '';
 			}
+			if ($type === \Monitors::TYPE_SERVER_PORT) {
+				if ($creating || array_key_exists('port', $payload)) {
+					$port = intval($payload['port'] ?? 0);
+					if ($port < 1 || $port > 65535) {
+						return ['error' => 'Port must be between 1 and 65535', 'http' => 422];
+					}
+					$row['port'] = $port;
+				}
+				if ($creating || array_key_exists('port_protocol', $payload)) {
+					$row['port_protocol'] = \Monitors::normalize_port_protocol($payload['port_protocol'] ?? 'tcp');
+				}
+			} elseif ($creating || array_key_exists('port_protocol', $payload)) {
+				$row['port_protocol'] = 'tcp';
+			}
 		}
 
 		if ($existing && intval($existing['type'] ?? 0) === \Monitors::TYPE_EXTERNAL && $type !== \Monitors::TYPE_EXTERNAL) {

@@ -22,6 +22,7 @@ class MonitorsTest extends PHPUnit\Framework\TestCase {
 		$this->assertSame(14, \Monitors::TYPE_SERVER_CONTAINER);
 		$this->assertSame(15, \Monitors::TYPE_SERVER_NET_RX);
 		$this->assertSame(16, \Monitors::TYPE_SERVER_NET_TX);
+		$this->assertSame(17, \Monitors::TYPE_SERVER_PORT);
 		$this->assertSame(-1, \Monitors::EXTERNAL_WORKER_ID);
 		$this->assertSame(-2, \Servers::SERVER_WORKER_ID);
 	}
@@ -29,8 +30,18 @@ class MonitorsTest extends PHPUnit\Framework\TestCase {
 	function test_type_hash_excludes_exporter_cpu() {
 		$keys = array_keys(\Monitors::type_hash());
 		sort($keys);
-		$this->assertSame([0, 1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13, 14, 15, 16], $keys);
+		$this->assertSame([0, 1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17], $keys);
 		$this->assertArrayNotHasKey(\Monitors::TYPE_EXPORTER_CPU, \Monitors::type_hash());
+	}
+
+	function test_server_port_is_server_type_not_metric() {
+		$this->assertTrue(\Monitors::is_server_type(\Monitors::TYPE_SERVER_PORT));
+		$this->assertFalse(\Monitors::is_metric_value_type(\Monitors::TYPE_SERVER_PORT));
+		$this->assertTrue(\Monitors::hides_response_time_ui(\Monitors::TYPE_SERVER_PORT));
+		$this->assertSame('tcp', \Monitors::normalize_port_protocol('TCP'));
+		$this->assertSame('udp', \Monitors::normalize_port_protocol('udp'));
+		$this->assertSame('tcp', \Monitors::normalize_port_protocol('other'));
+		$this->assertSame(['tcp' => 'TCP', 'udp' => 'UDP'], \Monitors::port_protocol_hash());
 	}
 
 	function test_alert_fail_threshold() {

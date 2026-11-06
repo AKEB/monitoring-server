@@ -382,6 +382,17 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				} else {
 					$params['container'] = '';
 				}
+				if ($typeInt === \Monitors::TYPE_SERVER_PORT) {
+					$port = isset($data['port']) ? intval(trim(strval($data['port']))) : 0;
+					if ($port < 1 || $port > 65535) {
+						$this->error = \T::Monitor_Edit_PortRequired();
+						break;
+					}
+					$params['port'] = $port;
+					$params['port_protocol'] = \Monitors::normalize_port_protocol($data['port_protocol'] ?? 'tcp');
+				} else {
+					$params['port_protocol'] = 'tcp';
+				}
 			}
 
 			if (isset($data['parent_id'])) {
@@ -944,7 +955,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 						'global-id' => 'container-div',
 					]);
 
-					$server_type_class = 'type-dependence type-'.\Monitors::TYPE_SERVER_OFFLINE.' type-'.\Monitors::TYPE_SERVER_CPU.' type-'.\Monitors::TYPE_SERVER_MEMORY.' type-'.\Monitors::TYPE_SERVER_DISK.' type-'.\Monitors::TYPE_SERVER_CONTAINER.' type-'.\Monitors::TYPE_SERVER_NET_RX.' type-'.\Monitors::TYPE_SERVER_NET_TX;
+					$server_type_class = 'type-dependence type-'.\Monitors::TYPE_SERVER_OFFLINE.' type-'.\Monitors::TYPE_SERVER_CPU.' type-'.\Monitors::TYPE_SERVER_MEMORY.' type-'.\Monitors::TYPE_SERVER_DISK.' type-'.\Monitors::TYPE_SERVER_CONTAINER.' type-'.\Monitors::TYPE_SERVER_NET_RX.' type-'.\Monitors::TYPE_SERVER_NET_TX.' type-'.\Monitors::TYPE_SERVER_PORT;
 					echo $this->template?->html_select('server', \Servers::options_hash_for_user(), $this->monitor['server']??0, \T::Monitor_Edit_Server(), false,[
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
 						'global-class' => $server_type_class,
@@ -975,7 +986,13 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 
 					echo $this->template->html_input("port", $this->monitor['port']??'', \T::Monitor_Edit_Port(), false, [
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
-						'global-class' => 'type-dependence type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU,
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU.' type-'.\Monitors::TYPE_SERVER_PORT,
+						'readonly' => !($this->can_write || $this->can_create),
+					]);
+
+					echo $this->template?->html_select('port_protocol', \Monitors::port_protocol_hash(), $this->monitor['port_protocol']??'tcp', \T::Monitor_Edit_PortProtocol(), false,[
+						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_SERVER_PORT,
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 
@@ -1052,7 +1069,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					echo $this->template->html_input("send_repeat_minute", $this->monitor['send_repeat_minute']??0, \T::Monitor_Edit_SendRepeatMinute(), false, [
 						'type' => 'number',
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
-						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_HTTP_JSON.' type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_PING.' type-'.\Monitors::TYPE_DOCKER.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU.' type-'.\Monitors::TYPE_EXTERNAL.' type-'.\Monitors::TYPE_SERVER_OFFLINE.' type-'.\Monitors::TYPE_SERVER_CPU.' type-'.\Monitors::TYPE_SERVER_MEMORY.' type-'.\Monitors::TYPE_SERVER_DISK.' type-'.\Monitors::TYPE_SERVER_CONTAINER.' type-'.\Monitors::TYPE_SERVER_NET_RX.' type-'.\Monitors::TYPE_SERVER_NET_TX,
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_HTTP_JSON.' type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_PING.' type-'.\Monitors::TYPE_DOCKER.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU.' type-'.\Monitors::TYPE_EXTERNAL.' type-'.\Monitors::TYPE_SERVER_OFFLINE.' type-'.\Monitors::TYPE_SERVER_CPU.' type-'.\Monitors::TYPE_SERVER_MEMORY.' type-'.\Monitors::TYPE_SERVER_DISK.' type-'.\Monitors::TYPE_SERVER_CONTAINER.' type-'.\Monitors::TYPE_SERVER_NET_RX.' type-'.\Monitors::TYPE_SERVER_NET_TX.' type-'.\Monitors::TYPE_SERVER_PORT,
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 					echo $this->template?->html_select('alert_fail_mode', \Monitors::alert_fail_mode_hash(), intval($this->monitor['alert_fail_mode']??\Monitors::ALERT_FAIL_MODE_MAJORITY), \T::Monitor_Edit_AlertFailMode(), false,[
@@ -1112,7 +1129,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 
-					$signature_type_class = 'type-dependence type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_PING.' type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_HTTP_JSON.' type-'.\Monitors::TYPE_DOCKER.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU.' type-'.\Monitors::TYPE_EXTERNAL.' type-'.\Monitors::TYPE_SERVER_OFFLINE.' type-'.\Monitors::TYPE_SERVER_CPU.' type-'.\Monitors::TYPE_SERVER_MEMORY.' type-'.\Monitors::TYPE_SERVER_DISK.' type-'.\Monitors::TYPE_SERVER_CONTAINER.' type-'.\Monitors::TYPE_SERVER_NET_RX.' type-'.\Monitors::TYPE_SERVER_NET_TX;
+					$signature_type_class = 'type-dependence type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_PING.' type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_HTTP_JSON.' type-'.\Monitors::TYPE_DOCKER.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU.' type-'.\Monitors::TYPE_EXTERNAL.' type-'.\Monitors::TYPE_SERVER_OFFLINE.' type-'.\Monitors::TYPE_SERVER_CPU.' type-'.\Monitors::TYPE_SERVER_MEMORY.' type-'.\Monitors::TYPE_SERVER_DISK.' type-'.\Monitors::TYPE_SERVER_CONTAINER.' type-'.\Monitors::TYPE_SERVER_NET_RX.' type-'.\Monitors::TYPE_SERVER_NET_TX.' type-'.\Monitors::TYPE_SERVER_PORT;
 					$signatures_list = \Signatures::active_list();
 					$current_signature_id = intval($this->monitor['signature_id'] ?? 0);
 					if ($current_signature_id > 0 && !isset($signatures_list[$current_signature_id])) {
