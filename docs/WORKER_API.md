@@ -32,7 +32,7 @@ Authentication: `worker_key_hash` in JSON body.
 ## `get/` response
 
 - `data`: worker tuning + optional `"restart": "true"` (one-shot, from admin **Restart worker**).
-- `jobs[]`: monitor tasks (whitelist fields, includes `proxy_type`). Monitors in active maintenance are omitted.
+- `jobs[]`: monitor tasks (whitelist fields, includes `proxy_type`). Monitors in active maintenance are omitted. Worker-executed types include HTTPS/JSON, TCP (`2`), ping, exporters, and UDP Port (`18`: host+port listen probe — ICMP unreachable = fail, timeout/reply = ok; not a protocol handshake). Type `17` (server listening port) is agent-side, not dispatched here.
 - `dockers[]`: docker tasks (`docker_update_time`, conditional TLS PEM). Omitted when every enabled container monitor on that host is in maintenance.
 
 No `server_time` / `server_microtime`.

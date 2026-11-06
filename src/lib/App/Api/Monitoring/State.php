@@ -343,7 +343,7 @@ class State extends \Routing_Parent implements \Routing_Interface {
 					$job_response['response']['response_error'] = 'Unexpected HTTP status code: '.intval($job_response['response']['status_code'] ?? 0);
 				}
 			}
-		} elseif ($monitor['type'] == \Monitors::TYPE_TCP) {
+		} elseif ($monitor['type'] == \Monitors::TYPE_TCP || $monitor['type'] == \Monitors::TYPE_UDP) {
 			if ($job_response['response']['status'] == 1) {
 				$status = \MonitoringLogs::STATUS_GOOD;
 			}

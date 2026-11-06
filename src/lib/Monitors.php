@@ -29,6 +29,7 @@ class Monitors extends \DB\MySQLObject implements \PermissionSubject_Interface {
 	const TYPE_SERVER_NET_RX     = 15;
 	const TYPE_SERVER_NET_TX     = 16;
 	const TYPE_SERVER_PORT       = 17;
+	const TYPE_UDP               = 18;
 
 	/** Virtual worker_id for push-based External monitors (never a real Workers row). */
 	const EXTERNAL_WORKER_ID = -1;
@@ -76,6 +77,7 @@ class Monitors extends \DB\MySQLObject implements \PermissionSubject_Interface {
 			static::TYPE_SERVER_NET_RX => \T::Monitor_Type_ServerNetRx(),
 			static::TYPE_SERVER_NET_TX => \T::Monitor_Type_ServerNetTx(),
 			static::TYPE_SERVER_PORT => \T::Monitor_Type_ServerPort(),
+			static::TYPE_UDP => \T::Monitor_Type_UDP(),
 			// static::TYPE_EXPORTER_CPU => \T::Monitor_Type_ExporterCPU(),
 		];
 	}

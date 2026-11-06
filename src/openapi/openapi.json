@@ -87,7 +87,7 @@
       "post": {
         "tags": ["monitors"],
         "summary": "Create monitor",
-        "description": "Types: 0 HTTPS, 1 folder, 2 TCP, 3 ping, 4 docker, 5–7 exporters, 8 HTTP JSON, 9 external. Type-specific fields: url/method/response_code/ssl_* (HTTPS/JSON); host/port (TCP/exporters); host (ping); docker/container (docker); external_hash auto (external). Link workers[] and notify[] by id. api_enabled only for /api/v1/status/ opt-in.",
+        "description": "Types: 0 HTTPS, 1 folder, 2 TCP, 3 ping, 4 docker, 5–7 exporters, 8 HTTP JSON, 9 external, 10–17 server agent, 18 UDP. Type-specific fields: url/method/response_code/ssl_* (HTTPS/JSON); host/port (TCP/UDP/exporters); host (ping); docker/container (docker); external_hash auto (external). Link workers[] and notify[] by id. api_enabled only for /api/v1/status/ opt-in.",
         "security": [{"BearerAuth": []}, {"ApiTokenHeader": []}],
         "requestBody": {
           "required": true,
@@ -1283,7 +1283,7 @@
         "properties": {
           "id": {"type": "integer"},
           "title": {"type": "string"},
-          "type": {"type": "integer", "description": "0 HTTPS, 1 folder, 2 TCP, 3 ping, 4 docker, 5–7 exporters, 8 HTTP JSON, 9 external, 10–16 server agent metrics, 17 server listening port"},
+          "type": {"type": "integer", "description": "0 HTTPS, 1 folder, 2 TCP, 3 ping, 4 docker, 5–7 exporters, 8 HTTP JSON, 9 external, 10–16 server agent metrics, 17 server listening port, 18 UDP Port"},
           "status": {"type": "integer", "description": "0 disabled, 1 enabled"},
           "api_enabled": {"type": "integer", "description": "Opt-in for GET /api/v1/status/ only"},
           "url": {"type": "string"},

@@ -1249,6 +1249,14 @@ class T {
 	public static function Monitor_Type_TCP(...$argv): string { return ''; }
 
 	/**
+	 * Monitor_Type_UDP
+	 * 
+	 * @return string "UDP Port"
+	 * @return string "UDP Port"
+	 */
+	public static function Monitor_Type_UDP(...$argv): string { return ''; }
+
+	/**
 	 * Monitor_Type_Ping
 	 * 
 	 * @return string "Ping"

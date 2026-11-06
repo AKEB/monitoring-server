@@ -269,6 +269,8 @@ class MonitoringApiStatus {
 				return $url;
 			case \Monitors::TYPE_TCP:
 				return $port > 0 ? 'tcp://'.$host.':'.$port : 'tcp://'.$host;
+			case \Monitors::TYPE_UDP:
+				return $port > 0 ? 'udp://'.$host.':'.$port : 'udp://'.$host;
 			case \Monitors::TYPE_PING:
 				return 'icmp://'.$host;
 			case \Monitors::TYPE_DOCKER:

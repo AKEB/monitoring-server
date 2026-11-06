@@ -303,7 +303,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					$data['proxy_type'] = trim($data['proxy_type']);
 					$params['proxy_type'] = intval($data['proxy_type']);
 				}
-			} elseif ($data['type'] == \Monitors::TYPE_TCP) {
+			} elseif ($data['type'] == \Monitors::TYPE_TCP || $data['type'] == \Monitors::TYPE_UDP) {
 				if (isset($data['host'])) {
 					$data['host'] = trim($data['host']);
 					$params['host'] = $data['host'];
@@ -891,7 +891,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					]);
 					echo $this->template->html_switch("api_enabled", intval($this->monitor['api_enabled']??0), \T::Monitor_Edit_ApiEnabled(), false,[
 						'readonly' => !($this->can_write || $this->can_create),
-						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_HTTP_JSON.' type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_PING.' type-'.\Monitors::TYPE_DOCKER.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU.' type-'.\Monitors::TYPE_EXTERNAL,
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_HTTP_JSON.' type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_UDP.' type-'.\Monitors::TYPE_PING.' type-'.\Monitors::TYPE_DOCKER.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU.' type-'.\Monitors::TYPE_EXTERNAL,
 					]);
 					$api_description_class = 'api-description-dependence';
 					echo $this->template->html_input("api_description_ru", htmlspecialchars(strval($this->monitor['api_description_ru']??''), ENT_QUOTES, 'UTF-8'), \T::Monitor_Edit_ApiDescriptionRu(), false, [
@@ -980,13 +980,13 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 
 					echo $this->template->html_input("host", $this->monitor['host']??'', \T::Monitor_Edit_Host(), false, [
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
-						'global-class' => 'type-dependence type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_PING.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU,
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_UDP.' type-'.\Monitors::TYPE_PING.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU,
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 
 					echo $this->template->html_input("port", $this->monitor['port']??'', \T::Monitor_Edit_Port(), false, [
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
-						'global-class' => 'type-dependence type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU.' type-'.\Monitors::TYPE_SERVER_PORT,
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_UDP.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU.' type-'.\Monitors::TYPE_SERVER_PORT,
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 
@@ -1034,7 +1034,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 
 					echo $this->template->html_params("workers[]", $this->workers_hash, $this->monitor['workers']??[], \T::Monitor_Edit_Workers(),false,[
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
-						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_HTTP_JSON.' type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_PING.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU,
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_HTTP_JSON.' type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_UDP.' type-'.\Monitors::TYPE_PING.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU,
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 
@@ -1051,13 +1051,13 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					echo $this->template->html_input("timeout", $this->monitor['timeout']??0, \T::Monitor_Edit_Timeout(), false, [
 						'type' => 'number',
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
-						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_HTTP_JSON.' type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_PING.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU,
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_HTTP_JSON.' type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_UDP.' type-'.\Monitors::TYPE_PING.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU,
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 					echo $this->template->html_input("repeat_seconds", $this->monitor['repeat_seconds']??0, \T::Monitor_Edit_RepeatSeconds(), false, [
 						'type' => 'number',
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
-						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_HTTP_JSON.' type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_PING.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU,
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_HTTP_JSON.' type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_UDP.' type-'.\Monitors::TYPE_PING.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU,
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 					echo $this->template->html_input("max_redirects", $this->monitor['max_redirects']??0, \T::Monitor_Edit_MaxRedirects(), false, [
@@ -1069,12 +1069,12 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					echo $this->template->html_input("send_repeat_minute", $this->monitor['send_repeat_minute']??0, \T::Monitor_Edit_SendRepeatMinute(), false, [
 						'type' => 'number',
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
-						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_HTTP_JSON.' type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_PING.' type-'.\Monitors::TYPE_DOCKER.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU.' type-'.\Monitors::TYPE_EXTERNAL.' type-'.\Monitors::TYPE_SERVER_OFFLINE.' type-'.\Monitors::TYPE_SERVER_CPU.' type-'.\Monitors::TYPE_SERVER_MEMORY.' type-'.\Monitors::TYPE_SERVER_DISK.' type-'.\Monitors::TYPE_SERVER_CONTAINER.' type-'.\Monitors::TYPE_SERVER_NET_RX.' type-'.\Monitors::TYPE_SERVER_NET_TX.' type-'.\Monitors::TYPE_SERVER_PORT,
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_HTTP_JSON.' type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_UDP.' type-'.\Monitors::TYPE_PING.' type-'.\Monitors::TYPE_DOCKER.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU.' type-'.\Monitors::TYPE_EXTERNAL.' type-'.\Monitors::TYPE_SERVER_OFFLINE.' type-'.\Monitors::TYPE_SERVER_CPU.' type-'.\Monitors::TYPE_SERVER_MEMORY.' type-'.\Monitors::TYPE_SERVER_DISK.' type-'.\Monitors::TYPE_SERVER_CONTAINER.' type-'.\Monitors::TYPE_SERVER_NET_RX.' type-'.\Monitors::TYPE_SERVER_NET_TX.' type-'.\Monitors::TYPE_SERVER_PORT,
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 					echo $this->template?->html_select('alert_fail_mode', \Monitors::alert_fail_mode_hash(), intval($this->monitor['alert_fail_mode']??\Monitors::ALERT_FAIL_MODE_MAJORITY), \T::Monitor_Edit_AlertFailMode(), false,[
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
-						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_HTTP_JSON.' type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_PING.' type-'.\Monitors::TYPE_DOCKER.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU,
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_HTTP_JSON.' type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_UDP.' type-'.\Monitors::TYPE_PING.' type-'.\Monitors::TYPE_DOCKER.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU,
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 					echo $this->template?->html_select('response_code[]', \Monitors::response_code_hash(), $this->monitor['response_code']??[], \T::Monitor_Edit_ResponseCode(), false,[
@@ -1129,7 +1129,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 
-					$signature_type_class = 'type-dependence type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_PING.' type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_HTTP_JSON.' type-'.\Monitors::TYPE_DOCKER.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU.' type-'.\Monitors::TYPE_EXTERNAL.' type-'.\Monitors::TYPE_SERVER_OFFLINE.' type-'.\Monitors::TYPE_SERVER_CPU.' type-'.\Monitors::TYPE_SERVER_MEMORY.' type-'.\Monitors::TYPE_SERVER_DISK.' type-'.\Monitors::TYPE_SERVER_CONTAINER.' type-'.\Monitors::TYPE_SERVER_NET_RX.' type-'.\Monitors::TYPE_SERVER_NET_TX.' type-'.\Monitors::TYPE_SERVER_PORT;
+					$signature_type_class = 'type-dependence type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_UDP.' type-'.\Monitors::TYPE_PING.' type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_HTTP_JSON.' type-'.\Monitors::TYPE_DOCKER.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU.' type-'.\Monitors::TYPE_EXTERNAL.' type-'.\Monitors::TYPE_SERVER_OFFLINE.' type-'.\Monitors::TYPE_SERVER_CPU.' type-'.\Monitors::TYPE_SERVER_MEMORY.' type-'.\Monitors::TYPE_SERVER_DISK.' type-'.\Monitors::TYPE_SERVER_CONTAINER.' type-'.\Monitors::TYPE_SERVER_NET_RX.' type-'.\Monitors::TYPE_SERVER_NET_TX.' type-'.\Monitors::TYPE_SERVER_PORT;
 					$signatures_list = \Signatures::active_list();
 					$current_signature_id = intval($this->monitor['signature_id'] ?? 0);
 					if ($current_signature_id > 0 && !isset($signatures_list[$current_signature_id])) {

@@ -176,6 +176,7 @@ Monitor:
     HTTPs: "HTTP(s)"
     Folder: "Папка"
     TCP: "TCP Port"
+    UDP: "UDP Port"
     Ping: "Ping"
     Docker: "Docker"
     ExporterDisk: "Node Exporter (disk)"

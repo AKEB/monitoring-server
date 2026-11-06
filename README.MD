@@ -52,6 +52,7 @@ After upgrade, run DB migrations.
 - [x] Displaying events in the selected monitor
 - [x] Event notifications
 - [x] New monitor type: TCP
+- [x] New monitor type: UDP Port
 - [x] New monitor type: PING
 - [x] New monitor type: Docker API
 - [x] Filtering monitors by status

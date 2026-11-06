@@ -130,5 +130,31 @@ class ApiV2MonitorsTest extends ApiV2TestCase {
 		$read = $doc['components']['schemas']['Monitor']['properties'] ?? [];
 		$this->assertArrayHasKey('port_protocol', $read);
 		$this->assertStringContainsString('17', strval($read['type']['description'] ?? ''));
+		$this->assertStringContainsString('18', strval($read['type']['description'] ?? ''));
+		$createDesc = strval($doc['paths']['/api/v2/monitors/']['post']['description'] ?? '');
+		$this->assertStringContainsString('18 UDP', $createDesc);
+		$this->assertStringContainsString('TCP/UDP', $createDesc);
+	}
+
+	function test_create_and_update_udp_port() {
+		$created = \Api\V2\MonitorsService::create($this->user(), [
+			'title' => 'WG UDP',
+			'type' => \Monitors::TYPE_UDP,
+			'host' => 'vpn.example',
+			'port' => 51820,
+		]);
+		$this->assertSame(0, $created['status'], json_encode($created));
+		$this->assertSame(\Monitors::TYPE_UDP, intval($created['data']['type'] ?? -1));
+		$this->assertSame('vpn.example', strval($created['data']['host'] ?? ''));
+		$this->assertSame(51820, intval($created['data']['port'] ?? 0));
+
+		$id = intval($created['data']['id'] ?? 0);
+		$updated = \Api\V2\MonitorsService::update($this->user(), $id, [
+			'host' => 'vpn2.example',
+			'port' => 51821,
+		]);
+		$this->assertSame(0, $updated['status'], json_encode($updated));
+		$this->assertSame('vpn2.example', strval($updated['data']['host'] ?? ''));
+		$this->assertSame(51821, intval($updated['data']['port'] ?? 0));
 	}
 }

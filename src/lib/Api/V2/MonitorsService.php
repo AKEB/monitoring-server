@@ -332,7 +332,7 @@ class MonitorsService {
 			if ($creating || array_key_exists('proxy_type', $payload)) {
 				$row['proxy_type'] = intval($payload['proxy_type'] ?? 0);
 			}
-		} elseif ($type === \Monitors::TYPE_TCP) {
+		} elseif ($type === \Monitors::TYPE_TCP || $type === \Monitors::TYPE_UDP) {
 			if ($creating || array_key_exists('host', $payload)) {
 				$row['host'] = trim(strval($payload['host'] ?? ''));
 			}

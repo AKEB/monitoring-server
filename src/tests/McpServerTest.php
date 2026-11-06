@@ -81,6 +81,7 @@ class McpServerTest extends ApiV2TestCase {
 		$this->assertContains('status_api_vs_management_api', $names);
 		$this->assertContains('how_to_add_host_agent', $names);
 		$this->assertContains('how_to_create_server_port_monitor', $names);
+		$this->assertContains('how_to_create_udp_monitor', $names);
 	}
 
 	function test_initialize_mentions_listening_ports() {
@@ -100,6 +101,22 @@ class McpServerTest extends ApiV2TestCase {
 		$this->assertArrayHasKey('port_protocol', $create);
 		$this->assertArrayHasKey('server', $create);
 		$this->assertSame(['tcp', 'udp'], $create['port_protocol']['enum'] ?? null);
+		$this->assertStringContainsString('18', strval($byName['monitors_create']['description'] ?? ''));
+		$this->assertStringContainsString('18', strval($create['type']['description'] ?? ''));
+	}
+
+	function test_call_tool_create_udp_monitor() {
+		$user = ['id' => 1, 'status' => \Users::STATUS_ACTIVE, '__agent_key_hash' => true];
+		$created = \Mcp\Server::callTool($user, 'monitors_create', [
+			'title' => 'AmneziaWG UDP',
+			'type' => \Monitors::TYPE_UDP,
+			'host' => 'vpn.example',
+			'port' => 443,
+		]);
+		$this->assertSame(0, $created['status'], json_encode($created));
+		$this->assertSame(\Monitors::TYPE_UDP, intval($created['data']['type'] ?? -1));
+		$this->assertSame('vpn.example', strval($created['data']['host'] ?? ''));
+		$this->assertSame(443, intval($created['data']['port'] ?? 0));
 	}
 
 	function test_call_tool_create_server_port_monitor() {

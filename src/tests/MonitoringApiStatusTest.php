@@ -55,6 +55,11 @@ class MonitoringApiStatusTest extends PHPUnit\Framework\TestCase {
 			'host' => 'db.local',
 			'port' => 3306,
 		]));
+		$this->assertSame('udp://vpn.example:51820', \MonitoringApiStatus::checkUrl([
+			'type' => \Monitors::TYPE_UDP,
+			'host' => 'vpn.example',
+			'port' => 51820,
+		]));
 		$this->assertSame('icmp://8.8.8.8', \MonitoringApiStatus::checkUrl([
 			'type' => \Monitors::TYPE_PING,
 			'host' => '8.8.8.8',

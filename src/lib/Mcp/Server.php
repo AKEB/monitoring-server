@@ -69,9 +69,9 @@ class Server {
 			['name' => 'api_docs', 'description' => 'Read OpenAPI documentation (same as /api/docs/). No args = index of tags and METHOD path. Optional tag, path, and/or operation (get/post/patch/put/delete) return a focused slice with schemas.', 'inputSchema' => ['type' => 'object', 'properties' => ['tag' => ['type' => 'string', 'description' => 'OpenAPI tag, e.g. monitors'], 'path' => ['type' => 'string', 'description' => 'Exact path key, e.g. /api/v2/monitors/'], 'operation' => ['type' => 'string', 'description' => 'HTTP method under path, e.g. post']]]],
 			['name' => 'monitors_list', 'description' => 'List monitors visible to the current user.', 'inputSchema' => $empty],
 			['name' => 'monitors_get', 'description' => 'Get one monitor by id.', 'inputSchema' => $idSchema],
-			['name' => 'monitors_create', 'description' => 'Create a monitor. Types include 0 HTTPS, 2 TCP, 3 ping, 8 HTTP JSON, 9 external, 10–16 server metrics, 17 server listening port (needs server+port+port_protocol tcp|udp). Set api_enabled only for /api/v1/status/ opt-in.', 'inputSchema' => ['type' => 'object', 'properties' => [
+			['name' => 'monitors_create', 'description' => 'Create a monitor. Types include 0 HTTPS, 2 TCP, 3 ping, 8 HTTP JSON, 9 external, 10–16 server metrics, 17 server listening port (needs server+port+port_protocol tcp|udp), 18 UDP Port (host+port; listen probe, not protocol handshake). Set api_enabled only for /api/v1/status/ opt-in.', 'inputSchema' => ['type' => 'object', 'properties' => [
 				'title' => ['type' => 'string'],
-				'type' => ['type' => 'integer', 'description' => '0 HTTPS, 2 TCP, 3 ping, 4 docker, 8 HTTP JSON, 9 external, 10–16 server agent, 17 listening port'],
+				'type' => ['type' => 'integer', 'description' => '0 HTTPS, 2 TCP, 3 ping, 4 docker, 8 HTTP JSON, 9 external, 10–16 server agent, 17 listening port, 18 UDP Port'],
 				'url' => ['type' => 'string'],
 				'host' => ['type' => 'string'],
 				'port' => ['type' => 'integer', 'minimum' => 1, 'maximum' => 65535],
@@ -84,7 +84,7 @@ class Server {
 				'workers' => ['type' => 'array', 'items' => ['type' => 'integer']],
 				'notify' => ['type' => 'array', 'items' => ['type' => 'integer']],
 			], 'required' => ['title', 'type']]],
-			['name' => 'monitors_update', 'description' => 'Update a monitor. Read it first. For type 17 use server, port (1–65535), port_protocol tcp|udp. api_enabled is /api/v1/status/ opt-in only.', 'inputSchema' => ['type' => 'object', 'properties' => [
+			['name' => 'monitors_update', 'description' => 'Update a monitor. Read it first. For type 17 use server, port (1–65535), port_protocol tcp|udp. For type 18 (UDP Port) use host+port. api_enabled is /api/v1/status/ opt-in only.', 'inputSchema' => ['type' => 'object', 'properties' => [
 				'id' => ['type' => 'integer'],
 				'title' => ['type' => 'string'],
 				'type' => ['type' => 'integer'],
@@ -210,6 +210,10 @@ class Server {
 			[
 				'name' => 'how_to_create_server_port_monitor',
 				'description' => 'Guide for type 17 server listening port monitors: pick server, port 1–65535, port_protocol tcp|udp; agent must report listeners.',
+			],
+			[
+				'name' => 'how_to_create_udp_monitor',
+				'description' => 'Guide for type 18 UDP Port monitors: host+port, worker probe (ICMP unreachable=fail, timeout/reply=ok). Not a WireGuard/Amnezia handshake; distinct from type 17 agent listening port.',
 			],
 		];
 	}
