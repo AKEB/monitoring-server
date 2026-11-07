@@ -4,10 +4,6 @@ FROM akeb/nginx-php-fpm-8.4:latest
 ARG SERVER_VERSION="v0.0.0"
 ENV SERVER_VERSION=${SERVER_VERSION}
 
-COPY ./src/ /app/
-COPY default.conf /etc/nginx/conf.d/default.conf
-COPY run_on_start.sh /run_on_start.sh
-
 RUN apt-get update \
     && apt-get install -y --no-install-recommends ca-certificates wget unzip \
     && wget -q https://gu-st.ru/content/lending/linux_russian_trusted_root_ca_pem.zip -O /tmp/russian_root_ca.zip \
@@ -18,8 +14,13 @@ RUN apt-get update \
     && rm -rf /tmp/russian_root_ca.zip /tmp/russian_sub_ca.zip \
     && apt-get purge -y wget unzip \
     && apt-get autoremove -y \
-    && rm -rf /var/lib/apt/lists/* \
-    && composer config --unset repositories.framework \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY ./src/ /app/
+COPY default.conf /etc/nginx/conf.d/default.conf
+COPY run_on_start.sh /run_on_start.sh
+
+RUN composer config --unset repositories.framework \
     && rm -rf vendor/ composer.lock \
     && composer install --prefer-dist --no-interaction --no-dev --no-scripts --no-autoloader --no-progress \
     && composer dump-autoload --optimize \
