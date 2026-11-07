@@ -32,12 +32,12 @@ class MonitoringLogs extends \DB\MySQLObject {
 	}
 
 	/**
-	 * Drop trailing empty timeline slots that are still inside the visibility
-	 * grace window. Keeps older mid-timeline greys (real gaps) intact.
+	 * Drop trailing empty timeline slots that are still open ($last+$repeat > $now).
+	 * Keeps older mid-timeline greys (real gaps) intact.
 	 *
 	 * @param array<int|string, mixed> $logsHash
 	 */
-	static public function trimTrailingEmptyLogSlots(array &$logsHash, int $repeatSeconds, int $visibleHorizon): void {
+	static public function trimTrailingEmptyLogSlots(array &$logsHash, int $repeatSeconds, int $now): void {
 		if ($repeatSeconds < 1 || !$logsHash) {
 			return;
 		}
@@ -45,8 +45,8 @@ class MonitoringLogs extends \DB\MySQLObject {
 		sort($times, SORT_NUMERIC);
 		while ($times) {
 			$last = intval(end($times));
-			// Only trim slots that may still be collecting results.
-			if ($last + $repeatSeconds <= $visibleHorizon) {
+			// Only trim the still-open incomplete interval.
+			if ($last + $repeatSeconds <= $now) {
 				break;
 			}
 			$hasWorkerData = false;
@@ -54,7 +54,8 @@ class MonitoringLogs extends \DB\MySQLObject {
 				if ($key === 'title') {
 					continue;
 				}
-				if (is_array($value) && array_key_exists('status', $value)) {
+				// Chart seeds use status=null placeholders; only real results count.
+				if (is_array($value) && array_key_exists('status', $value) && $value['status'] !== null) {
 					$hasWorkerData = true;
 					break;
 				}
@@ -488,14 +489,10 @@ class MonitoringLogs extends \DB\MySQLObject {
 			$return['monitor']['can_read'] = true;
 			$return['monitor']['can_write'] = \Sessions::checkPermission(\Monitors::PERMISSION_ACCESS, $monitor_id, WRITE);
 			$repeat = intval($monitor['repeat_seconds']);
-			$timeout = intval($monitor['timeout'] ?? 15);
-			if ($timeout < 1) {
-				$timeout = 15;
-			}
-			// Same idea as the list view ($i+$repeat > time()), plus a short
-			// grace for in-flight checks so the UI does not seed a false grey
-			// oval for the minute that is still collecting results.
-			$visible_horizon = time() - ($timeout + 5);
+			// Align with list view: hide only the still-open interval
+			// ($slot+$repeat > now). Do not add timeout grace — that pushed
+			// ovals ~2 minutes behind wall clock.
+			$now = time();
 
 			// Get MonitoringJobs
 			if ($monitor['type'] == \Monitors::TYPE_DOCKER) {
@@ -581,20 +578,29 @@ class MonitoringLogs extends \DB\MySQLObject {
 
 			for($i=$max_time - 60*60; $i <= $max_time; $i+=$repeat) {
 				$time = intval($i / $repeat) * $repeat;
-				// Skip open / still-collecting intervals (avoids a false grey "current" oval).
-				if ($time + $repeat > $visible_horizon) continue;
+				// Do not pre-seed the open current interval as an empty grey oval.
+				if ($time + $repeat > $now) continue;
 				$logs_hash[$time] = [
 					'title' => date("Y-m-d H:i:s",$time),
 				];
 			}
 			foreach($logs as $item) {
-				if (intval($item['interval_time']) + $repeat > $visible_horizon) continue;
-				$item['title'] = date("Y-m-d H:i:s",$item['interval_time']).' - '.$item['status_code'].' '.$item['response_error'];
-				$logs_hash[$item['interval_time']]['title'] = date("H:i:s",$item['interval_time']);
-				$logs_hash[$item['interval_time']][$item['worker_id']] = $item;
+				$intervalTime = intval($item['interval_time']);
+				if ($intervalTime > $now) {
+					continue;
+				}
+				// Include current open minute when data already exists (no empty seed).
+				if (!isset($logs_hash[$intervalTime])) {
+					$logs_hash[$intervalTime] = [
+						'title' => date("H:i:s", $intervalTime),
+					];
+				}
+				$item['title'] = date("Y-m-d H:i:s",$intervalTime).' - '.$item['status_code'].' '.$item['response_error'];
+				$logs_hash[$intervalTime]['title'] = date("H:i:s",$intervalTime);
+				$logs_hash[$intervalTime][$item['worker_id']] = $item;
 				$last_data[$item['worker_id']] = $item;
 			}
-			static::trimTrailingEmptyLogSlots($logs_hash, $repeat, $visible_horizon);
+			static::trimTrailingEmptyLogSlots($logs_hash, $repeat, $now);
 			$return['logs'] = $logs_hash;
 
 			$interval = intval($monitor['repeat_seconds']);
@@ -618,15 +624,21 @@ class MonitoringLogs extends \DB\MySQLObject {
 			$logs_hash = [];
 			for($i=$max_time - $period*60*60; $i<$max_time; $i+=intval($interval)) {
 				$time = intval($i / intval($interval)) * intval($interval);
-				if ($time + intval($interval) > $visible_horizon) continue;
+				if ($time + intval($interval) > $now) continue;
 				$logs_hash[$time] = $worker_data_for_charts;
 			}
 			foreach($logs as $item) {
-				if (intval($item['interval_time']) + intval($interval) > $visible_horizon) continue;
+				$intervalTime = intval($item['interval_time']);
+				if ($intervalTime > $now) {
+					continue;
+				}
+				if (!isset($logs_hash[$intervalTime])) {
+					$logs_hash[$intervalTime] = $worker_data_for_charts;
+				}
 				$metricValue = $metricChart ? static::parseMetricValue($item['response_error'] ?? null) : null;
 				$responseMs = ceil(floatval($item['total_time_us'] ?? 0) / 1000);
-				if (isset($logs_hash[$item['interval_time']][$item['worker_id']])) {
-					$slot = &$logs_hash[$item['interval_time']][$item['worker_id']];
+				if (isset($logs_hash[$intervalTime][$item['worker_id']])) {
+					$slot = &$logs_hash[$intervalTime][$item['worker_id']];
 					$slot['status'] = min($slot['status'] ?? \MonitoringLogs::STATUS_GOOD, intval($item['status']));
 					$slot['time'] = max($slot['time'] ?? 0, $responseMs);
 					if ($metricValue !== null) {
@@ -634,14 +646,14 @@ class MonitoringLogs extends \DB\MySQLObject {
 					}
 					unset($slot);
 				} else {
-					$logs_hash[$item['interval_time']][$item['worker_id']] = [
+					$logs_hash[$intervalTime][$item['worker_id']] = [
 						'status' => intval($item['status']),
 						'time' => $responseMs,
 						'value' => $metricValue,
 					];
 				}
 			}
-			static::trimTrailingEmptyLogSlots($logs_hash, intval($interval), $visible_horizon);
+			static::trimTrailingEmptyLogSlots($logs_hash, intval($interval), $now);
 			$return['logs_chart'] = $logs_hash;
 
 			$start_time = microtime(true);
