@@ -171,12 +171,16 @@ class ServerAgent {
 				'monitor_id' => $monitorId,
 				'worker_id' => \Servers::SERVER_WORKER_ID,
 			]);
-			// Agents may push every 15s; keep monitor checks at repeat_seconds (default 60).
-			if ($job && ($now - intval($job['update_time'] ?? 0)) < $repeat) {
+			// Agents push every ~15s; ovals are 1 slot per repeat_seconds.
+			// Throttle by calendar bucket (not elapsed seconds): a write at :50
+			// plus "wait 60s" used to land the next log in :00 of minute+2 and
+			// leave minute+1 empty (grey / No Data) even though reports arrived.
+			$bucket = static::monitorLogBucket($now, $repeat);
+			if (!static::shouldWriteMonitorLog($job ?: null, $now, $repeat)) {
 				continue;
 			}
 			[$status, $statusCode, $error, $result] = static::evalOne($type, $monitor, $server, $payload, true);
-			$log = static::writeLog($monitorId, $status, $statusCode, $error, $result, $now);
+			$log = static::writeLog($monitorId, $status, $statusCode, $error, $result, $bucket);
 			if ($log) {
 				\MonitorsEvents::updateEvent($log);
 				$notificationCheck[$monitorId] = true;
@@ -435,6 +439,27 @@ class ServerAgent {
 			}
 		}
 		return $disks ? $max : $fallback;
+	}
+
+	/** Floor unix time into a monitor log slot start. */
+	static public function monitorLogBucket(int $unixTime, int $repeatSeconds): int {
+		$repeat = max(1, $repeatSeconds);
+		return intdiv($unixTime, $repeat) * $repeat;
+	}
+
+	/**
+	 * True when this agent report should insert a MonitoringLogs row for the
+	 * current calendar bucket (at most one oval per repeat_seconds).
+	 *
+	 * @param array<string,mixed>|null $job
+	 */
+	static public function shouldWriteMonitorLog(?array $job, int $now, int $repeatSeconds): bool {
+		$bucket = static::monitorLogBucket($now, $repeatSeconds);
+		if (!$job) {
+			return true;
+		}
+		$lastBucket = static::monitorLogBucket(intval($job['update_time'] ?? 0), $repeatSeconds);
+		return $lastBucket < $bucket;
 	}
 
 	/** @return array<string,mixed>|null */

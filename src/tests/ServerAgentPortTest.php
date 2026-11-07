@@ -62,4 +62,25 @@ class ServerAgentPortTest extends PHPUnit\Framework\TestCase {
 		\ServerAgent::removeVirtualJob(0);
 		$this->assertTrue(true);
 	}
+
+	function test_monitor_log_bucket_throttle_fills_each_minute() {
+		$repeat = 60;
+		// Old elapsed throttle: write at :50 → next after +60s lands in minute+2.
+		$writeAt = strtotime('2026-11-07 04:10:50 UTC');
+		$nextMinute = strtotime('2026-11-07 04:11:15 UTC'); // agent report inside 04:11
+		$job = ['update_time' => $writeAt];
+
+		$this->assertSame(strtotime('2026-11-07 04:10:00 UTC'), \ServerAgent::monitorLogBucket($writeAt, $repeat));
+		$this->assertTrue(\ServerAgent::shouldWriteMonitorLog($job, $nextMinute, $repeat));
+		$this->assertFalse(\ServerAgent::shouldWriteMonitorLog(
+			['update_time' => $nextMinute],
+			strtotime('2026-11-07 04:11:45 UTC'),
+			$repeat
+		));
+		$this->assertTrue(\ServerAgent::shouldWriteMonitorLog(
+			['update_time' => $nextMinute],
+			strtotime('2026-11-07 04:12:00 UTC'),
+			$repeat
+		));
+	}
 }
