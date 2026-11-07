@@ -353,7 +353,7 @@ cat >/opt/monitoring-agent/.env <<EOF
 TZ=Europe/Moscow
 SERVER_HOST={$serverHost}
 AGENT_KEY_HASH={$agentKey}
-REPORT_INTERVAL_SEC=30
+REPORT_INTERVAL_SEC=15
 EOF
 
 systemctl daemon-reload

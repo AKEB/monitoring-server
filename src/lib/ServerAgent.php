@@ -171,7 +171,7 @@ class ServerAgent {
 				'monitor_id' => $monitorId,
 				'worker_id' => \Servers::SERVER_WORKER_ID,
 			]);
-			// Agents may push every 30s; keep monitor checks at repeat_seconds (default 60).
+			// Agents may push every 15s; keep monitor checks at repeat_seconds (default 60).
 			if ($job && ($now - intval($job['update_time'] ?? 0)) < $repeat) {
 				continue;
 			}
