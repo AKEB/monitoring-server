@@ -60,4 +60,26 @@ class MonitoringLogsMetricTest extends PHPUnit\Framework\TestCase {
 		$this->assertNotSame('', \Servers::workerTitle());
 		$this->assertSame(\Servers::workerTitle(), \Servers::workerTitleForMonitor(['server' => 0]));
 	}
+
+	function test_trim_trailing_empty_log_slots() {
+		$repeat = 60;
+		$horizon = 1000;
+		$logs = [
+			900 => ['title' => 'a', 1 => ['status' => 1]],
+			960 => ['title' => 'b'], // empty, still inside grace (960+60 > 1000)
+			1020 => ['title' => 'c'], // empty future-ish
+		];
+		\MonitoringLogs::trimTrailingEmptyLogSlots($logs, $repeat, $horizon);
+		$this->assertArrayHasKey(900, $logs);
+		$this->assertArrayNotHasKey(960, $logs);
+		$this->assertArrayNotHasKey(1020, $logs);
+
+		$logs = [
+			840 => ['title' => 'old-empty'], // 840+60 <= 1000 → keep real gap
+			900 => ['title' => 'ok', 1 => ['status' => 1]],
+		];
+		\MonitoringLogs::trimTrailingEmptyLogSlots($logs, $repeat, $horizon);
+		$this->assertArrayHasKey(840, $logs);
+		$this->assertArrayHasKey(900, $logs);
+	}
 }

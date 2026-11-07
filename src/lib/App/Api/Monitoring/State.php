@@ -192,7 +192,10 @@ class State extends \Routing_Parent implements \Routing_Interface {
 		if (!$docker) return false;
 		if ($docker['status'] == \Dockers::STATUS_DISABLED) return false;
 
-		$pollTime = intval($docker_response['update_time'] ?? time());
+		$pollTime = intval($docker_response['start_time'] ?? 0);
+		if ($pollTime < 1) {
+			$pollTime = intval($docker_response['update_time'] ?? 0);
+		}
 		if ($pollTime < 1) {
 			$pollTime = time();
 		}
@@ -381,12 +384,22 @@ class State extends \Routing_Parent implements \Routing_Interface {
 			);
 		}
 
+		// Prefer check start_time for the log bucket. Workers may send
+		// update_time as a schedule cursor (now / now-repeat after errors);
+		// flooring that into the "current" minute hides the previous oval.
+		$logUpdateTime = intval($job_response['start_time'] ?? 0);
+		if ($logUpdateTime < 1) {
+			$logUpdateTime = intval($job_response['update_time'] ?? 0);
+		}
+		if ($logUpdateTime < 1) {
+			$logUpdateTime = time();
+		}
 		$params = [
 			'monitor_id' => $job['monitor_id'],
 			'worker_id' => $job['worker_id'],
 			'job_id' => $job['id'],
 			'status' => $status,
-			'update_time' => $job_response['update_time'] ?? 0,
+			'update_time' => $logUpdateTime,
 			'status_code' => intval($job_response['response']['status_code'] ?? 0),
 			'response_error_num' => intval($job_response['response']['response_error_num'] ?? 0),
 			'response_error' => $job_response['response']['response_error'] ?? '',

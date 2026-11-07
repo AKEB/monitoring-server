@@ -32,6 +32,42 @@ class MonitoringLogs extends \DB\MySQLObject {
 	}
 
 	/**
+	 * Drop trailing empty timeline slots that are still inside the visibility
+	 * grace window. Keeps older mid-timeline greys (real gaps) intact.
+	 *
+	 * @param array<int|string, mixed> $logsHash
+	 */
+	static public function trimTrailingEmptyLogSlots(array &$logsHash, int $repeatSeconds, int $visibleHorizon): void {
+		if ($repeatSeconds < 1 || !$logsHash) {
+			return;
+		}
+		$times = array_keys($logsHash);
+		sort($times, SORT_NUMERIC);
+		while ($times) {
+			$last = intval(end($times));
+			// Only trim slots that may still be collecting results.
+			if ($last + $repeatSeconds <= $visibleHorizon) {
+				break;
+			}
+			$hasWorkerData = false;
+			foreach ($logsHash[$last] as $key => $value) {
+				if ($key === 'title') {
+					continue;
+				}
+				if (is_array($value) && array_key_exists('status', $value)) {
+					$hasWorkerData = true;
+					break;
+				}
+			}
+			if ($hasWorkerData) {
+				break;
+			}
+			unset($logsHash[$last]);
+			array_pop($times);
+		}
+	}
+
+	/**
 	 * Extract a numeric metric from monitoring_logs.response_error.
 	 * Supports "value=12.3", "value=12.3; threshold exceeded", or a bare number (exporters).
 	 */
@@ -426,7 +462,9 @@ class MonitoringLogs extends \DB\MySQLObject {
 			if (!\Sessions::checkPermission(\Monitors::PERMISSION_ACCESS, $monitor_id, READ)) return $return;
 		}
 
-		$cache = new \Cache('monitor_data_'.md5($monitor_id.'__'.$period));
+		// Bucket cache by wall-clock minute so crossing into a new interval
+		// cannot keep serving a payload that still hid the previous slot.
+		$cache = new \Cache('monitor_data_'.md5($monitor_id.'__'.$period.'__'.intval(time() / 60)));
 		if ($cache->isValid()) {
 			$from_cache = json_decode($cache->get(), true);
 			if ($from_cache && is_array($from_cache)) {
@@ -449,7 +487,15 @@ class MonitoringLogs extends \DB\MySQLObject {
 			$return['monitor'] = $monitor;
 			$return['monitor']['can_read'] = true;
 			$return['monitor']['can_write'] = \Sessions::checkPermission(\Monitors::PERMISSION_ACCESS, $monitor_id, WRITE);
-			$current_time = intval(time() / intval($monitor['repeat_seconds'])) * intval($monitor['repeat_seconds']);
+			$repeat = intval($monitor['repeat_seconds']);
+			$timeout = intval($monitor['timeout'] ?? 15);
+			if ($timeout < 1) {
+				$timeout = 15;
+			}
+			// Same idea as the list view ($i+$repeat > time()), plus a short
+			// grace for in-flight checks so the UI does not seed a false grey
+			// oval for the minute that is still collecting results.
+			$visible_horizon = time() - ($timeout + 5);
 
 			// Get MonitoringJobs
 			if ($monitor['type'] == \Monitors::TYPE_DOCKER) {
@@ -533,20 +579,22 @@ class MonitoringLogs extends \DB\MySQLObject {
 				unset($return['monitor']['maintenances']);
 			}
 
-			for($i=$max_time - 60*60; $i <= $max_time; $i+=intval($monitor['repeat_seconds'])) {
-				$time = intval($i / intval($monitor['repeat_seconds'])) * intval($monitor['repeat_seconds']);
-				if ($time == $current_time) continue;
+			for($i=$max_time - 60*60; $i <= $max_time; $i+=$repeat) {
+				$time = intval($i / $repeat) * $repeat;
+				// Skip open / still-collecting intervals (avoids a false grey "current" oval).
+				if ($time + $repeat > $visible_horizon) continue;
 				$logs_hash[$time] = [
 					'title' => date("Y-m-d H:i:s",$time),
 				];
 			}
 			foreach($logs as $item) {
-				if ($item['interval_time'] == $current_time) continue;
+				if (intval($item['interval_time']) + $repeat > $visible_horizon) continue;
 				$item['title'] = date("Y-m-d H:i:s",$item['interval_time']).' - '.$item['status_code'].' '.$item['response_error'];
 				$logs_hash[$item['interval_time']]['title'] = date("H:i:s",$item['interval_time']);
 				$logs_hash[$item['interval_time']][$item['worker_id']] = $item;
 				$last_data[$item['worker_id']] = $item;
 			}
+			static::trimTrailingEmptyLogSlots($logs_hash, $repeat, $visible_horizon);
 			$return['logs'] = $logs_hash;
 
 			$interval = intval($monitor['repeat_seconds']);
@@ -570,11 +618,11 @@ class MonitoringLogs extends \DB\MySQLObject {
 			$logs_hash = [];
 			for($i=$max_time - $period*60*60; $i<$max_time; $i+=intval($interval)) {
 				$time = intval($i / intval($interval)) * intval($interval);
-				if ($time == $current_time) continue;
+				if ($time + intval($interval) > $visible_horizon) continue;
 				$logs_hash[$time] = $worker_data_for_charts;
 			}
 			foreach($logs as $item) {
-				if ($item['interval_time'] == $current_time) continue;
+				if (intval($item['interval_time']) + intval($interval) > $visible_horizon) continue;
 				$metricValue = $metricChart ? static::parseMetricValue($item['response_error'] ?? null) : null;
 				$responseMs = ceil(floatval($item['total_time_us'] ?? 0) / 1000);
 				if (isset($logs_hash[$item['interval_time']][$item['worker_id']])) {
@@ -593,6 +641,7 @@ class MonitoringLogs extends \DB\MySQLObject {
 					];
 				}
 			}
+			static::trimTrailingEmptyLogSlots($logs_hash, intval($interval), $visible_horizon);
 			$return['logs_chart'] = $logs_hash;
 
 			$start_time = microtime(true);
