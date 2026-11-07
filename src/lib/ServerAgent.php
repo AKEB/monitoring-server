@@ -497,6 +497,19 @@ class ServerAgent {
 		]);
 	}
 
+	static public function removeVirtualJob(int $monitorId): void {
+		if ($monitorId < 1) {
+			return;
+		}
+		$job = \MonitoringJobs::get([
+			'monitor_id' => $monitorId,
+			'worker_id' => \Servers::SERVER_WORKER_ID,
+		]);
+		if ($job && isset($job['id']) && $job['id']) {
+			\MonitoringJobs::delete($job['id']);
+		}
+	}
+
 	static public function clearRealJobs(int $monitorId): void {
 		if ($monitorId < 1) {
 			return;

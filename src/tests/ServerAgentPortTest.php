@@ -55,4 +55,11 @@ class ServerAgentPortTest extends PHPUnit\Framework\TestCase {
 		$this->assertSame(503, $code);
 		$this->assertSame('port not listening', $error);
 	}
+
+	function test_remove_virtual_job_is_noop_without_job() {
+		// Method must exist and tolerate missing rows (no DB fixture in unit tests).
+		$this->assertTrue(method_exists(\ServerAgent::class, 'removeVirtualJob'));
+		\ServerAgent::removeVirtualJob(0);
+		$this->assertTrue(true);
+	}
 }

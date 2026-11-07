@@ -211,10 +211,12 @@ class MonitorsService {
 		if (\Monitors::is_server_type($type)) {
 			\ServerAgent::ensureVirtualJob($id);
 			\ServerAgent::clearRealJobs($id);
+		} else {
+			\ServerAgent::removeVirtualJob($id);
 		}
 
 		$saved = \Monitors::get(['id' => $id]);
-		return Envelope::ok(static::publicRow($saved ?: $existing));
+		return Envelope::ok(static::publicProps($saved ?: $existing));
 	}
 
 	/** @param array<string,mixed> $user */
@@ -432,6 +434,13 @@ class MonitorsService {
 			$row['external_hash'] = '';
 			$row['external_status'] = \ExternalMonitors::STATUS_UNSET;
 			$row['external_log'] = '';
+		}
+		if ($existing && \Monitors::is_server_type(intval($existing['type'] ?? 0)) && !\Monitors::is_server_type($type)) {
+			$row['server'] = 0;
+		}
+		if (!\Monitors::is_server_type($type) && intval(($existing['server'] ?? $row['server'] ?? 0)) > 0 && !array_key_exists('server', $row)) {
+			// Non-server monitors should not keep a leftover server link (e.g. after type change).
+			$row['server'] = 0;
 		}
 
 		$workers = [];

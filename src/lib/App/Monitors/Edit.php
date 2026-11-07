@@ -451,6 +451,9 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					$data['workers'] = [];
 					$params['repeat_seconds'] = 60;
 					$params['timeout'] = 60;
+				} elseif (\Monitors::is_server_type(intval($old_monitor['type'] ?? 0))) {
+					// Leaving server-agent types: drop leftover server link (virtual job cleaned after save).
+					$params['server'] = 0;
 				}
 				$old_jobs = get_hash(\MonitoringJobs::data(['monitor_id' => $params['id']]), 'worker_id', 'monitor_id');
 				foreach($old_jobs as $worker_id=>$_) {
@@ -670,6 +673,8 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				if (\Monitors::is_server_type(intval($monitor['type']))) {
 					\ServerAgent::clearRealJobs(intval($monitor_id));
 					\ServerAgent::ensureVirtualJob(intval($monitor_id));
+				} else {
+					\ServerAgent::removeVirtualJob(intval($monitor_id));
 				}
 				if ($monitor['type'] == \Monitors::TYPE_FOLDER && !$old_monitor) {
 					common_redirect('/admin/monitors/'.$monitor['id'].'/');
