@@ -222,7 +222,7 @@ class MonitoringApiStatus {
 		$rows = \Monitors::data(
 			['api_enabled' => 1],
 			$sql,
-			'`id`, `title`, `type`, `url`, `host`, `port`, `docker`, `container`, `status`, `parent_id`, `repeat_seconds`, `api_description_ru`, `api_description_en`, `external_hash`'
+			'`id`, `title`, `type`, `url`, `host`, `port`, `docker`, `container`, `status`, `api_enabled`, `parent_id`, `repeat_seconds`, `api_description_ru`, `api_description_en`, `external_hash`'
 		);
 		if (!$rows || !is_array($rows)) {
 			return [];

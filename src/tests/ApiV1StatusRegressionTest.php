@@ -57,4 +57,15 @@ class ApiV1StatusRegressionTest extends PHPUnit\Framework\TestCase {
 			$this->assertArrayHasKey($key, $top);
 		}
 	}
+
+	function test_visible_monitors_select_includes_api_enabled() {
+		// isStatusApiCandidate() needs api_enabled on each row; omitting it from the
+		// SELECT makes every opted-in monitor look disabled and empties /api/v1/status/.
+		$source = file_get_contents(dirname(__DIR__).'/lib/MonitoringApiStatus.php');
+		$this->assertIsString($source);
+		$this->assertMatchesRegularExpression(
+			'/function visibleMonitors.*?Monitors::data\(\s*\[[^\]]*api_enabled[^\]]*\],\s*\$sql,\s*\'[^\']*`api_enabled`[^\']*\'/s',
+			$source
+		);
+	}
 }
