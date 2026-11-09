@@ -181,6 +181,55 @@ class McpServerTest extends ApiV2TestCase {
 		$this->assertIsArray($result['data']);
 	}
 
+	function test_call_tool_monitors_update_parent_id() {
+		$user = ['id' => 1, 'status' => \Users::STATUS_ACTIVE];
+		$folder = \Mcp\Server::callTool($user, 'monitors_create', [
+			'title' => 'Folder',
+			'type' => \Monitors::TYPE_FOLDER,
+		]);
+		$this->assertSame(0, $folder['status'], json_encode($folder));
+		$folderId = intval($folder['data']['id'] ?? 0);
+
+		$child = \Mcp\Server::callTool($user, 'monitors_create', [
+			'title' => 'Child ping',
+			'type' => \Monitors::TYPE_PING,
+			'host' => '8.8.8.8',
+		]);
+		$this->assertSame(0, $child['status'], json_encode($child));
+		$childId = intval($child['data']['id'] ?? 0);
+
+		$updated = \Mcp\Server::callTool($user, 'monitors_update', [
+			'id' => $childId,
+			'parent_id' => $folderId,
+		]);
+		$this->assertSame(0, $updated['status'], json_encode($updated));
+		$this->assertSame($folderId, intval($updated['data']['parent_id'] ?? -1));
+	}
+
+	function test_monitors_update_schema_includes_parent_id() {
+		$tools = \Mcp\Server::tools();
+		$byName = [];
+		foreach ($tools as $tool) {
+			$byName[$tool['name']] = $tool;
+		}
+		$props = $byName['monitors_update']['inputSchema']['properties'] ?? [];
+		$this->assertArrayHasKey('parent_id', $props);
+		$createProps = $byName['monitors_create']['inputSchema']['properties'] ?? [];
+		$this->assertArrayHasKey('parent_id', $createProps);
+	}
+
+	function test_monitors_service_update_db_path_uses_publicRow() {
+		// Production DB path (no MemoryStore) previously called undefined publicProps()
+		// and returned HTML fatals to MCP clients. Guard the source against regressions.
+		$src = file_get_contents(__DIR__ . '/../lib/Api/V2/MonitorsService.php');
+		$this->assertNotFalse($src);
+		$this->assertStringNotContainsString('publicProps', $src);
+		$this->assertMatchesRegularExpression(
+			'/return Envelope::ok\(static::publicRow\(\$saved \?: \$existing\)\);/',
+			$src
+		);
+	}
+
 	function test_call_unknown_tool_errors() {
 		$user = ['id' => 1, 'status' => \Users::STATUS_ACTIVE];
 		$result = \Mcp\Server::callTool($user, 'no_such_tool', []);

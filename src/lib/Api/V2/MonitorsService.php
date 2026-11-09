@@ -216,7 +216,7 @@ class MonitorsService {
 		}
 
 		$saved = \Monitors::get(['id' => $id]);
-		return Envelope::ok(static::publicProps($saved ?: $existing));
+		return Envelope::ok(static::publicRow($saved ?: $existing));
 	}
 
 	/** @param array<string,mixed> $user */

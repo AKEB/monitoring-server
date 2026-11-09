@@ -33,15 +33,28 @@ class Endpoint extends \Routing_Parent implements \Routing_Interface {
 		$method = strval($req['method'] ?? '');
 		$params = is_array($req['params'] ?? null) ? $req['params'] : [];
 
-		$result = match ($method) {
-			'initialize' => \Mcp\Server::initializeResult(),
-			'notifications/initialized' => new \stdClass(),
-			'tools/list' => ['tools' => \Mcp\Server::tools()],
-			'tools/call' => $this->toolCall($user, $params),
-			'prompts/list' => ['prompts' => \Mcp\Server::prompts()],
-			'ping' => new \stdClass(),
-			default => null,
-		};
+		try {
+			$result = match ($method) {
+				'initialize' => \Mcp\Server::initializeResult(),
+				'notifications/initialized' => new \stdClass(),
+				'tools/list' => ['tools' => \Mcp\Server::tools()],
+				'tools/call' => $this->toolCall($user, $params),
+				'prompts/list' => ['prompts' => \Mcp\Server::prompts()],
+				'ping' => new \stdClass(),
+				default => null,
+			};
+		} catch (\Throwable $e) {
+			// Always JSON for MCP clients (mcp-remote rejects text/html error pages).
+			$this->respond([
+				'jsonrpc' => '2.0',
+				'error' => [
+					'code' => -32603,
+					'message' => 'Internal error: ' . $e->getMessage(),
+				],
+				'id' => $id,
+			], 500);
+			return;
+		}
 
 		if ($result === null) {
 			$this->respond([
