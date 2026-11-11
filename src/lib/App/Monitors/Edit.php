@@ -34,6 +34,16 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				$this->ajaxServerContainers(intval($_POST['selectedServer'] ?? 0), trim(strval($_POST['selectedContainer'] ?? '')));
 				exit;
 			}
+			if (isset($_POST['method']) && $_POST['method'] == 'ajaxServerSensors') {
+				\Csrf::requirePost();
+				$this->ajaxServerSensors(intval($_POST['selectedServer'] ?? 0), trim(strval($_POST['selectedSensor'] ?? '')));
+				exit;
+			}
+			if (isset($_POST['method']) && $_POST['method'] == 'ajaxServerSystemd') {
+				\Csrf::requirePost();
+				$this->ajaxServerSystemd(intval($_POST['selectedServer'] ?? 0), trim(strval($_POST['selectedUnit'] ?? '')));
+				exit;
+			}
 		}
 
 		$this->processRequest();
@@ -132,6 +142,64 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 			$state = strval($c['state'] ?? '');
 			$label = $name.($state !== '' ? ' ['.$state.']' : '');
 			$selected = ($container === $name) ? ' selected' : '';
+			echo '<option value="'.htmlspecialchars($name, ENT_QUOTES, 'UTF-8').'"'.$selected.'>'.htmlspecialchars($label, ENT_QUOTES, 'UTF-8').'</option>';
+		}
+	}
+
+	private function ajaxServerSensors(int $server_id, string $sensor): void {
+		echo '<option value="" '.($sensor === '' ? 'selected' : '').'>'.htmlspecialchars(\T::Monitor_Edit_TempSensorMax(), ENT_QUOTES, 'UTF-8').'</option>';
+		if ($server_id < 1) {
+			return;
+		}
+		if (!\Sessions::checkPermission(\Servers::PERMISSION_ACCESS, $server_id, READ)) {
+			return;
+		}
+		$server = \Servers::get(['id' => $server_id]);
+		if (!$server || empty($server['last_payload'])) {
+			return;
+		}
+		$payload = @json_decode(strval($server['last_payload']), true);
+		$temps = is_array($payload['temperatures'] ?? null) ? $payload['temperatures'] : [];
+		foreach ($temps as $t) {
+			if (!is_array($t)) {
+				continue;
+			}
+			$name = strval($t['sensor'] ?? '');
+			if ($name === '') {
+				continue;
+			}
+			$label = $name.' ('.number_format(floatval($t['temp_c'] ?? 0), 1).'°C)';
+			$selected = ($sensor === $name) ? ' selected' : '';
+			echo '<option value="'.htmlspecialchars($name, ENT_QUOTES, 'UTF-8').'"'.$selected.'>'.htmlspecialchars($label, ENT_QUOTES, 'UTF-8').'</option>';
+		}
+	}
+
+	private function ajaxServerSystemd(int $server_id, string $unit): void {
+		echo '<option value="" '.($unit === '' ? 'selected' : '').'>-- None --</option>';
+		if ($server_id < 1) {
+			return;
+		}
+		if (!\Sessions::checkPermission(\Servers::PERMISSION_ACCESS, $server_id, READ)) {
+			return;
+		}
+		$server = \Servers::get(['id' => $server_id]);
+		if (!$server || empty($server['last_payload'])) {
+			return;
+		}
+		$payload = @json_decode(strval($server['last_payload']), true);
+		$systemd = is_array($payload['systemd'] ?? null) ? $payload['systemd'] : [];
+		$units = is_array($systemd['units'] ?? null) ? $systemd['units'] : [];
+		foreach ($units as $u) {
+			if (!is_array($u)) {
+				continue;
+			}
+			$name = strval($u['name'] ?? '');
+			if ($name === '') {
+				continue;
+			}
+			$state = trim(strval($u['active_state'] ?? '').'/'.strval($u['sub_state'] ?? ''), '/');
+			$label = $name.($state !== '' ? ' ['.$state.']' : '');
+			$selected = ($unit === $name) ? ' selected' : '';
 			echo '<option value="'.htmlspecialchars($name, ENT_QUOTES, 'UTF-8').'"'.$selected.'>'.htmlspecialchars($label, ENT_QUOTES, 'UTF-8').'</option>';
 		}
 	}
@@ -362,6 +430,12 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					$params['value'] = intval(trim(strval($data['value'])));
 				} elseif ($typeInt === \Monitors::TYPE_SERVER_OFFLINE) {
 					$params['value'] = 3;
+				} elseif ($typeInt === \Monitors::TYPE_SERVER_UPTIME) {
+					$params['value'] = 5;
+				} elseif ($typeInt === \Monitors::TYPE_SERVER_TEMP) {
+					$params['value'] = 80;
+				} elseif ($typeInt === \Monitors::TYPE_SERVER_SYSTEMD_MEMORY) {
+					$params['value'] = 512;
 				} elseif (\Monitors::is_server_net_type($typeInt)) {
 					$params['value'] = 100;
 				} else {
@@ -371,12 +445,24 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					$params['container'] = isset($data['disk_mount'])
 						? trim(strval($data['disk_mount']))
 						: (isset($data['container']) ? trim(strval($data['container'])) : '');
-				} elseif ($typeInt === \Monitors::TYPE_SERVER_CONTAINER) {
+				} elseif ($typeInt === \Monitors::TYPE_SERVER_TEMP) {
+					$params['container'] = isset($data['temp_sensor'])
+						? trim(strval($data['temp_sensor']))
+						: (isset($data['container']) ? trim(strval($data['container'])) : '');
+				} elseif (\Monitors::is_server_container_metric_type($typeInt) || $typeInt === \Monitors::TYPE_SERVER_CONTAINER) {
 					$params['container'] = isset($data['agent_container'])
 						? trim(strval($data['agent_container']))
 						: (isset($data['container']) ? trim(strval($data['container'])) : '');
 					if ($params['container'] === '') {
 						$this->error = \T::Monitor_Edit_ContainerRequired();
+						break;
+					}
+				} elseif ($typeInt === \Monitors::TYPE_SERVER_SYSTEMD || \Monitors::is_server_systemd_metric_type($typeInt)) {
+					$params['container'] = isset($data['systemd_unit'])
+						? trim(strval($data['systemd_unit']))
+						: (isset($data['container']) ? trim(strval($data['container'])) : '');
+					if ($params['container'] === '') {
+						$this->error = \T::Monitor_Edit_UnitRequired();
 						break;
 					}
 				} else {
@@ -960,7 +1046,10 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 						'global-id' => 'container-div',
 					]);
 
-					$server_type_class = 'type-dependence type-'.\Monitors::TYPE_SERVER_OFFLINE.' type-'.\Monitors::TYPE_SERVER_CPU.' type-'.\Monitors::TYPE_SERVER_MEMORY.' type-'.\Monitors::TYPE_SERVER_DISK.' type-'.\Monitors::TYPE_SERVER_CONTAINER.' type-'.\Monitors::TYPE_SERVER_NET_RX.' type-'.\Monitors::TYPE_SERVER_NET_TX.' type-'.\Monitors::TYPE_SERVER_PORT;
+					$server_type_class = 'type-dependence';
+					foreach (\Monitors::server_types() as $st) {
+						$server_type_class .= ' type-'.$st;
+					}
 					echo $this->template?->html_select('server', \Servers::options_hash_for_user(), $this->monitor['server']??0, \T::Monitor_Edit_Server(), false,[
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
 						'global-class' => $server_type_class,
@@ -975,12 +1064,33 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 						'global-id' => 'server-disk-div',
 					]);
 
+					echo $this->template?->html_select('temp_sensor', ['' => \T::Monitor_Edit_TempSensorMax()], $this->monitor['container']??'', \T::Monitor_Edit_TempSensor(), false,[
+						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_SERVER_TEMP,
+						'readonly' => !($this->can_write || $this->can_create),
+						'global-id' => 'server-temp-div',
+					]);
+
+					$agent_container_types = 'type-dependence type-'.\Monitors::TYPE_SERVER_CONTAINER
+						.' type-'.\Monitors::TYPE_SERVER_CONTAINER_CPU
+						.' type-'.\Monitors::TYPE_SERVER_CONTAINER_MEMORY;
 					echo $this->template?->html_select('agent_container', [], $this->monitor['container']??'', \T::Monitor_Edit_AgentContainer(), false,[
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
-						'global-class' => 'type-dependence type-'.\Monitors::TYPE_SERVER_CONTAINER,
+						'global-class' => $agent_container_types,
 						'readonly' => !($this->can_write || $this->can_create),
 						'with-undefined' => true,
 						'global-id' => 'server-container-div',
+					]);
+
+					$systemd_types = 'type-dependence type-'.\Monitors::TYPE_SERVER_SYSTEMD
+						.' type-'.\Monitors::TYPE_SERVER_SYSTEMD_CPU
+						.' type-'.\Monitors::TYPE_SERVER_SYSTEMD_MEMORY;
+					echo $this->template?->html_select('systemd_unit', [], $this->monitor['container']??'', \T::Monitor_Edit_SystemdUnit(), false,[
+						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+						'global-class' => $systemd_types,
+						'readonly' => !($this->can_write || $this->can_create),
+						'with-undefined' => true,
+						'global-id' => 'server-systemd-div',
 					]);
 
 					echo $this->template->html_input("host", $this->monitor['host']??'', \T::Monitor_Edit_Host(), false, [
@@ -1005,12 +1115,27 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					$offlineDefault = ($curType === \Monitors::TYPE_SERVER_OFFLINE)
 						? strval($this->monitor['value'] ?? '3')
 						: '3';
-					$pctDefault = in_array($curType, [\Monitors::TYPE_SERVER_CPU, \Monitors::TYPE_SERVER_MEMORY, \Monitors::TYPE_SERVER_DISK, \Monitors::TYPE_EXPORTER_DISK, \Monitors::TYPE_EXPORTER_MEMORY, \Monitors::TYPE_EXPORTER_CPU], true)
+					$pctTypes = [
+						\Monitors::TYPE_SERVER_CPU, \Monitors::TYPE_SERVER_MEMORY, \Monitors::TYPE_SERVER_DISK,
+						\Monitors::TYPE_EXPORTER_DISK, \Monitors::TYPE_EXPORTER_MEMORY, \Monitors::TYPE_EXPORTER_CPU,
+						\Monitors::TYPE_SERVER_CONTAINER_CPU, \Monitors::TYPE_SERVER_CONTAINER_MEMORY,
+						\Monitors::TYPE_SERVER_SYSTEMD_CPU,
+					];
+					$pctDefault = in_array($curType, $pctTypes, true)
 						? strval($this->monitor['value'] ?? '80')
 						: '90';
 					$netDefault = \Monitors::is_server_net_type($curType)
 						? strval($this->monitor['value'] ?? '100')
 						: '100';
+					$tempDefault = ($curType === \Monitors::TYPE_SERVER_TEMP)
+						? strval($this->monitor['value'] ?? '80')
+						: '80';
+					$uptimeDefault = ($curType === \Monitors::TYPE_SERVER_UPTIME)
+						? strval($this->monitor['value'] ?? '5')
+						: '5';
+					$memMbDefault = ($curType === \Monitors::TYPE_SERVER_SYSTEMD_MEMORY)
+						? strval($this->monitor['value'] ?? '512')
+						: '512';
 					echo $this->template->html_input("value", $offlineDefault, \T::Monitor_Edit_OfflineMinutes(), false, [
 						'id' => 'value_offline',
 						'type' => 'number',
@@ -1019,13 +1144,41 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 						'global-class' => 'type-dependence type-'.\Monitors::TYPE_SERVER_OFFLINE,
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
+					echo $this->template->html_input("value", $uptimeDefault, \T::Monitor_Edit_UptimeMinutes(), false, [
+						'id' => 'value_uptime',
+						'type' => 'number',
+						'min' => '1',
+						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_SERVER_UPTIME,
+						'readonly' => !($this->can_write || $this->can_create),
+					]);
+					echo $this->template->html_input("value", $tempDefault, \T::Monitor_Edit_TempThreshold(), false, [
+						'id' => 'value_temp',
+						'type' => 'number',
+						'min' => '1',
+						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_SERVER_TEMP,
+						'readonly' => !($this->can_write || $this->can_create),
+					]);
+					$pctClass = 'type-dependence type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU
+						.' type-'.\Monitors::TYPE_SERVER_CPU.' type-'.\Monitors::TYPE_SERVER_MEMORY.' type-'.\Monitors::TYPE_SERVER_DISK
+						.' type-'.\Monitors::TYPE_SERVER_CONTAINER_CPU.' type-'.\Monitors::TYPE_SERVER_CONTAINER_MEMORY
+						.' type-'.\Monitors::TYPE_SERVER_SYSTEMD_CPU;
 					echo $this->template->html_input("value", $pctDefault, \T::Monitor_Edit_Value(), false, [
 						'id' => 'value_pct',
 						'type' => 'number',
 						'min' => '1',
 						'max' => '100',
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
-						'global-class' => 'type-dependence type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU.' type-'.\Monitors::TYPE_SERVER_CPU.' type-'.\Monitors::TYPE_SERVER_MEMORY.' type-'.\Monitors::TYPE_SERVER_DISK,
+						'global-class' => $pctClass,
+						'readonly' => !($this->can_write || $this->can_create),
+					]);
+					echo $this->template->html_input("value", $memMbDefault, \T::Monitor_Edit_MemoryMB(), false, [
+						'id' => 'value_mem_mb',
+						'type' => 'number',
+						'min' => '1',
+						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_SERVER_SYSTEMD_MEMORY,
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 					echo $this->template->html_input("value", $netDefault, \T::Monitor_Edit_ValueMbps(), false, [
@@ -1071,10 +1224,14 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_HTTP_JSON,
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
+					$send_repeat_type_class = 'type-dependence type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_HTTP_JSON.' type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_UDP.' type-'.\Monitors::TYPE_PING.' type-'.\Monitors::TYPE_DOCKER.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU.' type-'.\Monitors::TYPE_EXTERNAL;
+					foreach (\Monitors::server_types() as $st) {
+						$send_repeat_type_class .= ' type-'.$st;
+					}
 					echo $this->template->html_input("send_repeat_minute", $this->monitor['send_repeat_minute']??0, \T::Monitor_Edit_SendRepeatMinute(), false, [
 						'type' => 'number',
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
-						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_HTTP_JSON.' type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_UDP.' type-'.\Monitors::TYPE_PING.' type-'.\Monitors::TYPE_DOCKER.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU.' type-'.\Monitors::TYPE_EXTERNAL.' type-'.\Monitors::TYPE_SERVER_OFFLINE.' type-'.\Monitors::TYPE_SERVER_CPU.' type-'.\Monitors::TYPE_SERVER_MEMORY.' type-'.\Monitors::TYPE_SERVER_DISK.' type-'.\Monitors::TYPE_SERVER_CONTAINER.' type-'.\Monitors::TYPE_SERVER_NET_RX.' type-'.\Monitors::TYPE_SERVER_NET_TX.' type-'.\Monitors::TYPE_SERVER_PORT,
+						'global-class' => $send_repeat_type_class,
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 					echo $this->template?->html_select('alert_fail_mode', \Monitors::alert_fail_mode_hash(), intval($this->monitor['alert_fail_mode']??\Monitors::ALERT_FAIL_MODE_MAJORITY), \T::Monitor_Edit_AlertFailMode(), false,[
@@ -1134,7 +1291,10 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 
-					$signature_type_class = 'type-dependence type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_UDP.' type-'.\Monitors::TYPE_PING.' type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_HTTP_JSON.' type-'.\Monitors::TYPE_DOCKER.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU.' type-'.\Monitors::TYPE_EXTERNAL.' type-'.\Monitors::TYPE_SERVER_OFFLINE.' type-'.\Monitors::TYPE_SERVER_CPU.' type-'.\Monitors::TYPE_SERVER_MEMORY.' type-'.\Monitors::TYPE_SERVER_DISK.' type-'.\Monitors::TYPE_SERVER_CONTAINER.' type-'.\Monitors::TYPE_SERVER_NET_RX.' type-'.\Monitors::TYPE_SERVER_NET_TX.' type-'.\Monitors::TYPE_SERVER_PORT;
+					$signature_type_class = 'type-dependence type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_UDP.' type-'.\Monitors::TYPE_PING.' type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_HTTP_JSON.' type-'.\Monitors::TYPE_DOCKER.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU.' type-'.\Monitors::TYPE_EXTERNAL;
+					foreach (\Monitors::server_types() as $st) {
+						$signature_type_class .= ' type-'.$st;
+					}
 					$signatures_list = \Signatures::active_list();
 					$current_signature_id = intval($this->monitor['signature_id'] ?? 0);
 					if ($current_signature_id > 0 && !isset($signatures_list[$current_signature_id])) {
@@ -1275,8 +1435,18 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				if (selected_type == '<?=intval(\Monitors::TYPE_SERVER_DISK);?>') {
 					monitor_server_disks_select();
 				}
-				if (selected_type == '<?=intval(\Monitors::TYPE_SERVER_CONTAINER);?>') {
+				if (selected_type == '<?=intval(\Monitors::TYPE_SERVER_CONTAINER);?>'
+					|| selected_type == '<?=intval(\Monitors::TYPE_SERVER_CONTAINER_CPU);?>'
+					|| selected_type == '<?=intval(\Monitors::TYPE_SERVER_CONTAINER_MEMORY);?>') {
 					monitor_server_containers_select();
+				}
+				if (selected_type == '<?=intval(\Monitors::TYPE_SERVER_TEMP);?>') {
+					monitor_server_sensors_select();
+				}
+				if (selected_type == '<?=intval(\Monitors::TYPE_SERVER_SYSTEMD);?>'
+					|| selected_type == '<?=intval(\Monitors::TYPE_SERVER_SYSTEMD_CPU);?>'
+					|| selected_type == '<?=intval(\Monitors::TYPE_SERVER_SYSTEMD_MEMORY);?>') {
+					monitor_server_systemd_select();
 				}
 			}
 
@@ -1339,8 +1509,14 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				const $el = $('#agent_container');
 				if (!$el.length) return;
 				const selected_server = $('#server').val();
+				const curType = <?=intval($this->monitor['type'] ?? 0);?>;
+				const containerTypes = [
+					<?=intval(\Monitors::TYPE_SERVER_CONTAINER);?>,
+					<?=intval(\Monitors::TYPE_SERVER_CONTAINER_CPU);?>,
+					<?=intval(\Monitors::TYPE_SERVER_CONTAINER_MEMORY);?>
+				];
 				const selected_container = <?=json_encode(
-					(intval($this->monitor['type'] ?? 0) === \Monitors::TYPE_SERVER_CONTAINER) ? strval($this->monitor['container'] ?? '') : '',
+					strval($this->monitor['container'] ?? ''),
 					JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
 				);?>;
 				const reqSeq = ++monitorContainersReqSeq;
@@ -1351,13 +1527,63 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					window.location.pathname,
 					{
 						selectedServer: selected_server,
-						selectedContainer: selected_container,
+						selectedContainer: containerTypes.indexOf(curType) >= 0 ? selected_container : '',
 						ajax: '1',
 						method: 'ajaxServerContainers',
 						<?=json_encode(\Csrf::FIELD);?>: <?=json_encode(\Csrf::token(), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);?>
 					}
 				).done(function(html) {
 					if (reqSeq !== monitorContainersReqSeq) return;
+					monitor_apply_select_options($el, html);
+				});
+			}
+
+			function monitor_server_sensors_select() {
+				const $el = $('#temp_sensor');
+				if (!$el.length) return;
+				const selected_server = $('#server').val();
+				const selected_sensor = <?=json_encode(
+					(intval($this->monitor['type'] ?? 0) === \Monitors::TYPE_SERVER_TEMP) ? strval($this->monitor['container'] ?? '') : '',
+					JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
+				);?>;
+				$.post(
+					window.location.pathname,
+					{
+						selectedServer: selected_server,
+						selectedSensor: selected_sensor,
+						ajax: '1',
+						method: 'ajaxServerSensors',
+						<?=json_encode(\Csrf::FIELD);?>: <?=json_encode(\Csrf::token(), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);?>
+					}
+				).done(function(html) {
+					monitor_apply_select_options($el, html);
+				});
+			}
+
+			function monitor_server_systemd_select() {
+				const $el = $('#systemd_unit');
+				if (!$el.length) return;
+				const selected_server = $('#server').val();
+				const curType = <?=intval($this->monitor['type'] ?? 0);?>;
+				const unitTypes = [
+					<?=intval(\Monitors::TYPE_SERVER_SYSTEMD);?>,
+					<?=intval(\Monitors::TYPE_SERVER_SYSTEMD_CPU);?>,
+					<?=intval(\Monitors::TYPE_SERVER_SYSTEMD_MEMORY);?>
+				];
+				const selected_unit = <?=json_encode(
+					strval($this->monitor['container'] ?? ''),
+					JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
+				);?>;
+				$.post(
+					window.location.pathname,
+					{
+						selectedServer: selected_server,
+						selectedUnit: unitTypes.indexOf(curType) >= 0 ? selected_unit : '',
+						ajax: '1',
+						method: 'ajaxServerSystemd',
+						<?=json_encode(\Csrf::FIELD);?>: <?=json_encode(\Csrf::token(), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);?>
+					}
+				).done(function(html) {
 					monitor_apply_select_options($el, html);
 				});
 			}
@@ -1450,8 +1676,18 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					if (t == '<?=intval(\Monitors::TYPE_SERVER_DISK);?>') {
 						monitor_server_disks_select();
 					}
-					if (t == '<?=intval(\Monitors::TYPE_SERVER_CONTAINER);?>') {
+					if (t == '<?=intval(\Monitors::TYPE_SERVER_CONTAINER);?>'
+						|| t == '<?=intval(\Monitors::TYPE_SERVER_CONTAINER_CPU);?>'
+						|| t == '<?=intval(\Monitors::TYPE_SERVER_CONTAINER_MEMORY);?>') {
 						monitor_server_containers_select();
+					}
+					if (t == '<?=intval(\Monitors::TYPE_SERVER_TEMP);?>') {
+						monitor_server_sensors_select();
+					}
+					if (t == '<?=intval(\Monitors::TYPE_SERVER_SYSTEMD);?>'
+						|| t == '<?=intval(\Monitors::TYPE_SERVER_SYSTEMD_CPU);?>'
+						|| t == '<?=intval(\Monitors::TYPE_SERVER_SYSTEMD_MEMORY);?>') {
+						monitor_server_systemd_select();
 					}
 				});
 

@@ -34,6 +34,8 @@ class ServerAgent {
 		$mem = is_array($data['memory'] ?? null) ? $data['memory'] : [];
 		$disks = is_array($data['disks'] ?? null) ? $data['disks'] : [];
 		$network = is_array($data['network'] ?? null) ? $data['network'] : [];
+		$temperatures = is_array($data['temperatures'] ?? null) ? $data['temperatures'] : [];
+		$docker = is_array($data['docker'] ?? null) ? $data['docker'] : [];
 
 		$diskMax = 0.0;
 		foreach ($disks as $d) {
@@ -45,6 +47,19 @@ class ServerAgent {
 				$diskMax = $pct;
 			}
 		}
+
+		$tempMax = null;
+		foreach ($temperatures as $t) {
+			if (!is_array($t)) {
+				continue;
+			}
+			$tc = floatval($t['temp_c'] ?? 0);
+			if ($tempMax === null || $tc > $tempMax) {
+				$tempMax = $tc;
+			}
+		}
+		$uptimeSec = max(0, intval($host['uptime_sec'] ?? 0));
+		$details = static::buildMetricDetails($temperatures, $docker);
 
 		$ips = [];
 		$netRx = 0;
@@ -91,6 +106,8 @@ class ServerAgent {
 			'mem_used_pct' => round(floatval($mem['used_pct'] ?? 0), 2),
 			'disk_used_pct_max' => round($diskMax, 2),
 			'load1' => round(floatval($cpu['load1'] ?? 0), 2),
+			'temp_c_max' => $tempMax === null ? null : round($tempMax, 2),
+			'uptime_sec' => $uptimeSec,
 			'ips' => json_encode($ipsList, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
 			'last_payload' => $encoded,
 			'update_time' => $now,
@@ -117,6 +134,9 @@ class ServerAgent {
 			'load1' => $patch['load1'],
 			'net_rx_bps' => max(0, $netRx),
 			'net_tx_bps' => max(0, $netTx),
+			'temp_c_max' => $patch['temp_c_max'],
+			'uptime_sec' => $uptimeSec,
+			'details' => $details,
 			'_mode' => \DB\Common::CSMODE_INSERT,
 		]);
 
@@ -236,6 +256,11 @@ class ServerAgent {
 	 */
 	static private function evalOne(int $type, array $monitor, array $server, array $payload, bool $justReported): array {
 		$threshold = floatval($monitor['value'] ?? 0);
+		$src = $payload;
+		if (!$src) {
+			$decoded = @json_decode(strval($server['last_payload'] ?? ''), true);
+			$src = is_array($decoded) ? $decoded : [];
+		}
 		if ($type === \Monitors::TYPE_SERVER_OFFLINE) {
 			$minutes = $threshold > 0 ? $threshold : 3;
 			$last = intval($server['last_seen_time'] ?? 0);
@@ -249,30 +274,17 @@ class ServerAgent {
 			];
 		}
 		if ($type === \Monitors::TYPE_SERVER_CONTAINER) {
-			$name = trim(strval($monitor['container'] ?? ''));
-			$src = $payload;
-			if (!$src) {
-				$decoded = @json_decode(strval($server['last_payload'] ?? ''), true);
-				$src = is_array($decoded) ? $decoded : [];
-			}
-			return static::evalContainer($name, $src);
+			return static::evalContainer(trim(strval($monitor['container'] ?? '')), $src);
+		}
+		if ($type === \Monitors::TYPE_SERVER_SYSTEMD) {
+			return static::evalSystemd(trim(strval($monitor['container'] ?? '')), $src);
 		}
 		if ($type === \Monitors::TYPE_SERVER_PORT) {
-			$src = $payload;
-			if (!$src) {
-				$decoded = @json_decode(strval($server['last_payload'] ?? ''), true);
-				$src = is_array($decoded) ? $decoded : [];
-			}
 			$port = intval($monitor['port'] ?? 0);
 			$protocol = \Monitors::normalize_port_protocol($monitor['port_protocol'] ?? 'tcp');
 			return static::evalPortListening($port, $protocol, $src);
 		}
 		if (\Monitors::is_server_net_type($type)) {
-			$src = $payload;
-			if (!$src) {
-				$decoded = @json_decode(strval($server['last_payload'] ?? ''), true);
-				$src = is_array($decoded) ? $decoded : [];
-			}
 			$bps = static::netBpsFromPayload($src, $type === \Monitors::TYPE_SERVER_NET_RX ? 'rx' : 'tx');
 			$mbps = $bps * 8.0 / 1000000.0;
 			$limit = $threshold > 0 ? $threshold : 100.0;
@@ -285,24 +297,87 @@ class ServerAgent {
 				strval(round($mbps, 2)),
 			];
 		}
+		if ($type === \Monitors::TYPE_SERVER_TEMP) {
+			$sensor = trim(strval($monitor['container'] ?? ''));
+			$value = static::tempCFromPayload($src, $sensor, floatval($server['temp_c_max'] ?? 0));
+			$limit = $threshold > 0 ? $threshold : 80.0;
+			$ok = $value < $limit;
+			$failMsg = $sensor !== '' ? 'temperature threshold exceeded ('.$sensor.')' : 'temperature threshold exceeded';
+			return [
+				$ok ? \MonitoringLogs::STATUS_GOOD : \MonitoringLogs::STATUS_FAIL,
+				$ok ? 200 : 500,
+				$ok ? '' : $failMsg,
+				strval(round($value, 2)),
+			];
+		}
+		if ($type === \Monitors::TYPE_SERVER_UPTIME) {
+			$host = is_array($src['host'] ?? null) ? $src['host'] : [];
+			$uptimeSec = intval($host['uptime_sec'] ?? ($server['uptime_sec'] ?? 0));
+			$uptimeMin = $uptimeSec / 60.0;
+			$limit = $threshold > 0 ? $threshold : 5.0;
+			$ok = $uptimeMin >= $limit;
+			return [
+				$ok ? \MonitoringLogs::STATUS_GOOD : \MonitoringLogs::STATUS_FAIL,
+				$ok ? 200 : 500,
+				$ok ? '' : 'recent reboot',
+				strval(round($uptimeMin, 2)),
+			];
+		}
+		if (\Monitors::is_server_container_metric_type($type)) {
+			$name = trim(strval($monitor['container'] ?? ''));
+			[$okFound, $value, $err] = static::containerMetricFromPayload($src, $name, $type);
+			if (!$okFound) {
+				return [\MonitoringLogs::STATUS_FAIL, 404, $err, '0'];
+			}
+			$limit = $threshold > 0 ? $threshold : 90.0;
+			$ok = $value < $limit;
+			return [
+				$ok ? \MonitoringLogs::STATUS_GOOD : \MonitoringLogs::STATUS_FAIL,
+				$ok ? 200 : 500,
+				$ok ? '' : 'threshold exceeded ('.$name.')',
+				strval(round($value, 2)),
+			];
+		}
+		if (\Monitors::is_server_systemd_metric_type($type)) {
+			$name = trim(strval($monitor['container'] ?? ''));
+			[$okFound, $value, $err] = static::systemdMetricFromPayload($src, $name, $type);
+			if (!$okFound) {
+				return [\MonitoringLogs::STATUS_FAIL, 404, $err, '0'];
+			}
+			if ($type === \Monitors::TYPE_SERVER_SYSTEMD_MEMORY) {
+				// Chart/value in MB; threshold is MB.
+				$valueMb = $value / (1024 * 1024);
+				$limit = $threshold > 0 ? $threshold : 512.0;
+				$ok = $valueMb < $limit;
+				return [
+					$ok ? \MonitoringLogs::STATUS_GOOD : \MonitoringLogs::STATUS_FAIL,
+					$ok ? 200 : 500,
+					$ok ? '' : 'threshold exceeded ('.$name.')',
+					strval(round($valueMb, 2)),
+				];
+			}
+			$limit = $threshold > 0 ? $threshold : 90.0;
+			$ok = $value < $limit;
+			return [
+				$ok ? \MonitoringLogs::STATUS_GOOD : \MonitoringLogs::STATUS_FAIL,
+				$ok ? 200 : 500,
+				$ok ? '' : 'threshold exceeded ('.$name.')',
+				strval(round($value, 2)),
+			];
+		}
 		$cpu = floatval($server['cpu_usage_pct'] ?? 0);
 		$mem = floatval($server['mem_used_pct'] ?? 0);
 		$disk = floatval($server['disk_used_pct_max'] ?? 0);
 		$mount = trim(strval($monitor['container'] ?? ''));
-		if ($payload) {
-			if (isset($payload['cpu']['usage_pct'])) {
-				$cpu = floatval($payload['cpu']['usage_pct']);
+		if ($src) {
+			if (isset($src['cpu']['usage_pct'])) {
+				$cpu = floatval($src['cpu']['usage_pct']);
 			}
-			if (isset($payload['memory']['used_pct'])) {
-				$mem = floatval($payload['memory']['used_pct']);
+			if (isset($src['memory']['used_pct'])) {
+				$mem = floatval($src['memory']['used_pct']);
 			}
 			if ($type === \Monitors::TYPE_SERVER_DISK) {
-				$disk = static::diskUsedPctFromPayload($payload, $mount, $disk);
-			}
-		} elseif ($type === \Monitors::TYPE_SERVER_DISK && $mount !== '') {
-			$decoded = @json_decode(strval($server['last_payload'] ?? ''), true);
-			if (is_array($decoded)) {
-				$disk = static::diskUsedPctFromPayload($decoded, $mount, $disk);
+				$disk = static::diskUsedPctFromPayload($src, $mount, $disk);
 			}
 		}
 		$value = match ($type) {
@@ -322,6 +397,169 @@ class ServerAgent {
 			$ok ? 200 : 500,
 			$ok ? '' : $failMsg,
 			strval(round($value, 2)),
+		];
+	}
+
+	/**
+	 * Compact JSON for server_metrics charts (temps + docker cpu/mem).
+	 *
+	 * @param list<mixed> $temperatures
+	 * @param array<string,mixed> $docker
+	 */
+	static public function buildMetricDetails(array $temperatures, array $docker): ?string {
+		$temps = [];
+		foreach ($temperatures as $t) {
+			if (!is_array($t)) {
+				continue;
+			}
+			$sensor = trim(strval($t['sensor'] ?? ''));
+			if ($sensor === '') {
+				continue;
+			}
+			$temps[$sensor] = round(floatval($t['temp_c'] ?? 0), 2);
+		}
+		$dockerCpu = [];
+		$dockerMem = [];
+		$containers = is_array($docker['containers'] ?? null) ? $docker['containers'] : [];
+		foreach ($containers as $c) {
+			if (!is_array($c)) {
+				continue;
+			}
+			if (strtolower(trim(strval($c['state'] ?? ''))) !== 'running') {
+				continue;
+			}
+			$name = trim(strval($c['name'] ?? ''));
+			if ($name === '') {
+				continue;
+			}
+			$dockerCpu[$name] = round(floatval($c['cpu_pct'] ?? 0), 2);
+			$dockerMem[$name] = intval($c['mem_bytes'] ?? 0);
+		}
+		$payload = [];
+		if ($temps) {
+			$payload['temps'] = $temps;
+		}
+		if ($dockerCpu) {
+			$payload['docker_cpu'] = $dockerCpu;
+		}
+		if ($dockerMem) {
+			$payload['docker_mem'] = $dockerMem;
+		}
+		if (!$payload) {
+			return null;
+		}
+		$encoded = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+		return $encoded === false ? null : $encoded;
+	}
+
+	/**
+	 * @param array<string,mixed> $payload
+	 */
+	static public function tempCFromPayload(array $payload, string $sensor, float $fallback): float {
+		$temps = is_array($payload['temperatures'] ?? null) ? $payload['temperatures'] : [];
+		$max = null;
+		foreach ($temps as $t) {
+			if (!is_array($t)) {
+				continue;
+			}
+			$name = trim(strval($t['sensor'] ?? ''));
+			$tc = floatval($t['temp_c'] ?? 0);
+			if ($sensor !== '' && $name === $sensor) {
+				return $tc;
+			}
+			if ($max === null || $tc > $max) {
+				$max = $tc;
+			}
+		}
+		if ($sensor !== '') {
+			return 999.0; // missing sensor → fail-friendly
+		}
+		return $max === null ? $fallback : $max;
+	}
+
+	/**
+	 * @param array<string,mixed> $payload
+	 * @return array{0:bool,1:float,2:string}
+	 */
+	static public function containerMetricFromPayload(array $payload, string $name, int $type): array {
+		if ($name === '') {
+			return [false, 0.0, 'container not set'];
+		}
+		$docker = is_array($payload['docker'] ?? null) ? $payload['docker'] : [];
+		if (empty($docker['available'])) {
+			return [false, 0.0, 'docker unavailable'];
+		}
+		foreach ((is_array($docker['containers'] ?? null) ? $docker['containers'] : []) as $c) {
+			if (!is_array($c) || strval($c['name'] ?? '') !== $name) {
+				continue;
+			}
+			if ($type === \Monitors::TYPE_SERVER_CONTAINER_CPU) {
+				return [true, floatval($c['cpu_pct'] ?? 0), ''];
+			}
+			return [true, floatval($c['mem_pct'] ?? 0), ''];
+		}
+		return [false, 0.0, 'container not found: '.$name];
+	}
+
+	/**
+	 * @param array<string,mixed> $payload
+	 * @return array{0:bool,1:float,2:string}
+	 */
+	static public function systemdMetricFromPayload(array $payload, string $name, int $type): array {
+		if ($name === '') {
+			return [false, 0.0, 'unit not set'];
+		}
+		$systemd = is_array($payload['systemd'] ?? null) ? $payload['systemd'] : [];
+		if (empty($systemd['available'])) {
+			return [false, 0.0, 'systemd unavailable'];
+		}
+		foreach ((is_array($systemd['units'] ?? null) ? $systemd['units'] : []) as $u) {
+			if (!is_array($u) || strval($u['name'] ?? '') !== $name) {
+				continue;
+			}
+			if ($type === \Monitors::TYPE_SERVER_SYSTEMD_CPU) {
+				return [true, floatval($u['cpu_pct'] ?? 0), ''];
+			}
+			return [true, floatval($u['mem_bytes'] ?? 0), ''];
+		}
+		return [false, 0.0, 'unit not found: '.$name];
+	}
+
+	/**
+	 * @param array<string,mixed> $payload
+	 * @return array{0:int,1:int,2:string,3:string}
+	 */
+	static private function evalSystemd(string $name, array $payload): array {
+		if ($name === '') {
+			return [\MonitoringLogs::STATUS_FAIL, 404, 'unit not set', '0'];
+		}
+		$systemd = is_array($payload['systemd'] ?? null) ? $payload['systemd'] : [];
+		if (empty($systemd['available'])) {
+			return [\MonitoringLogs::STATUS_FAIL, 503, 'systemd unavailable', '0'];
+		}
+		$found = null;
+		foreach ((is_array($systemd['units'] ?? null) ? $systemd['units'] : []) as $u) {
+			if (!is_array($u)) {
+				continue;
+			}
+			if (strval($u['name'] ?? '') === $name) {
+				$found = $u;
+				break;
+			}
+		}
+		if (!$found) {
+			return [\MonitoringLogs::STATUS_FAIL, 404, 'unit not found: '.$name, '0'];
+		}
+		$active = strtolower(trim(strval($found['active_state'] ?? '')));
+		$sub = strtolower(trim(strval($found['sub_state'] ?? '')));
+		// active+running for daemons; active+exited OK for oneshot units.
+		$ok = $active === 'active' && ($sub === 'running' || $sub === 'exited');
+		$statusText = trim($active.($sub !== '' ? '/'.$sub : ''));
+		return [
+			$ok ? \MonitoringLogs::STATUS_GOOD : \MonitoringLogs::STATUS_FAIL,
+			$ok ? 200 : 500,
+			$ok ? '' : 'unit '.$name.' is '.$statusText,
+			$statusText !== '' ? $statusText : 'unknown',
 		];
 	}
 
@@ -372,12 +610,16 @@ class ServerAgent {
 		}
 		$state = strtolower(trim(strval($found['state'] ?? '')));
 		$ok = $state === 'running';
-		$statusText = trim(strval($found['status'] ?? $state));
+		// Use stable Docker state (running/exited/…), not Status text like
+		// "Exited (0) 5 minutes ago" — that churned every minute and spammed events.
+		$failMsg = $state !== ''
+			? 'container '.$name.' is not running ('.$state.')'
+			: 'container '.$name.' is not running';
 		return [
 			$ok ? \MonitoringLogs::STATUS_GOOD : \MonitoringLogs::STATUS_FAIL,
 			$ok ? 200 : 500,
-			$ok ? '' : 'container '.$name.' is '.$statusText,
-			$state,
+			$ok ? '' : $failMsg,
+			$state !== '' ? $state : 'unknown',
 		];
 	}
 

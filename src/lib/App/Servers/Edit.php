@@ -294,6 +294,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				$this->print_listeners();
 				$this->print_charts();
 				$this->print_docker();
+				$this->print_systemd();
 				$this->print_proxmox();
 				$this->print_processes();
 				$this->print_auth();
@@ -386,6 +387,22 @@ SH;
 					<div class="col-md-4 mb-2"><strong>CPU:</strong> <?=number_format(floatval($cpu['usage_pct'] ?? $this->server['cpu_usage_pct'] ?? 0), 1);?>% (<?=intval($cpu['cores'] ?? 0);?> cores, load <?=number_format(floatval($cpu['load1'] ?? 0), 2);?>)</div>
 					<div class="col-md-4 mb-2"><strong>RAM:</strong> <?=number_format(floatval($mem['used_pct'] ?? 0), 1);?>%</div>
 					<div class="col-md-4 mb-2"><strong>Swap:</strong> <?=number_format(floatval($swap['used_pct'] ?? 0), 1);?>%</div>
+					<div class="col-md-4 mb-2"><strong><?=\T::Server_Edit_Uptime();?>:</strong> <?=htmlspecialchars($this->formatUptime(intval($host['uptime_sec'] ?? $this->server['uptime_sec'] ?? 0)));?></div>
+					<?php
+					$tempMax = $this->server['temp_c_max'] ?? null;
+					$temps = is_array(($this->payload ?? [])['temperatures'] ?? null) ? ($this->payload['temperatures'] ?? []) : [];
+					if ($tempMax === null && $temps) {
+						foreach ($temps as $t) {
+							if (!is_array($t)) continue;
+							$tc = floatval($t['temp_c'] ?? 0);
+							if ($tempMax === null || $tc > floatval($tempMax)) {
+								$tempMax = $tc;
+							}
+						}
+					}
+					if ($tempMax !== null && $tempMax !== '') { ?>
+						<div class="col-md-4 mb-2"><strong><?=\T::Server_Edit_Temperature();?>:</strong> <?=number_format(floatval($tempMax), 1);?>°C</div>
+					<?php } ?>
 				</div>
 				<?php if ($disks) { ?>
 					<h5 class="mt-3"><?=\T::Server_Edit_Disks();?></h5>
@@ -505,6 +522,11 @@ SH;
 		$disk = [];
 		$netRx = [];
 		$netTx = [];
+		$uptimeMin = [];
+		$tempMax = [];
+		$tempSeries = [];
+		$dockerCpuSeries = [];
+		$dockerMemSeries = [];
 		foreach ($this->metrics as $m) {
 			$labels[] = date('H:i', intval($m['collected_at'] ?? 0));
 			$cpu[] = floatval($m['cpu_usage_pct'] ?? 0);
@@ -512,6 +534,66 @@ SH;
 			$disk[] = floatval($m['disk_used_pct_max'] ?? 0);
 			$netRx[] = round(floatval($m['net_rx_bps'] ?? 0) * 8.0 / 1000000.0, 3);
 			$netTx[] = round(floatval($m['net_tx_bps'] ?? 0) * 8.0 / 1000000.0, 3);
+			$uptimeMin[] = round(floatval($m['uptime_sec'] ?? 0) / 60.0, 2);
+			$tm = $m['temp_c_max'] ?? null;
+			$tempMax[] = ($tm === null || $tm === '') ? null : floatval($tm);
+			$details = [];
+			if (!empty($m['details'])) {
+				$decoded = @json_decode(strval($m['details']), true);
+				if (is_array($decoded)) {
+					$details = $decoded;
+				}
+			}
+			$temps = is_array($details['temps'] ?? null) ? $details['temps'] : [];
+			foreach ($temps as $sensor => $val) {
+				$sensor = strval($sensor);
+				if (!isset($tempSeries[$sensor])) {
+					$tempSeries[$sensor] = array_fill(0, count($labels) - 1, null);
+				}
+				$tempSeries[$sensor][] = floatval($val);
+			}
+			foreach ($tempSeries as $sensor => $_) {
+				if (!array_key_exists($sensor, $temps)) {
+					$tempSeries[$sensor][] = null;
+				}
+			}
+			$dCpu = is_array($details['docker_cpu'] ?? null) ? $details['docker_cpu'] : [];
+			foreach ($dCpu as $name => $val) {
+				$name = strval($name);
+				if (!isset($dockerCpuSeries[$name])) {
+					$dockerCpuSeries[$name] = array_fill(0, count($labels) - 1, 0);
+				}
+				$dockerCpuSeries[$name][] = floatval($val);
+			}
+			foreach ($dockerCpuSeries as $name => $_) {
+				if (!array_key_exists($name, $dCpu)) {
+					$dockerCpuSeries[$name][] = 0;
+				}
+			}
+			$dMem = is_array($details['docker_mem'] ?? null) ? $details['docker_mem'] : [];
+			foreach ($dMem as $name => $val) {
+				$name = strval($name);
+				if (!isset($dockerMemSeries[$name])) {
+					$dockerMemSeries[$name] = array_fill(0, count($labels) - 1, 0);
+				}
+				$dockerMemSeries[$name][] = round(floatval($val) / (1024 * 1024), 2);
+			}
+			foreach ($dockerMemSeries as $name => $_) {
+				if (!array_key_exists($name, $dMem)) {
+					$dockerMemSeries[$name][] = 0;
+				}
+			}
+		}
+		$hasTemp = false;
+		foreach ($tempMax as $v) {
+			if ($v !== null) { $hasTemp = true; break; }
+		}
+		if (!$hasTemp && $tempSeries) {
+			$hasTemp = true;
+		}
+		$hasUptime = false;
+		foreach ($uptimeMin as $v) {
+			if ($v > 0) { $hasUptime = true; break; }
 		}
 		?>
 		<div class="card bg-transparent col-xl-10 p-4 mt-2 mb-3">
@@ -519,6 +601,28 @@ SH;
 			<div class="card-body">
 				<div id="serverMetricsChart" class="ServerMetricsChart"></div>
 				<div id="serverNetworkChart" class="ServerNetworkChart mt-4"></div>
+				<?php if ($hasTemp) { ?>
+					<h5 class="mt-4"><?=\T::Server_Edit_TempChartTitle();?></h5>
+					<div id="serverTempChart" class="ServerTempChart"></div>
+				<?php } ?>
+				<?php if ($hasUptime) { ?>
+					<h5 class="mt-4"><?=\T::Server_Edit_UptimeChartTitle();?></h5>
+					<div id="serverUptimeChart" class="ServerUptimeChart"></div>
+				<?php } ?>
+				<?php if ($dockerCpuSeries) { ?>
+					<div class="d-flex justify-content-between align-items-center mt-4">
+						<h5 class="mb-0"><?=\T::Server_Edit_DockerCpuChartTitle();?></h5>
+						<input type="search" class="form-control form-control-sm w-auto" id="dockerCpuFilter" placeholder="<?=\T::Server_Edit_SystemdFilter();?>">
+					</div>
+					<div id="serverDockerCpuChart" class="ServerDockerCpuChart mt-2"></div>
+				<?php } ?>
+				<?php if ($dockerMemSeries) { ?>
+					<div class="d-flex justify-content-between align-items-center mt-4">
+						<h5 class="mb-0"><?=\T::Server_Edit_DockerMemChartTitle();?></h5>
+						<input type="search" class="form-control form-control-sm w-auto" id="dockerMemFilter" placeholder="<?=\T::Server_Edit_SystemdFilter();?>">
+					</div>
+					<div id="serverDockerMemChart" class="ServerDockerMemChart mt-2"></div>
+				<?php } ?>
 			</div>
 		</div>
 		<script nonce="<?=\CSP::nonceRandom();?>">
@@ -529,6 +633,11 @@ SH;
 				const disk = <?=json_encode($disk);?>;
 				const netRx = <?=json_encode($netRx);?>;
 				const netTx = <?=json_encode($netTx);?>;
+				const uptimeMin = <?=json_encode($uptimeMin);?>;
+				const tempMax = <?=json_encode($tempMax);?>;
+				const tempSeries = <?=json_encode($tempSeries, JSON_UNESCAPED_UNICODE);?>;
+				const dockerCpuSeries = <?=json_encode($dockerCpuSeries, JSON_UNESCAPED_UNICODE);?>;
+				const dockerMemSeries = <?=json_encode($dockerMemSeries, JSON_UNESCAPED_UNICODE);?>;
 
 				function isDarkTheme() {
 					const theme = (document.documentElement.getAttribute('data-bs-theme') || '').toLowerCase();
@@ -548,13 +657,27 @@ SH;
 					}, extra);
 				}
 
+				function stackedSeries(map, filterText) {
+					const q = (filterText || '').toLowerCase();
+					const names = Object.keys(map).filter(function(n){ return !q || n.toLowerCase().indexOf(q) >= 0; }).sort();
+					return names.map(function(name){
+						return {
+							name: name,
+							type: 'line',
+							stack: 'total',
+							areaStyle: {},
+							showSymbol: false,
+							data: map[name]
+						};
+					});
+				}
+
 				function initServerCharts() {
 					if (typeof echarts === 'undefined') return;
 					const theme = isDarkTheme() ? 'dark' : 'light';
-					const el = document.getElementById('serverMetricsChart');
-					const netEl = document.getElementById('serverNetworkChart');
 					const charts = [];
 
+					const el = document.getElementById('serverMetricsChart');
 					if (el) {
 						const chart = echarts.init(el, theme);
 						chart.setOption(baseOption({
@@ -569,6 +692,7 @@ SH;
 						charts.push(chart);
 					}
 
+					const netEl = document.getElementById('serverNetworkChart');
 					if (netEl) {
 						const netChart = echarts.init(netEl, theme);
 						netChart.setOption(baseOption({
@@ -581,6 +705,71 @@ SH;
 						}));
 						charts.push(netChart);
 					}
+
+					const tempEl = document.getElementById('serverTempChart');
+					if (tempEl) {
+						const tempChart = echarts.init(tempEl, theme);
+						const sensorNames = Object.keys(tempSeries);
+						let series;
+						if (sensorNames.length) {
+							series = sensorNames.map(function(name){
+								return { name: name, type: 'line', showSymbol: false, data: tempSeries[name] };
+							});
+						} else {
+							series = [{ name: 'Max °C', type: 'line', showSymbol: false, data: tempMax }];
+						}
+						tempChart.setOption(baseOption({
+							legend: { type: 'scroll', data: series.map(function(s){ return s.name; }) },
+							yAxis: { type: 'value', name: '°C' },
+							series: series
+						}));
+						charts.push(tempChart);
+					}
+
+					const upEl = document.getElementById('serverUptimeChart');
+					if (upEl) {
+						const upChart = echarts.init(upEl, theme);
+						upChart.setOption(baseOption({
+							legend: { data: ['Uptime min'] },
+							yAxis: { type: 'value', min: 0, name: 'min' },
+							tooltip: {
+								trigger: 'axis',
+								valueFormatter: function(v) {
+									const m = Number(v) || 0;
+									const d = Math.floor(m / 1440);
+									const h = Math.floor((m % 1440) / 60);
+									const mm = Math.floor(m % 60);
+									return d + 'd ' + h + 'h ' + mm + 'm';
+								}
+							},
+							series: [{ name: 'Uptime min', type: 'line', showSymbol: false, data: uptimeMin }]
+						}));
+						charts.push(upChart);
+					}
+
+					function bindStacked(elId, filterId, map, yName) {
+						const chartEl = document.getElementById(elId);
+						if (!chartEl) return null;
+						const chart = echarts.init(chartEl, theme);
+						function render() {
+							const filter = (document.getElementById(filterId) || {}).value || '';
+							const series = stackedSeries(map, filter);
+							chart.setOption(baseOption({
+								legend: { type: 'scroll', data: series.map(function(s){ return s.name; }) },
+								yAxis: { type: 'value', min: 0, name: yName },
+								series: series
+							}), true);
+						}
+						render();
+						const filterEl = document.getElementById(filterId);
+						if (filterEl) {
+							filterEl.addEventListener('input', render);
+						}
+						charts.push(chart);
+						return chart;
+					}
+					bindStacked('serverDockerCpuChart', 'dockerCpuFilter', dockerCpuSeries, '%');
+					bindStacked('serverDockerMemChart', 'dockerMemFilter', dockerMemSeries, 'MB');
 
 					const resize = function(){ charts.forEach(function(c){ c.resize(); }); };
 					window.addEventListener('resize', resize);
@@ -608,17 +797,27 @@ SH;
 			<div class="card-header bg-transparent"><h4><?=\T::Server_Edit_DockerTitle();?></h4></div>
 			<div class="card-body table-responsive">
 				<table class="table table-sm table-transparent">
-					<thead><tr><th>Name</th><th>State</th><th>Status</th><th>Image</th><th>Ports</th><th>ID</th></tr></thead>
+					<thead><tr><th>Name</th><th>State</th><th>Status</th><th>CPU</th><th>Memory</th><th>Image</th><th>Ports</th><th>ID</th></tr></thead>
 					<tbody>
 					<?php foreach ($containers as $c) {
 						if (!is_array($c)) continue;
 						$state = strval($c['state'] ?? '');
 						$class = $state === 'running' ? 'text-success' : 'text-secondary';
+						$cpuPct = floatval($c['cpu_pct'] ?? 0);
+						$memBytes = intval($c['mem_bytes'] ?? 0);
+						$memLimit = intval($c['mem_limit_bytes'] ?? 0);
+						$memPct = floatval($c['mem_pct'] ?? 0);
+						$memText = $memBytes > 0
+							? $this->formatBytes($memBytes).($memLimit > 0 ? ' / '.$this->formatBytes($memLimit) : '').($memPct > 0 ? ' ('.number_format($memPct, 1).'%)' : '')
+							: '—';
+						$cpuText = ($state === 'running') ? number_format($cpuPct, 2).'%' : '—';
 						?>
 						<tr>
 							<td><?=htmlspecialchars(strval($c['name'] ?? ''));?></td>
 							<td class="<?=$class;?>"><?=htmlspecialchars($state);?></td>
 							<td><?=htmlspecialchars(strval($c['status'] ?? ''));?></td>
+							<td><?=htmlspecialchars($cpuText);?></td>
+							<td><?=htmlspecialchars($memText);?></td>
 							<td><small><?=htmlspecialchars(strval($c['image'] ?? ''));?></small></td>
 							<td><small><?=htmlspecialchars(strval($c['ports'] ?? ''));?></small></td>
 							<td><code><?=htmlspecialchars(strval($c['id'] ?? ''));?></code></td>
@@ -628,6 +827,81 @@ SH;
 				</table>
 			</div>
 		</div>
+		<?php
+	}
+
+	private function print_systemd() {
+		$systemd = is_array($this->payload['systemd'] ?? null) ? $this->payload['systemd'] : null;
+		if (!$systemd || empty($systemd['available'])) {
+			return;
+		}
+		$units = is_array($systemd['units'] ?? null) ? $systemd['units'] : [];
+		if (!$units) {
+			return;
+		}
+		usort($units, static function ($a, $b) {
+			if (!is_array($a) || !is_array($b)) {
+				return 0;
+			}
+			return strcmp(strval($a['name'] ?? ''), strval($b['name'] ?? ''));
+		});
+		?>
+		<div class="card bg-transparent col-xl-10 p-4 mt-2 mb-3">
+			<div class="card-header bg-transparent d-flex justify-content-between align-items-center flex-wrap gap-2">
+				<h4 class="mb-0"><?=\T::Server_Edit_SystemdTitle();?> <small class="text-muted">(<?=count($units);?>)</small></h4>
+				<input type="search" class="form-control form-control-sm w-auto" id="systemdFilter" placeholder="<?=\T::Server_Edit_SystemdFilter();?>">
+			</div>
+			<div class="card-body table-responsive">
+				<table class="table table-sm table-transparent" id="systemdTable">
+					<thead><tr>
+						<th>Name</th>
+						<th>State</th>
+						<th>Sub-state</th>
+						<th>CPU</th>
+						<th>Peak CPU</th>
+						<th>Memory</th>
+						<th>Peak Memory</th>
+					</tr></thead>
+					<tbody>
+					<?php foreach ($units as $u) {
+						if (!is_array($u)) continue;
+						$name = strval($u['name'] ?? '');
+						$active = strval($u['active_state'] ?? '');
+						$sub = strval($u['sub_state'] ?? '');
+						$class = strtolower($active) === 'active' ? 'text-success' : (strtolower($active) === 'failed' ? 'text-danger' : 'text-secondary');
+						$cpu = floatval($u['cpu_pct'] ?? 0);
+						$cpuPeak = floatval($u['cpu_peak_pct'] ?? 0);
+						$mem = intval($u['mem_bytes'] ?? 0);
+						$memPeak = intval($u['mem_peak_bytes'] ?? 0);
+						?>
+						<tr data-name="<?=htmlspecialchars(strtolower($name), ENT_QUOTES, 'UTF-8');?>">
+							<td><?=htmlspecialchars($name);?></td>
+							<td class="<?=$class;?>"><?=htmlspecialchars($active);?></td>
+							<td><?=htmlspecialchars($sub);?></td>
+							<td><?=number_format($cpu, 2);?>%</td>
+							<td><?=number_format($cpuPeak, 2);?>%</td>
+							<td><?=$mem > 0 ? htmlspecialchars($this->formatBytes($mem)) : '—';?></td>
+							<td><?=$memPeak > 0 ? htmlspecialchars($this->formatBytes($memPeak)) : '—';?></td>
+						</tr>
+					<?php } ?>
+					</tbody>
+				</table>
+			</div>
+		</div>
+		<script nonce="<?=\CSP::nonceRandom();?>">
+			(function(){
+				const input = document.getElementById('systemdFilter');
+				const table = document.getElementById('systemdTable');
+				if (!input || !table) return;
+				input.addEventListener('input', function(){
+					const q = (input.value || '').toLowerCase();
+					table.querySelectorAll('tbody tr').forEach(function(tr){
+						const name = tr.getAttribute('data-name') || '';
+						tr.style.display = (!q || name.indexOf(q) >= 0) ? '' : 'none';
+					});
+				});
+			})();
+		</script>
 		<?php
 	}
 

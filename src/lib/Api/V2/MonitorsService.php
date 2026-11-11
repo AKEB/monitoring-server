@@ -399,6 +399,9 @@ class MonitorsService {
 			if ($creating || array_key_exists('value', $payload)) {
 				$default = match (true) {
 					$type === \Monitors::TYPE_SERVER_OFFLINE => 3,
+					$type === \Monitors::TYPE_SERVER_UPTIME => 5,
+					$type === \Monitors::TYPE_SERVER_TEMP => 80,
+					$type === \Monitors::TYPE_SERVER_SYSTEMD_MEMORY => 512,
 					\Monitors::is_server_net_type($type) => 100,
 					default => 90,
 				};
@@ -406,12 +409,24 @@ class MonitorsService {
 			}
 			if ($type === \Monitors::TYPE_SERVER_DISK && ($creating || array_key_exists('disk_mount', $payload) || array_key_exists('container', $payload))) {
 				$row['container'] = trim(strval($payload['disk_mount'] ?? $payload['container'] ?? ''));
-			} elseif ($type === \Monitors::TYPE_SERVER_CONTAINER && ($creating || array_key_exists('agent_container', $payload) || array_key_exists('container', $payload))) {
-				$row['container'] = trim(strval($payload['agent_container'] ?? $payload['container'] ?? ''));
+			} elseif ($type === \Monitors::TYPE_SERVER_TEMP && ($creating || array_key_exists('temp_sensor', $payload) || array_key_exists('container', $payload))) {
+				$row['container'] = trim(strval($payload['temp_sensor'] ?? $payload['container'] ?? ''));
+			} elseif ((\Monitors::uses_container_name_field($type)) && ($creating || array_key_exists('agent_container', $payload) || array_key_exists('systemd_unit', $payload) || array_key_exists('container', $payload))) {
+				$row['container'] = trim(strval($payload['agent_container'] ?? $payload['systemd_unit'] ?? $payload['container'] ?? ''));
 				if ($row['container'] === '') {
-					return ['error' => 'Container required', 'http' => 422];
+					$msg = ($type === \Monitors::TYPE_SERVER_SYSTEMD || \Monitors::is_server_systemd_metric_type($type))
+						? 'Systemd unit required'
+						: 'Container required';
+					return ['error' => $msg, 'http' => 422];
 				}
-			} elseif ($creating || !in_array($type, [\Monitors::TYPE_SERVER_DISK, \Monitors::TYPE_SERVER_CONTAINER], true)) {
+			} elseif ($creating || !in_array($type, array_merge([\Monitors::TYPE_SERVER_DISK, \Monitors::TYPE_SERVER_TEMP], [
+				\Monitors::TYPE_SERVER_CONTAINER,
+				\Monitors::TYPE_SERVER_CONTAINER_CPU,
+				\Monitors::TYPE_SERVER_CONTAINER_MEMORY,
+				\Monitors::TYPE_SERVER_SYSTEMD,
+				\Monitors::TYPE_SERVER_SYSTEMD_CPU,
+				\Monitors::TYPE_SERVER_SYSTEMD_MEMORY,
+			]), true)) {
 				$row['container'] = '';
 			}
 			if ($type === \Monitors::TYPE_SERVER_PORT) {

@@ -28,8 +28,8 @@ function hidesResponseTimeUi(dataOrMonitor) {
 	if (!monitor) return false;
 	if (isExternalMonitor(monitor)) return true;
 	const t = Number(monitor.type);
-	// Exporters 5–7; server 10–16 (offline/cpu/mem/disk/container/net)
-	return (t >= 5 && t <= 7) || (t >= 10 && t <= 16);
+	// Exporters 5–7; server 10–17 and 19–25 (skip 18 UDP which is worker-based)
+	return (t >= 5 && t <= 7) || (t >= 10 && t <= 17) || (t >= 19 && t <= 25);
 }
 
 function isValueChartMonitor(data) {

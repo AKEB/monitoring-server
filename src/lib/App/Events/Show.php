@@ -86,6 +86,26 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 
 		$workers = \Workers::data(false, ' ORDER BY `title` ASC', '`id`, `title`');
 		$this->workers = make_hash($workers ?: [], 'id');
+		// Virtual worker ids are never Workers rows (External push / server agent).
+		$this->workers[\Monitors::EXTERNAL_WORKER_ID] = [
+			'id' => \Monitors::EXTERNAL_WORKER_ID,
+			'title' => \ExternalMonitors::workerTitle(),
+		];
+		$this->workers[\Servers::SERVER_WORKER_ID] = [
+			'id' => \Servers::SERVER_WORKER_ID,
+			'title' => \Servers::workerTitle(),
+		];
+	}
+
+	/** Resolve display title for real or virtual worker_id. */
+	private function workerTitleForEvent(int $worker_id, int $monitor_id): string {
+		if ($worker_id === \Monitors::EXTERNAL_WORKER_ID) {
+			return \ExternalMonitors::workerTitle();
+		}
+		if ($worker_id === \Servers::SERVER_WORKER_ID) {
+			return \Servers::workerTitleForMonitor($this->monitors[$monitor_id] ?? []);
+		}
+		return strval($this->workers[$worker_id]['title'] ?? 'Unknown worker');
 	}
 
 	private function get_data() {
@@ -248,7 +268,7 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 							\Monitors::get_monitor_title_with_folders($monitor_id)
 							?: strval($this->monitors[$monitor_id]['title'] ?? '')
 						);
-						$worker_title = htmlspecialchars(strval($this->workers[$worker_id]['title'] ?? 'Unknown worker'));
+						$worker_title = htmlspecialchars($this->workerTitleForEvent($worker_id, $monitor_id));
 						$error = htmlspecialchars(strval($event['response_error'] ?? ''));
 						?>
 						<tr>

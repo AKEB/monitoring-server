@@ -50,7 +50,7 @@ class Server {
 			'When fields, types, or response shapes are unclear, call api_docs (optionally with tag/path/operation) — same OpenAPI as /api/docs/.',
 			'Never expose notify/worker/server agent secrets unless the user explicitly needs them and has rights.',
 			'Servers are host agents (monitoring-agent): create returns agent_key_hash for install; regenerate_key rotates it.',
-			'Agent reports may include listeners (TCP/UDP listening ports). Monitor type 17 (server listening port) checks that a port+protocol is present in listeners on the selected server.',
+			'Agent reports may include listeners (TCP/UDP listening ports), temperatures, docker CPU/mem, and systemd units. Monitor type 17 checks listening ports; 19 temp; 20 uptime; 21–22 docker CPU/mem; 23–25 systemd.',
 			'For maintenances, ensure finish_time >= start_time and only attach readable monitors.',
 		]);
 	}
@@ -69,17 +69,19 @@ class Server {
 			['name' => 'api_docs', 'description' => 'Read OpenAPI documentation (same as /api/docs/). No args = index of tags and METHOD path. Optional tag, path, and/or operation (get/post/patch/put/delete) return a focused slice with schemas.', 'inputSchema' => ['type' => 'object', 'properties' => ['tag' => ['type' => 'string', 'description' => 'OpenAPI tag, e.g. monitors'], 'path' => ['type' => 'string', 'description' => 'Exact path key, e.g. /api/v2/monitors/'], 'operation' => ['type' => 'string', 'description' => 'HTTP method under path, e.g. post']]]],
 			['name' => 'monitors_list', 'description' => 'List monitors visible to the current user.', 'inputSchema' => $empty],
 			['name' => 'monitors_get', 'description' => 'Get one monitor by id.', 'inputSchema' => $idSchema],
-			['name' => 'monitors_create', 'description' => 'Create a monitor. Types include 0 HTTPS, 1 folder, 2 TCP, 3 ping, 8 HTTP JSON, 9 external, 10–16 server metrics, 17 server listening port (needs server+port+port_protocol tcp|udp), 18 UDP Port (host+port; listen probe, not protocol handshake). Set api_enabled only for /api/v1/status/ opt-in.', 'inputSchema' => ['type' => 'object', 'properties' => [
+			['name' => 'monitors_create', 'description' => 'Create a monitor. Types include 0 HTTPS, 1 folder, 2 TCP, 3 ping, 8 HTTP JSON, 9 external, 10–17 server agent (offline/CPU/mem/disk/container/net/port), 18 UDP Port, 19 temp °C, 20 uptime min, 21–22 docker CPU/mem %, 23 systemd state, 24–25 systemd CPU%/mem MB. Set api_enabled only for /api/v1/status/ opt-in.', 'inputSchema' => ['type' => 'object', 'properties' => [
 				'title' => ['type' => 'string'],
-				'type' => ['type' => 'integer', 'description' => '0 HTTPS, 1 folder, 2 TCP, 3 ping, 4 docker, 8 HTTP JSON, 9 external, 10–16 server agent, 17 listening port, 18 UDP Port'],
+				'type' => ['type' => 'integer', 'description' => '0 HTTPS … 18 UDP; 19 temp; 20 uptime; 21–22 docker CPU/mem; 23–25 systemd'],
 				'parent_id' => ['type' => 'integer', 'description' => 'Folder monitor id (type 1), or 0 for root'],
 				'url' => ['type' => 'string'],
 				'host' => ['type' => 'string'],
 				'port' => ['type' => 'integer', 'minimum' => 1, 'maximum' => 65535],
 				'port_protocol' => ['type' => 'string', 'enum' => ['tcp', 'udp'], 'description' => 'For type 17'],
-				'server' => ['type' => 'integer', 'description' => 'Host agent server id (types 10–17)'],
+				'server' => ['type' => 'integer', 'description' => 'Host agent server id (types 10–17, 19–25)'],
 				'disk_mount' => ['type' => 'string'],
 				'agent_container' => ['type' => 'string'],
+				'temp_sensor' => ['type' => 'string', 'description' => 'Optional sensor for type 19; empty = max'],
+				'systemd_unit' => ['type' => 'string', 'description' => 'Unit name for types 23–25'],
 				'value' => ['type' => 'integer'],
 				'status' => ['type' => 'integer'],
 				'api_enabled' => ['type' => 'boolean'],

@@ -28,8 +28,15 @@ class Monitors extends \DB\MySQLObject implements \PermissionSubject_Interface {
 	const TYPE_SERVER_CONTAINER  = 14;
 	const TYPE_SERVER_NET_RX     = 15;
 	const TYPE_SERVER_NET_TX     = 16;
-	const TYPE_SERVER_PORT       = 17;
-	const TYPE_UDP               = 18;
+	const TYPE_SERVER_PORT            = 17;
+	const TYPE_UDP                    = 18;
+	const TYPE_SERVER_TEMP            = 19;
+	const TYPE_SERVER_UPTIME          = 20;
+	const TYPE_SERVER_CONTAINER_CPU   = 21;
+	const TYPE_SERVER_CONTAINER_MEMORY = 22;
+	const TYPE_SERVER_SYSTEMD         = 23;
+	const TYPE_SERVER_SYSTEMD_CPU     = 24;
+	const TYPE_SERVER_SYSTEMD_MEMORY  = 25;
 
 	/** Virtual worker_id for push-based External monitors (never a real Workers row). */
 	const EXTERNAL_WORKER_ID = -1;
@@ -78,6 +85,13 @@ class Monitors extends \DB\MySQLObject implements \PermissionSubject_Interface {
 			static::TYPE_SERVER_NET_TX => \T::Monitor_Type_ServerNetTx(),
 			static::TYPE_SERVER_PORT => \T::Monitor_Type_ServerPort(),
 			static::TYPE_UDP => \T::Monitor_Type_UDP(),
+			static::TYPE_SERVER_TEMP => \T::Monitor_Type_ServerTemp(),
+			static::TYPE_SERVER_UPTIME => \T::Monitor_Type_ServerUptime(),
+			static::TYPE_SERVER_CONTAINER_CPU => \T::Monitor_Type_ServerContainerCPU(),
+			static::TYPE_SERVER_CONTAINER_MEMORY => \T::Monitor_Type_ServerContainerMemory(),
+			static::TYPE_SERVER_SYSTEMD => \T::Monitor_Type_ServerSystemd(),
+			static::TYPE_SERVER_SYSTEMD_CPU => \T::Monitor_Type_ServerSystemdCPU(),
+			static::TYPE_SERVER_SYSTEMD_MEMORY => \T::Monitor_Type_ServerSystemdMemory(),
 			// static::TYPE_EXPORTER_CPU => \T::Monitor_Type_ExporterCPU(),
 		];
 	}
@@ -106,6 +120,13 @@ class Monitors extends \DB\MySQLObject implements \PermissionSubject_Interface {
 			static::TYPE_SERVER_NET_RX,
 			static::TYPE_SERVER_NET_TX,
 			static::TYPE_SERVER_PORT,
+			static::TYPE_SERVER_TEMP,
+			static::TYPE_SERVER_UPTIME,
+			static::TYPE_SERVER_CONTAINER_CPU,
+			static::TYPE_SERVER_CONTAINER_MEMORY,
+			static::TYPE_SERVER_SYSTEMD,
+			static::TYPE_SERVER_SYSTEMD_CPU,
+			static::TYPE_SERVER_SYSTEMD_MEMORY,
 		];
 	}
 
@@ -130,6 +151,12 @@ class Monitors extends \DB\MySQLObject implements \PermissionSubject_Interface {
 			static::TYPE_SERVER_DISK,
 			static::TYPE_SERVER_NET_RX,
 			static::TYPE_SERVER_NET_TX,
+			static::TYPE_SERVER_TEMP,
+			static::TYPE_SERVER_UPTIME,
+			static::TYPE_SERVER_CONTAINER_CPU,
+			static::TYPE_SERVER_CONTAINER_MEMORY,
+			static::TYPE_SERVER_SYSTEMD_CPU,
+			static::TYPE_SERVER_SYSTEMD_MEMORY,
 		], true);
 	}
 
@@ -149,10 +176,38 @@ class Monitors extends \DB\MySQLObject implements \PermissionSubject_Interface {
 		if (static::is_server_net_type($type)) {
 			return 'Mbps';
 		}
-		if ($type === static::TYPE_SERVER_OFFLINE) {
+		if ($type === static::TYPE_SERVER_OFFLINE || $type === static::TYPE_SERVER_UPTIME) {
 			return 'min';
 		}
+		if ($type === static::TYPE_SERVER_TEMP) {
+			return '°C';
+		}
+		if ($type === static::TYPE_SERVER_SYSTEMD_MEMORY) {
+			return 'MB';
+		}
 		return '%';
+	}
+
+	/** Types that store a named target (sensor/container/unit) in `container`. */
+	static public function uses_container_name_field(int $type): bool {
+		return in_array($type, [
+			static::TYPE_SERVER_CONTAINER,
+			static::TYPE_SERVER_CONTAINER_CPU,
+			static::TYPE_SERVER_CONTAINER_MEMORY,
+			static::TYPE_SERVER_SYSTEMD,
+			static::TYPE_SERVER_SYSTEMD_CPU,
+			static::TYPE_SERVER_SYSTEMD_MEMORY,
+		], true);
+	}
+
+	static public function is_server_container_metric_type(int $type): bool {
+		return $type === static::TYPE_SERVER_CONTAINER_CPU
+			|| $type === static::TYPE_SERVER_CONTAINER_MEMORY;
+	}
+
+	static public function is_server_systemd_metric_type(int $type): bool {
+		return $type === static::TYPE_SERVER_SYSTEMD_CPU
+			|| $type === static::TYPE_SERVER_SYSTEMD_MEMORY;
 	}
 
 	static public function proxy_type_hash(): array {

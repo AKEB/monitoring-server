@@ -24,6 +24,13 @@ class MonitorsTest extends PHPUnit\Framework\TestCase {
 		$this->assertSame(16, \Monitors::TYPE_SERVER_NET_TX);
 		$this->assertSame(17, \Monitors::TYPE_SERVER_PORT);
 		$this->assertSame(18, \Monitors::TYPE_UDP);
+		$this->assertSame(19, \Monitors::TYPE_SERVER_TEMP);
+		$this->assertSame(20, \Monitors::TYPE_SERVER_UPTIME);
+		$this->assertSame(21, \Monitors::TYPE_SERVER_CONTAINER_CPU);
+		$this->assertSame(22, \Monitors::TYPE_SERVER_CONTAINER_MEMORY);
+		$this->assertSame(23, \Monitors::TYPE_SERVER_SYSTEMD);
+		$this->assertSame(24, \Monitors::TYPE_SERVER_SYSTEMD_CPU);
+		$this->assertSame(25, \Monitors::TYPE_SERVER_SYSTEMD_MEMORY);
 		$this->assertSame(-1, \Monitors::EXTERNAL_WORKER_ID);
 		$this->assertSame(-2, \Servers::SERVER_WORKER_ID);
 	}
@@ -31,7 +38,7 @@ class MonitorsTest extends PHPUnit\Framework\TestCase {
 	function test_type_hash_excludes_exporter_cpu() {
 		$keys = array_keys(\Monitors::type_hash());
 		sort($keys);
-		$this->assertSame([0, 1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18], $keys);
+		$this->assertSame([0, 1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25], $keys);
 		$this->assertArrayNotHasKey(\Monitors::TYPE_EXPORTER_CPU, \Monitors::type_hash());
 	}
 

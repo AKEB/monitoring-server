@@ -1081,6 +1081,62 @@ class T {
 	public static function Monitor_Edit_ContainerRequired(...$argv): string { return ''; }
 
 	/**
+	 * Monitor_Edit_TempSensor
+	 * 
+	 * @return string "Temperature sensor"
+	 * @return string "Датчик температуры"
+	 */
+	public static function Monitor_Edit_TempSensor(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_TempSensorMax
+	 * 
+	 * @return string "Any (max °C)"
+	 * @return string "Любой (макс. °C)"
+	 */
+	public static function Monitor_Edit_TempSensorMax(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_TempThreshold
+	 * 
+	 * @return string "Greater than (°C)"
+	 * @return string "Больше чем (°C)"
+	 */
+	public static function Monitor_Edit_TempThreshold(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_UptimeMinutes
+	 * 
+	 * @return string "Minimum uptime (minutes)"
+	 * @return string "Минимальный аптайм (минуты)"
+	 */
+	public static function Monitor_Edit_UptimeMinutes(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_SystemdUnit
+	 * 
+	 * @return string "Systemd unit"
+	 * @return string "Юнит systemd"
+	 */
+	public static function Monitor_Edit_SystemdUnit(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_UnitRequired
+	 * 
+	 * @return string "Select a systemd unit"
+	 * @return string "Выберите юнит systemd"
+	 */
+	public static function Monitor_Edit_UnitRequired(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_MemoryMB
+	 * 
+	 * @return string "Greater than (MB)"
+	 * @return string "Больше чем (MB)"
+	 */
+	public static function Monitor_Edit_MemoryMB(...$argv): string { return ''; }
+
+	/**
 	 * Monitor_Edit_SignatureProject
 	 * 
 	 * @return string "Signature project"
@@ -1383,6 +1439,62 @@ class T {
 	 * @return string "Сервер слушающий порт"
 	 */
 	public static function Monitor_Type_ServerPort(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Type_ServerTemp
+	 * 
+	 * @return string "Server temperature"
+	 * @return string "Сервер температура"
+	 */
+	public static function Monitor_Type_ServerTemp(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Type_ServerUptime
+	 * 
+	 * @return string "Server uptime"
+	 * @return string "Сервер аптайм"
+	 */
+	public static function Monitor_Type_ServerUptime(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Type_ServerContainerCPU
+	 * 
+	 * @return string "Server Docker CPU"
+	 * @return string "Сервер Docker CPU"
+	 */
+	public static function Monitor_Type_ServerContainerCPU(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Type_ServerContainerMemory
+	 * 
+	 * @return string "Server Docker memory"
+	 * @return string "Сервер Docker память"
+	 */
+	public static function Monitor_Type_ServerContainerMemory(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Type_ServerSystemd
+	 * 
+	 * @return string "Server systemd service"
+	 * @return string "Сервер systemd сервис"
+	 */
+	public static function Monitor_Type_ServerSystemd(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Type_ServerSystemdCPU
+	 * 
+	 * @return string "Server systemd CPU"
+	 * @return string "Сервер systemd CPU"
+	 */
+	public static function Monitor_Type_ServerSystemdCPU(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Type_ServerSystemdMemory
+	 * 
+	 * @return string "Server systemd memory"
+	 * @return string "Сервер systemd память"
+	 */
+	public static function Monitor_Type_ServerSystemdMemory(...$argv): string { return ''; }
 
 	/**
 	 * Dashboard_Response
@@ -3049,12 +3161,76 @@ class T {
 	public static function Server_Edit_ChartsTitle(...$argv): string { return ''; }
 
 	/**
+	 * Server_Edit_TempChartTitle
+	 * 
+	 * @return string "Temperature"
+	 * @return string "Температура"
+	 */
+	public static function Server_Edit_TempChartTitle(...$argv): string { return ''; }
+
+	/**
+	 * Server_Edit_UptimeChartTitle
+	 * 
+	 * @return string "Uptime"
+	 * @return string "Аптайм"
+	 */
+	public static function Server_Edit_UptimeChartTitle(...$argv): string { return ''; }
+
+	/**
+	 * Server_Edit_DockerCpuChartTitle
+	 * 
+	 * @return string "Docker CPU"
+	 * @return string "Docker CPU"
+	 */
+	public static function Server_Edit_DockerCpuChartTitle(...$argv): string { return ''; }
+
+	/**
+	 * Server_Edit_DockerMemChartTitle
+	 * 
+	 * @return string "Docker memory"
+	 * @return string "Docker память"
+	 */
+	public static function Server_Edit_DockerMemChartTitle(...$argv): string { return ''; }
+
+	/**
 	 * Server_Edit_DockerTitle
 	 * 
 	 * @return string "Docker containers"
 	 * @return string "Docker-контейнеры"
 	 */
 	public static function Server_Edit_DockerTitle(...$argv): string { return ''; }
+
+	/**
+	 * Server_Edit_SystemdTitle
+	 * 
+	 * @return string "Systemd services"
+	 * @return string "Сервисы systemd"
+	 */
+	public static function Server_Edit_SystemdTitle(...$argv): string { return ''; }
+
+	/**
+	 * Server_Edit_SystemdFilter
+	 * 
+	 * @return string "Filter…"
+	 * @return string "Фильтр…"
+	 */
+	public static function Server_Edit_SystemdFilter(...$argv): string { return ''; }
+
+	/**
+	 * Server_Edit_Uptime
+	 * 
+	 * @return string "Uptime"
+	 * @return string "Аптайм"
+	 */
+	public static function Server_Edit_Uptime(...$argv): string { return ''; }
+
+	/**
+	 * Server_Edit_Temperature
+	 * 
+	 * @return string "Temperature"
+	 * @return string "Температура"
+	 */
+	public static function Server_Edit_Temperature(...$argv): string { return ''; }
 
 	/**
 	 * Server_Edit_ProxmoxTitle

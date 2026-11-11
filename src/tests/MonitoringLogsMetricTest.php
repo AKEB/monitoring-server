@@ -31,7 +31,11 @@ class MonitoringLogsMetricTest extends PHPUnit\Framework\TestCase {
 		$this->assertTrue(\Monitors::is_metric_value_type(\Monitors::TYPE_SERVER_MEMORY));
 		$this->assertTrue(\Monitors::is_metric_value_type(\Monitors::TYPE_SERVER_OFFLINE));
 		$this->assertTrue(\Monitors::is_metric_value_type(\Monitors::TYPE_EXPORTER_MEMORY));
+		$this->assertTrue(\Monitors::is_metric_value_type(\Monitors::TYPE_SERVER_TEMP));
+		$this->assertTrue(\Monitors::is_metric_value_type(\Monitors::TYPE_SERVER_UPTIME));
+		$this->assertTrue(\Monitors::is_metric_value_type(\Monitors::TYPE_SERVER_CONTAINER_CPU));
 		$this->assertFalse(\Monitors::is_metric_value_type(\Monitors::TYPE_SERVER_CONTAINER));
+		$this->assertFalse(\Monitors::is_metric_value_type(\Monitors::TYPE_SERVER_SYSTEMD));
 		$this->assertFalse(\Monitors::is_metric_value_type(\Monitors::TYPE_HTTPS));
 
 		foreach ([
@@ -42,6 +46,8 @@ class MonitoringLogsMetricTest extends PHPUnit\Framework\TestCase {
 			\Monitors::TYPE_SERVER_MEMORY,
 			\Monitors::TYPE_SERVER_OFFLINE,
 			\Monitors::TYPE_SERVER_CONTAINER,
+			\Monitors::TYPE_SERVER_TEMP,
+			\Monitors::TYPE_SERVER_SYSTEMD,
 			\Monitors::TYPE_EXTERNAL,
 			\Monitors::TYPE_EXPORTER_DISK,
 		] as $type) {
@@ -54,6 +60,9 @@ class MonitoringLogsMetricTest extends PHPUnit\Framework\TestCase {
 		$this->assertSame('Mbps', \Monitors::metric_chart_unit(\Monitors::TYPE_SERVER_NET_RX));
 		$this->assertSame('Mbps', \Monitors::metric_chart_unit(\Monitors::TYPE_SERVER_NET_TX));
 		$this->assertSame('min', \Monitors::metric_chart_unit(\Monitors::TYPE_SERVER_OFFLINE));
+		$this->assertSame('°C', \Monitors::metric_chart_unit(\Monitors::TYPE_SERVER_TEMP));
+		$this->assertSame('min', \Monitors::metric_chart_unit(\Monitors::TYPE_SERVER_UPTIME));
+		$this->assertSame('MB', \Monitors::metric_chart_unit(\Monitors::TYPE_SERVER_SYSTEMD_MEMORY));
 	}
 
 	function test_server_worker_title_fallback() {

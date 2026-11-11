@@ -933,7 +933,16 @@ class MonitoringLogs extends \DB\MySQLObject {
 			}
 			$return['events'] = \MonitorsEvents::getEventsForMonitor($monitor_id);
 		} else {
-			$return['workers'] = make_hash(\Workers::data(false, '', '`id`, `title`'));
+			$workers = make_hash(\Workers::data(false, '', '`id`, `title`') ?: []);
+			$workers[\Monitors::EXTERNAL_WORKER_ID] = [
+				'id' => \Monitors::EXTERNAL_WORKER_ID,
+				'title' => \ExternalMonitors::workerTitle(),
+			];
+			$workers[\Servers::SERVER_WORKER_ID] = [
+				'id' => \Servers::SERVER_WORKER_ID,
+				'title' => \Servers::workerTitle(),
+			];
+			$return['workers'] = $workers;
 			$return['monitors'] = \Monitors::get_hash();
 			$return['events'] = \MonitorsEvents::getEventsForMonitor(0);
 		}
