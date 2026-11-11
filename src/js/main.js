@@ -68,6 +68,26 @@ function escapeHtmlAttr(value) {
 		.replace(/>/g, '&gt;');
 }
 
+/** Soft colors for open minute while worker data is still missing. */
+function toSubtleStatusClass(className) {
+	switch (className) {
+		case 'bg-success':
+		case 'bg-success-subtle':
+			return 'bg-success-subtle';
+		case 'bg-danger':
+		case 'bg-danger-subtle':
+			return 'bg-danger-subtle';
+		case 'bg-warning':
+		case 'bg-warning-subtle':
+			return 'bg-warning-subtle';
+		case 'bg-secondary':
+		case 'bg-body-secondary':
+			return 'bg-body-secondary';
+		default:
+			return className;
+	}
+}
+
 /**
  * Рекурсивно генерирует HTML-представление списка мониторов.
  * @param {Object} data - Данные мониторов для отображения.
@@ -412,8 +432,8 @@ function updateMonitorWorkersLogs(data) {
 							prevClassName = className;
 							prevTitle = title;
 						} else if (isOpenSlot) {
-							// Still collecting this minute — keep previous worker status.
-							className = prevClassName;
+							// Still collecting this minute — soft provisional color from previous status.
+							className = toSubtleStatusClass(prevClassName);
 							if (prevTitle) {
 								title = prevTitle;
 							}

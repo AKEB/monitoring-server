@@ -83,6 +83,23 @@ div.text-success>input {
 	background-color: rgba(var(--bs-primary-rgb), var(--bs-bg-opacity)) !important;
 }
 
+/* Open minute without data yet: provisional / inherited status */
+.monitor-states>div.bg-success-subtle, .monitor-states-big>div.bg-success-subtle {
+	background-color: var(--bs-success-bg-subtle) !important;
+}
+
+.monitor-states>div.bg-danger-subtle, .monitor-states-big>div.bg-danger-subtle {
+	background-color: var(--bs-danger-bg-subtle) !important;
+}
+
+.monitor-states>div.bg-warning-subtle, .monitor-states-big>div.bg-warning-subtle {
+	background-color: var(--bs-warning-bg-subtle) !important;
+}
+
+.monitor-states>div.bg-body-secondary, .monitor-states-big>div.bg-body-secondary {
+	background-color: var(--bs-secondary-bg) !important;
+}
+
 .monitor-states>div:hover, .monitor-states-big>div:hover {
 	transition: all ease-in-out .15s;
 	opacity: .8;

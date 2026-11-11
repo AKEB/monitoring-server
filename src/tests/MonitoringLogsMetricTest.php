@@ -116,6 +116,21 @@ class MonitoringLogsMetricTest extends PHPUnit\Framework\TestCase {
 		);
 	}
 
+	function test_subtle_status_class_mapping() {
+		$this->assertSame('bg-success-subtle', \MonitoringLogs::toSubtleStatusClass('bg-success'));
+		$this->assertSame('bg-danger-subtle', \MonitoringLogs::toSubtleStatusClass('bg-danger'));
+		$this->assertSame('bg-warning-subtle', \MonitoringLogs::toSubtleStatusClass('bg-warning'));
+		$this->assertSame('bg-body-secondary', \MonitoringLogs::toSubtleStatusClass('bg-secondary'));
+		$this->assertSame('bg-primary', \MonitoringLogs::toSubtleStatusClass('bg-primary'));
+
+		$this->assertSame('bg-success', \MonitoringLogs::toSolidStatusClass('bg-success-subtle'));
+		$this->assertSame('bg-danger', \MonitoringLogs::toSolidStatusClass('bg-danger-subtle'));
+		$this->assertSame('bg-warning', \MonitoringLogs::toSolidStatusClass('bg-warning-subtle'));
+		$this->assertSame('bg-secondary', \MonitoringLogs::toSolidStatusClass('bg-body-secondary'));
+		$this->assertTrue(\MonitoringLogs::isSolidStatusClass('bg-success'));
+		$this->assertFalse(\MonitoringLogs::isSolidStatusClass('bg-success-subtle'));
+	}
+
 	function test_open_unknown_without_previous_stays_grey() {
 		$workers = [1 => 1, 2 => 1, 3 => 1];
 		$states = [
@@ -128,6 +143,17 @@ class MonitoringLogsMetricTest extends PHPUnit\Framework\TestCase {
 		$this->assertSame(
 			'bg-success',
 			\MonitoringLogs::classForCountedStates($counts['error'], $counts['success'])
+		);
+		// Open minute with no confirmed reports yet uses soft colors.
+		$this->assertSame(
+			'bg-success-subtle',
+			\MonitoringLogs::toSubtleStatusClass(
+				\MonitoringLogs::classForCountedStates($counts['error'], $counts['success'])
+			)
+		);
+		$this->assertSame(
+			'bg-body-secondary',
+			\MonitoringLogs::toSubtleStatusClass('bg-secondary')
 		);
 	}
 

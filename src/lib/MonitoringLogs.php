@@ -97,6 +97,50 @@ class MonitoringLogs extends \DB\MySQLObject {
 	}
 
 	/**
+	 * Soft Bootstrap colors for the open minute while results are still missing.
+	 * Uses --bs-*-bg-subtle / --bs-secondary-bg (see main.css).
+	 */
+	static public function toSubtleStatusClass(string $class): string {
+		switch (static::toSolidStatusClass($class)) {
+			case 'bg-success':
+				return 'bg-success-subtle';
+			case 'bg-danger':
+				return 'bg-danger-subtle';
+			case 'bg-warning':
+				return 'bg-warning-subtle';
+			case 'bg-secondary':
+				return 'bg-body-secondary';
+			default:
+				return $class;
+		}
+	}
+
+	/**
+	 * Normalize subtle/pending bar classes back to solid filter/badge classes.
+	 */
+	static public function toSolidStatusClass(string $class): string {
+		switch ($class) {
+			case 'bg-success-subtle':
+				return 'bg-success';
+			case 'bg-danger-subtle':
+				return 'bg-danger';
+			case 'bg-warning-subtle':
+				return 'bg-warning';
+			case 'bg-body-secondary':
+				return 'bg-secondary';
+			default:
+				return $class;
+		}
+	}
+
+	/**
+	 * True for a solid (confirmed) success/error/warning bar class.
+	 */
+	static public function isSolidStatusClass(string $class): bool {
+		return in_array($class, ['bg-success', 'bg-danger', 'bg-warning'], true);
+	}
+
+	/**
 	 * Map a Bootstrap status class into folder aggregation flags.
 	 *
 	 * @param-out bool $has_error
@@ -105,6 +149,7 @@ class MonitoringLogs extends \DB\MySQLObject {
 	 * @param-out bool $has_unknown
 	 */
 	static public function classifyStatusClass(string $class, bool &$has_error, bool &$has_success, bool &$has_warning, bool &$has_unknown): void {
+		$class = static::toSolidStatusClass($class);
 		if ($class === 'bg-danger') {
 			$has_error = true;
 		} elseif ($class === 'bg-success') {
@@ -331,16 +376,21 @@ class MonitoringLogs extends \DB\MySQLObject {
 					$has_success = false;
 					$has_unknown = false;
 					$has_warning = false;
+					$has_solid_child = false;
 					$prevSlot = $i - $repeat;
 					foreach($monitor['children'] as $child) {
 						$class = '';
 						if (isset($child['states'][$i]['class'])) {
 							$class = strval($child['states'][$i]['class']);
 						}
+						if (static::isSolidStatusClass($class)) {
+							$has_solid_child = true;
+						}
+						$solidClass = static::toSolidStatusClass($class);
 						// Open minute without child data: inherit previous child class.
-						if ($class === '' || $class === 'bg-secondary') {
+						if ($solidClass === '' || $solidClass === 'bg-secondary') {
 							if ($isOpen && isset($child['states'][$prevSlot]['class'])) {
-								$prevClass = strval($child['states'][$prevSlot]['class']);
+								$prevClass = static::toSolidStatusClass(strval($child['states'][$prevSlot]['class']));
 								if ($prevClass !== '' && $prevClass !== 'bg-secondary') {
 									$class = $prevClass;
 								}
@@ -349,17 +399,22 @@ class MonitoringLogs extends \DB\MySQLObject {
 						static::classifyStatusClass($class, $has_error, $has_success, $has_warning, $has_unknown);
 					}
 					if (isset($monitor['maintenances']) && $monitor['maintenances']) {
-						$monitor['states'][$i]['class'] = 'bg-primary';
+						$slotClass = 'bg-primary';
 					} elseif ($has_error) {
-						$monitor['states'][$i]['class'] = 'bg-danger';
+						$slotClass = 'bg-danger';
 					} elseif ($has_warning) {
-						$monitor['states'][$i]['class'] = 'bg-warning';
+						$slotClass = 'bg-warning';
 					} elseif ($has_success) {
-						$monitor['states'][$i]['class'] = 'bg-success';
+						$slotClass = 'bg-success';
 					} else {
-						$monitor['states'][$i]['class'] = 'bg-secondary';
+						$slotClass = 'bg-secondary';
 					}
-					$last_class = $monitor['states'][$i]['class'];
+					// Open minute still waiting for child reports: softer provisional colors.
+					if ($isOpen && !$has_solid_child && $slotClass !== 'bg-primary') {
+						$slotClass = static::toSubtleStatusClass($slotClass);
+					}
+					$monitor['states'][$i]['class'] = $slotClass;
+					$last_class = static::toSolidStatusClass($slotClass);
 				}
 				$monitor['badge_class'] = $last_class;
 				unset($child);
@@ -387,6 +442,14 @@ class MonitoringLogs extends \DB\MySQLObject {
 					}
 					$monitor['states'][$i]['workers'] ??= [];
 					$workerStates = $monitor['states'][$i]['workers'];
+					$hasRealData = false;
+					foreach ($workers as $worker_id => $_start) {
+						$state = intval($workerStates[$worker_id] ?? static::STATE_UNKNOWN);
+						if ($state === static::STATE_SUCCESS || $state === static::STATE_ERROR) {
+							$hasRealData = true;
+							break;
+						}
+					}
 					// Current minute with no data yet: reuse previous worker states.
 					if ($isOpen && $previousWorkers) {
 						$workerStates = static::fillUnknownFromPrevious($workerStates, $previousWorkers);
@@ -396,13 +459,18 @@ class MonitoringLogs extends \DB\MySQLObject {
 						$workerStates,
 						false
 					);
-					$monitor['states'][$i]['class'] = static::classForCountedStates(
+					$slotClass = static::classForCountedStates(
 						$counts['error'],
 						$counts['success'],
 						isset($monitor['maintenances']) && $monitor['maintenances']
 					);
+					// Open minute still waiting for reports: softer provisional colors.
+					if ($isOpen && !$hasRealData && $slotClass !== 'bg-primary') {
+						$slotClass = static::toSubtleStatusClass($slotClass);
+					}
+					$monitor['states'][$i]['class'] = $slotClass;
 					$previousWorkers = $monitor['states'][$i]['workers'];
-					$last_class = $monitor['states'][$i]['class'];
+					$last_class = static::toSolidStatusClass($slotClass);
 				}
 				$monitor['badge_class'] = $last_class;
 			}
