@@ -216,7 +216,7 @@ function MonitorsUpdate(count=25) {
 }
 
 /**
- * Cheap version poll: full list/detail refresh only when logs/events changed.
+ * Cheap version poll: full list/detail refresh when logs/events change or minute rolls.
  */
 function MonitorsDirtyCheck() {
 	clearTimeout(monitorDirtyTimeout);
@@ -389,10 +389,11 @@ function updateMonitorWorkersLogs(data) {
 	HTML = '';
 	for (let worker_id in data.workers) {
 		const worker = data.workers[worker_id];
-		const logs = data.logs[worker_id];
 		HTML += '<div class="row">';
 			HTML += '<div class="col-3 col-sm-2 align-middle lh-3">'+worker.title+'</div><div class="col-9 col-sm-10">';
 				HTML += '<div class="wrap"><div class="monitor-states-big" data-monitor-id="7">';
+					let prevClassName = 'bg-secondary';
+					let prevTitle = '';
 					for (let i in last40Keys) {
 						const time = last40Keys[i];
 						const slotStart = parseInt(time, 10);
@@ -408,9 +409,17 @@ function updateMonitorWorkersLogs(data) {
 								className = "bg-success";
 							}
 							title = log.title;
+							prevClassName = className;
+							prevTitle = title;
 						} else if (isOpenSlot) {
-							// Still collecting this minute — treat missing worker as OK.
-							className = "bg-success";
+							// Still collecting this minute — keep previous worker status.
+							className = prevClassName;
+							if (prevTitle) {
+								title = prevTitle;
+							}
+						} else {
+							prevClassName = 'bg-secondary';
+							prevTitle = '';
 						}
 						if (data.monitor.maintenances) {
 							// Собираем все заголовки обслуживания в одну строку

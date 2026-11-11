@@ -153,16 +153,24 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 						<input type="date" class="form-control" name="to" value="<?=$to;?>">
 					</div>
 					<div class="col-md-2">
-						<label class="form-label"><?=\T::Events_Filter_Monitor();?></label>
-						<select class="form-select" name="monitor_id">
-							<option value="0"><?=\T::Events_Filter_All();?></option>
-							<?php foreach ($this->monitors as $id => $monitor) {
-								$selected = $this->monitor_id === intval($id) ? ' selected' : '';
-								$title = htmlspecialchars(\Monitors::get_monitor_title_with_folders(intval($id)) ?: strval($monitor['title'] ?? ''));
-								?>
-								<option value="<?=intval($id);?>"<?=$selected;?>><?=$title;?></option>
-							<?php } ?>
-						</select>
+						<?php
+						echo $this->template?->html_select(
+							'monitor_id',
+							\Monitors::get_folder_hash_options_hash(false),
+							$this->monitor_id,
+							\T::Events_Filter_Monitor(),
+							false,
+							[
+								'with-undefined' => true,
+								'undefined-value' => '0',
+								'undefined-title' => \T::Events_Filter_All(),
+								'data-container' => 'body',
+								'vertical' => true,
+								'class1' => 'form-label',
+								'class2' => '',
+							]
+						);
+						?>
 					</div>
 					<div class="col-md-2">
 						<label class="form-label"><?=\T::Events_Filter_Worker();?></label>

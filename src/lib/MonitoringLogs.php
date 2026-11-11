@@ -44,13 +44,14 @@ class MonitoringLogs extends \DB\MySQLObject {
 
 	/**
 	 * Count worker states for one timeline slot.
-	 * When $optimisticUnknown is true (open interval), missing/unknown counts as success.
+	 * Unknown/missing workers stay unknown (no optimistic green).
+	 * For the open minute, call fillUnknownFromPrevious() first.
 	 *
 	 * @param array<int|string, mixed> $expectedWorkers worker_id => start_time
 	 * @param array<int|string, mixed> $workerStates worker_id => STATE_*
 	 * @return array{error:int,success:int,unknown:int}
 	 */
-	static public function countWorkerStatesForSlot(array $expectedWorkers, array $workerStates, bool $optimisticUnknown): array {
+	static public function countWorkerStatesForSlot(array $expectedWorkers, array $workerStates, bool $optimisticUnknown = false): array {
 		$has_error = 0;
 		$has_success = 0;
 		$has_unknown = 0;
@@ -61,6 +62,7 @@ class MonitoringLogs extends \DB\MySQLObject {
 			} elseif ($state == static::STATE_SUCCESS) {
 				$has_success++;
 			} elseif ($optimisticUnknown) {
+				// Legacy flag kept for callers/tests; prefer fillUnknownFromPrevious().
 				$has_success++;
 			} else {
 				$has_unknown++;
@@ -71,6 +73,47 @@ class MonitoringLogs extends \DB\MySQLObject {
 			'success' => $has_success,
 			'unknown' => $has_unknown,
 		];
+	}
+
+	/**
+	 * Fill UNKNOWN workers from the previous slot (open minute without data yet).
+	 *
+	 * @param array<int|string, mixed> $workerStates
+	 * @param array<int|string, mixed> $previousWorkerStates
+	 * @return array<int|string, int>
+	 */
+	static public function fillUnknownFromPrevious(array $workerStates, array $previousWorkerStates): array {
+		foreach ($previousWorkerStates as $worker_id => $prev) {
+			$current = $workerStates[$worker_id] ?? static::STATE_UNKNOWN;
+			if ($current != static::STATE_UNKNOWN) {
+				continue;
+			}
+			$prev = intval($prev);
+			if ($prev == static::STATE_SUCCESS || $prev == static::STATE_ERROR) {
+				$workerStates[$worker_id] = $prev;
+			}
+		}
+		return $workerStates;
+	}
+
+	/**
+	 * Map a Bootstrap status class into folder aggregation flags.
+	 *
+	 * @param-out bool $has_error
+	 * @param-out bool $has_success
+	 * @param-out bool $has_warning
+	 * @param-out bool $has_unknown
+	 */
+	static public function classifyStatusClass(string $class, bool &$has_error, bool &$has_success, bool &$has_warning, bool &$has_unknown): void {
+		if ($class === 'bg-danger') {
+			$has_error = true;
+		} elseif ($class === 'bg-success') {
+			$has_success = true;
+		} elseif ($class === 'bg-warning') {
+			$has_warning = true;
+		} else {
+			$has_unknown = true;
+		}
 	}
 
 	/**
@@ -112,7 +155,8 @@ class MonitoringLogs extends \DB\MySQLObject {
 	}
 
 	/**
-	 * Cheap dashboard dirty marker: changes when any log or event row is inserted.
+	 * Cheap dashboard dirty marker: changes when any log/event is inserted
+	 * or the wall-clock minute rolls (so open-slot bars advance in sync).
 	 *
 	 * @return array{version:string}
 	 */
@@ -130,7 +174,7 @@ class MonitoringLogs extends \DB\MySQLObject {
 			$maxEventId = intval($rows[0]['max_id']);
 		}
 		return [
-			'version' => $maxLogId.':'.$maxEventId,
+			'version' => $maxLogId.':'.$maxEventId.':'.intval(time() / 60),
 		];
 	}
 
@@ -287,26 +331,22 @@ class MonitoringLogs extends \DB\MySQLObject {
 					$has_success = false;
 					$has_unknown = false;
 					$has_warning = false;
+					$prevSlot = $i - $repeat;
 					foreach($monitor['children'] as $child) {
-						if (!isset($child['states'][$i]) || !isset($child['states'][$i]['class'])) {
-							if ($isOpen) {
-								$has_success = true;
-							} else {
-								$has_unknown = true;
+						$class = '';
+						if (isset($child['states'][$i]['class'])) {
+							$class = strval($child['states'][$i]['class']);
+						}
+						// Open minute without child data: inherit previous child class.
+						if ($class === '' || $class === 'bg-secondary') {
+							if ($isOpen && isset($child['states'][$prevSlot]['class'])) {
+								$prevClass = strval($child['states'][$prevSlot]['class']);
+								if ($prevClass !== '' && $prevClass !== 'bg-secondary') {
+									$class = $prevClass;
+								}
 							}
-							continue;
 						}
-						if ($child['states'][$i]['class'] == 'bg-danger') {
-							$has_error = true;
-						} elseif ($child['states'][$i]['class'] == 'bg-success') {
-							$has_success = true;
-						} elseif ($child['states'][$i]['class'] == 'bg-warning') {
-							$has_warning = true;
-						} elseif ($isOpen) {
-							$has_success = true;
-						} else {
-							$has_unknown = true;
-						}
+						static::classifyStatusClass($class, $has_error, $has_success, $has_warning, $has_unknown);
 					}
 					if (isset($monitor['maintenances']) && $monitor['maintenances']) {
 						$monitor['states'][$i]['class'] = 'bg-primary';
@@ -334,6 +374,7 @@ class MonitoringLogs extends \DB\MySQLObject {
 				$last_class = '';
 				$now = time();
 				$repeat = intval($monitor['repeat_seconds']);
+				$previousWorkers = [];
 				for($i=$monitor['min_time']; $i<=$monitor['max_time']; $i+=$repeat) {
 					if ($i > $now) continue;
 					$isOpen = static::isOpenInterval($i, $repeat, $now);
@@ -345,16 +386,22 @@ class MonitoringLogs extends \DB\MySQLObject {
 						$workers[$worker_id] = $start_time;
 					}
 					$monitor['states'][$i]['workers'] ??= [];
+					$workerStates = $monitor['states'][$i]['workers'];
+					// Current minute with no data yet: reuse previous worker states.
+					if ($isOpen && $previousWorkers) {
+						$workerStates = static::fillUnknownFromPrevious($workerStates, $previousWorkers);
+					}
 					$counts = static::countWorkerStatesForSlot(
 						$workers,
-						$monitor['states'][$i]['workers'],
-						$isOpen
+						$workerStates,
+						false
 					);
 					$monitor['states'][$i]['class'] = static::classForCountedStates(
 						$counts['error'],
 						$counts['success'],
 						isset($monitor['maintenances']) && $monitor['maintenances']
 					);
+					$previousWorkers = $monitor['states'][$i]['workers'];
 					$last_class = $monitor['states'][$i]['class'];
 				}
 				$monitor['badge_class'] = $last_class;
@@ -479,7 +526,7 @@ class MonitoringLogs extends \DB\MySQLObject {
 			$repeat = intval($monitor['repeat_seconds']);
 			for($i=$monitor['min_time']; $i<=$monitor['max_time']; $i+=$repeat) {
 				if ($i > $now) continue;
-				// Include the still-open current interval; UNKNOWN there is optimistic green later.
+				// Include the still-open current interval; UNKNOWN inherits previous later.
 				$monitor['states'][$i] = [
 					'class' => '',
 					'title' => date("Y-m-d H:i:s",$i),
@@ -693,7 +740,7 @@ class MonitoringLogs extends \DB\MySQLObject {
 			for($i=$max_time - 60*60; $i <= $max_time; $i+=$repeat) {
 				$time = intval($i / $repeat) * $repeat;
 				if ($time > $now) continue;
-				// Seed the open current interval too; missing workers render optimistic green in UI.
+				// Seed the open current interval too; UI inherits previous worker status if empty.
 				$logs_hash[$time] = [
 					'title' => date("Y-m-d H:i:s",$time),
 				];
@@ -713,7 +760,7 @@ class MonitoringLogs extends \DB\MySQLObject {
 				$logs_hash[$intervalTime][$item['worker_id']] = $item;
 				$last_data[$item['worker_id']] = $item;
 			}
-			// Keep the open interval even when empty — UI paints missing workers as optimistic green.
+			// Keep the open interval even when empty — UI inherits previous worker status.
 			$return['logs'] = $logs_hash;
 
 			$interval = intval($monitor['repeat_seconds']);

@@ -90,16 +90,41 @@ class MonitoringLogsMetricTest extends PHPUnit\Framework\TestCase {
 		$this->assertFalse(\MonitoringLogs::isOpenInterval(960, 0, 1000));
 	}
 
-	function test_open_unknown_is_optimistic_green() {
+	function test_open_unknown_inherits_previous_worker_states() {
 		$workers = [1 => 1, 2 => 1, 3 => 1];
-		$states = [
+		$openStates = [
 			1 => \MonitoringLogs::STATE_SUCCESS,
 			// 2 and 3 still unknown in the open minute
 		];
-		$counts = \MonitoringLogs::countWorkerStatesForSlot($workers, $states, true);
-		$this->assertSame(0, $counts['error']);
-		$this->assertSame(3, $counts['success']);
+		$previous = [
+			1 => \MonitoringLogs::STATE_SUCCESS,
+			2 => \MonitoringLogs::STATE_ERROR,
+			3 => \MonitoringLogs::STATE_ERROR,
+		];
+		$filled = \MonitoringLogs::fillUnknownFromPrevious($openStates, $previous);
+		$this->assertSame(\MonitoringLogs::STATE_SUCCESS, $filled[1]);
+		$this->assertSame(\MonitoringLogs::STATE_ERROR, $filled[2]);
+		$this->assertSame(\MonitoringLogs::STATE_ERROR, $filled[3]);
+
+		$counts = \MonitoringLogs::countWorkerStatesForSlot($workers, $filled, false);
+		$this->assertSame(2, $counts['error']);
+		$this->assertSame(1, $counts['success']);
 		$this->assertSame(0, $counts['unknown']);
+		$this->assertSame(
+			'bg-danger',
+			\MonitoringLogs::classForCountedStates($counts['error'], $counts['success'])
+		);
+	}
+
+	function test_open_unknown_without_previous_stays_grey() {
+		$workers = [1 => 1, 2 => 1, 3 => 1];
+		$states = [
+			1 => \MonitoringLogs::STATE_SUCCESS,
+		];
+		$counts = \MonitoringLogs::countWorkerStatesForSlot($workers, $states, false);
+		$this->assertSame(0, $counts['error']);
+		$this->assertSame(1, $counts['success']);
+		$this->assertSame(2, $counts['unknown']);
 		$this->assertSame(
 			'bg-success',
 			\MonitoringLogs::classForCountedStates($counts['error'], $counts['success'])
@@ -130,13 +155,18 @@ class MonitoringLogsMetricTest extends PHPUnit\Framework\TestCase {
 		);
 	}
 
-	function test_real_fail_wins_over_optimistic_unknown() {
+	function test_real_fail_with_inherited_previous() {
 		$workers = [1 => 1, 2 => 1, 3 => 1];
 		$states = [
 			1 => \MonitoringLogs::STATE_ERROR,
-			// 2,3 unknown → optimistic success
+			// 2,3 unknown → inherit previous success
 		];
-		$counts = \MonitoringLogs::countWorkerStatesForSlot($workers, $states, true);
+		$previous = [
+			2 => \MonitoringLogs::STATE_SUCCESS,
+			3 => \MonitoringLogs::STATE_SUCCESS,
+		];
+		$filled = \MonitoringLogs::fillUnknownFromPrevious($states, $previous);
+		$counts = \MonitoringLogs::countWorkerStatesForSlot($workers, $filled, false);
 		$this->assertSame(1, $counts['error']);
 		$this->assertSame(2, $counts['success']);
 		$this->assertSame(
@@ -148,7 +178,7 @@ class MonitoringLogsMetricTest extends PHPUnit\Framework\TestCase {
 			1 => \MonitoringLogs::STATE_ERROR,
 			2 => \MonitoringLogs::STATE_ERROR,
 		];
-		$countsFail = \MonitoringLogs::countWorkerStatesForSlot($workers, $statesMajorityFail, true);
+		$countsFail = \MonitoringLogs::countWorkerStatesForSlot($workers, $statesMajorityFail, false);
 		$this->assertSame(
 			'bg-danger',
 			\MonitoringLogs::classForCountedStates($countsFail['error'], $countsFail['success'])
