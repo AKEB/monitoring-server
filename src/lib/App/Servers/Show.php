@@ -229,7 +229,7 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 					<tr>
 						<th scope="row" class="align-middle"><?=$id;?></th>
 						<td class="align-middle"><?=$title;?></td>
-						<td class="align-middle text-center">
+						<td class="align-middle text-center" data-order="<?=$online ? '1' : '0';?>">
 							<?=$online
 								? '<i class="bi bi-circle-fill text-success" title="online"></i>'
 								: '<i class="bi bi-circle-fill text-danger" title="offline"></i>';?>

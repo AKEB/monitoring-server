@@ -141,6 +141,14 @@ div.text-success>input {
 	height: 280px;
 }
 
+.ServerTempChart,
+.ServerUptimeChart,
+.ServerDockerCpuChart,
+.ServerDockerMemChart {
+	width: 100%;
+	height: 280px;
+}
+
 .fs-7 {
 	font-size: 0.875rem;
 }
