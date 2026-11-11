@@ -39,9 +39,23 @@ No `server_time` / `server_microtime`.
 
 ## `state/` request
 
-- Monitors: `jobs[]` with `response` (`status_code`, `json_valid`, `cert_expire`, …). No `response_body`.
+- Monitors: `jobs[]` with `response` (`status_code`, `json_valid`, `cert_expire`, `response_error`, `response_error_num`, …). No `response_body`.
 - Docker: `dockers[]` with `response.status_code` (HTTP status from Engine API), `response.container_states` (not raw Engine API `body`), and optional `response.engine_info` from Engine `GET /version` (`Version`, `ApiVersion`, `MinAPIVersion`, `Os`, `Arch`, `KernelVersion`). Server stores per-worker poll outcome on `monitoring_dockers` and, on success, updates `dockers.container_states` / `last_success_*` / `engine_info` (does not overwrite `dockers.update_time`). Container monitor logs store that HTTP code in `monitoring_logs.status_code` (UI tooltips).
 - Omit empty `jobs` / `dockers` keys when not sending that kind of result.
+
+### HTTP probe `response` semantics
+
+- `status_code`: real HTTP status when a response was received; **`0` means no HTTP response** (DNS/dial/TLS/timeout). Transport failures are never remapped to `502`/`504`.
+- `response_error`: human-readable reason (truncated ~240 chars). For HTTP 4xx/5xx: `HTTP 502 Bad Gateway` plus optional body snippet; overridden by response header `Log:` when present.
+- `response_error_num` for transport failures (no HTTP response):
+  - `408` — timeout
+  - `601` — DNS
+  - `603` — connection refused
+  - `604` — network unreachable
+  - `605` — connection reset
+  - `606` — TLS / certificate
+  - `2` — other transport error
+  - for a real HTTP error response, equals `status_code` (e.g. `502`)
 
 ## Deployment order
 

@@ -328,6 +328,8 @@ class State extends \Routing_Parent implements \Routing_Interface {
 				(in_array(5, $monitor['response_code']) && $job_response['response']['status_code'] >= 500 && $job_response['response']['status_code'] < 600)
 			) {
 				$status = \MonitoringLogs::STATUS_GOOD;
+			} elseif (!isset($job_response['response']['response_error']) || !$job_response['response']['response_error']) {
+				$job_response['response']['response_error'] = 'Unexpected HTTP status code: '.intval($job_response['response']['status_code'] ?? 0);
 			}
 		} elseif ($monitor['type'] == \Monitors::TYPE_HTTP_JSON) {
 			$httpStatusGood =
