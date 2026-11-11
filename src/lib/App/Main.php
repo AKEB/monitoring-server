@@ -68,6 +68,7 @@ class Main extends \Routing_Parent implements \Routing_Interface {
 				$('footer').addClass('footer-main');
 				list_dashboard_mobile(<?=$this->monitor_id ? 'true' : 'false';?>);
 				MonitorsUpdate();
+				MonitorsDirtyCheck();
 				MonitorsCollapse();
 				<?php if ($this->monitor_id) { ?>
 					MonitorShowData(<?=$this->monitor_id;?>);

@@ -12,6 +12,7 @@ Menu:
   Home: "Home"
   ApiTokens: "API"
   Maintenances: "Maintenances"
+  Events: "Events"
 
 Worker:
   Menu: "Workers"
@@ -443,6 +444,31 @@ Server:
     EffectiveDesired: "Effective target: %s"
     RequestNow: "Update agent now"
     Requested: "Update queued — agent will pull on the next report"
+
+Events:
+  Menu: "Events"
+  PageTitle: "Events"
+  Empty: "No events found"
+  Filter:
+    From: "From"
+    To: "To"
+    Monitor: "Monitor"
+    Worker: "Worker"
+    Status: "Status"
+    All: "All"
+    Error: "Response error"
+    ErrorPlaceholder: "Search in error text"
+    PerPage: "Per page"
+    Apply: "Apply"
+  Table:
+    Status: "Status"
+    Monitor: "Monitor"
+    Worker: "Worker"
+    Time: "Time"
+    StatusCode: "Status code"
+    ResponseError: "Response error"
+  Pagination:
+    Total: "Total: %d"
 
 Maintenances:
   Menu: "Maintenances"

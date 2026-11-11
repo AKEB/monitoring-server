@@ -82,4 +82,80 @@ class MonitoringLogsMetricTest extends PHPUnit\Framework\TestCase {
 		$this->assertArrayHasKey(840, $logs);
 		$this->assertArrayHasKey(900, $logs);
 	}
+
+	function test_is_open_interval() {
+		$this->assertTrue(\MonitoringLogs::isOpenInterval(960, 60, 1000));
+		$this->assertFalse(\MonitoringLogs::isOpenInterval(900, 60, 1000));
+		$this->assertFalse(\MonitoringLogs::isOpenInterval(1020, 60, 1000));
+		$this->assertFalse(\MonitoringLogs::isOpenInterval(960, 0, 1000));
+	}
+
+	function test_open_unknown_is_optimistic_green() {
+		$workers = [1 => 1, 2 => 1, 3 => 1];
+		$states = [
+			1 => \MonitoringLogs::STATE_SUCCESS,
+			// 2 and 3 still unknown in the open minute
+		];
+		$counts = \MonitoringLogs::countWorkerStatesForSlot($workers, $states, true);
+		$this->assertSame(0, $counts['error']);
+		$this->assertSame(3, $counts['success']);
+		$this->assertSame(0, $counts['unknown']);
+		$this->assertSame(
+			'bg-success',
+			\MonitoringLogs::classForCountedStates($counts['error'], $counts['success'])
+		);
+	}
+
+	function test_closed_unknown_stays_grey() {
+		$workers = [1 => 1, 2 => 1];
+		$allUnknown = \MonitoringLogs::countWorkerStatesForSlot($workers, [], false);
+		$this->assertSame(0, $allUnknown['error']);
+		$this->assertSame(0, $allUnknown['success']);
+		$this->assertSame(2, $allUnknown['unknown']);
+		$this->assertSame(
+			'bg-secondary',
+			\MonitoringLogs::classForCountedStates($allUnknown['error'], $allUnknown['success'])
+		);
+
+		// Partial report on a closed slot: known success still wins (legacy rule).
+		$partial = \MonitoringLogs::countWorkerStatesForSlot(
+			$workers,
+			[1 => \MonitoringLogs::STATE_SUCCESS],
+			false
+		);
+		$this->assertSame(1, $partial['unknown']);
+		$this->assertSame(
+			'bg-success',
+			\MonitoringLogs::classForCountedStates($partial['error'], $partial['success'])
+		);
+	}
+
+	function test_real_fail_wins_over_optimistic_unknown() {
+		$workers = [1 => 1, 2 => 1, 3 => 1];
+		$states = [
+			1 => \MonitoringLogs::STATE_ERROR,
+			// 2,3 unknown → optimistic success
+		];
+		$counts = \MonitoringLogs::countWorkerStatesForSlot($workers, $states, true);
+		$this->assertSame(1, $counts['error']);
+		$this->assertSame(2, $counts['success']);
+		$this->assertSame(
+			'bg-warning',
+			\MonitoringLogs::classForCountedStates($counts['error'], $counts['success'])
+		);
+
+		$statesMajorityFail = [
+			1 => \MonitoringLogs::STATE_ERROR,
+			2 => \MonitoringLogs::STATE_ERROR,
+		];
+		$countsFail = \MonitoringLogs::countWorkerStatesForSlot($workers, $statesMajorityFail, true);
+		$this->assertSame(
+			'bg-danger',
+			\MonitoringLogs::classForCountedStates($countsFail['error'], $countsFail['success'])
+		);
+	}
+
+	function test_monitor_data_cache_gen_key() {
+		$this->assertSame('monitor_data_gen_58', \MonitoringLogs::monitorDataCacheGenKey(58));
+	}
 }

@@ -81,6 +81,14 @@ class T {
 	public static function Menu_Maintenances(...$argv): string { return ''; }
 
 	/**
+	 * Menu_Events
+	 * 
+	 * @return string "Events"
+	 * @return string "События"
+	 */
+	public static function Menu_Events(...$argv): string { return ''; }
+
+	/**
 	 * Worker_Menu
 	 * 
 	 * @return string "Workers"
@@ -3159,6 +3167,166 @@ class T {
 	 * @return string "Обновление поставлено в очередь — агент подтянет на следующем отчёте"
 	 */
 	public static function Server_Update_Requested(...$argv): string { return ''; }
+
+	/**
+	 * Events_Menu
+	 * 
+	 * @return string "Events"
+	 * @return string "События"
+	 */
+	public static function Events_Menu(...$argv): string { return ''; }
+
+	/**
+	 * Events_PageTitle
+	 * 
+	 * @return string "Events"
+	 * @return string "События"
+	 */
+	public static function Events_PageTitle(...$argv): string { return ''; }
+
+	/**
+	 * Events_Empty
+	 * 
+	 * @return string "No events found"
+	 * @return string "События не найдены"
+	 */
+	public static function Events_Empty(...$argv): string { return ''; }
+
+	/**
+	 * Events_Filter_From
+	 * 
+	 * @return string "From"
+	 * @return string "С"
+	 */
+	public static function Events_Filter_From(...$argv): string { return ''; }
+
+	/**
+	 * Events_Filter_To
+	 * 
+	 * @return string "To"
+	 * @return string "По"
+	 */
+	public static function Events_Filter_To(...$argv): string { return ''; }
+
+	/**
+	 * Events_Filter_Monitor
+	 * 
+	 * @return string "Monitor"
+	 * @return string "Монитор"
+	 */
+	public static function Events_Filter_Monitor(...$argv): string { return ''; }
+
+	/**
+	 * Events_Filter_Worker
+	 * 
+	 * @return string "Worker"
+	 * @return string "Обработчик"
+	 */
+	public static function Events_Filter_Worker(...$argv): string { return ''; }
+
+	/**
+	 * Events_Filter_Status
+	 * 
+	 * @return string "Status"
+	 * @return string "Статус"
+	 */
+	public static function Events_Filter_Status(...$argv): string { return ''; }
+
+	/**
+	 * Events_Filter_All
+	 * 
+	 * @return string "All"
+	 * @return string "Все"
+	 */
+	public static function Events_Filter_All(...$argv): string { return ''; }
+
+	/**
+	 * Events_Filter_Error
+	 * 
+	 * @return string "Response error"
+	 * @return string "Ошибка ответа"
+	 */
+	public static function Events_Filter_Error(...$argv): string { return ''; }
+
+	/**
+	 * Events_Filter_ErrorPlaceholder
+	 * 
+	 * @return string "Search in error text"
+	 * @return string "Поиск по тексту ошибки"
+	 */
+	public static function Events_Filter_ErrorPlaceholder(...$argv): string { return ''; }
+
+	/**
+	 * Events_Filter_PerPage
+	 * 
+	 * @return string "Per page"
+	 * @return string "На странице"
+	 */
+	public static function Events_Filter_PerPage(...$argv): string { return ''; }
+
+	/**
+	 * Events_Filter_Apply
+	 * 
+	 * @return string "Apply"
+	 * @return string "Применить"
+	 */
+	public static function Events_Filter_Apply(...$argv): string { return ''; }
+
+	/**
+	 * Events_Table_Status
+	 * 
+	 * @return string "Status"
+	 * @return string "Статус"
+	 */
+	public static function Events_Table_Status(...$argv): string { return ''; }
+
+	/**
+	 * Events_Table_Monitor
+	 * 
+	 * @return string "Monitor"
+	 * @return string "Монитор"
+	 */
+	public static function Events_Table_Monitor(...$argv): string { return ''; }
+
+	/**
+	 * Events_Table_Worker
+	 * 
+	 * @return string "Worker"
+	 * @return string "Обработчик"
+	 */
+	public static function Events_Table_Worker(...$argv): string { return ''; }
+
+	/**
+	 * Events_Table_Time
+	 * 
+	 * @return string "Time"
+	 * @return string "Время"
+	 */
+	public static function Events_Table_Time(...$argv): string { return ''; }
+
+	/**
+	 * Events_Table_StatusCode
+	 * 
+	 * @return string "Status code"
+	 * @return string "Код ответа"
+	 */
+	public static function Events_Table_StatusCode(...$argv): string { return ''; }
+
+	/**
+	 * Events_Table_ResponseError
+	 * 
+	 * @return string "Response error"
+	 * @return string "Ошибка ответа"
+	 */
+	public static function Events_Table_ResponseError(...$argv): string { return ''; }
+
+	/**
+	 * Events_Pagination_Total
+	 * 
+	 * @return string "Total: %d"
+	 * @return string "Всего: %d"
+	 */
+	public static function Events_Pagination_Total(...$argv): string { return ''; }
 
 	/**
 	 * Maintenances_Menu

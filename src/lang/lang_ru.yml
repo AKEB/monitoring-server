@@ -11,6 +11,7 @@ Status:
 Menu:
   Home: "Главная"
   ApiTokens: "API"
+  Events: "События"
 
 Worker:
   Menu: "Обработчики"
@@ -438,6 +439,31 @@ Server:
     EffectiveDesired: "Эффективная цель: %s"
     RequestNow: "Обновить агент сейчас"
     Requested: "Обновление поставлено в очередь — агент подтянет на следующем отчёте"
+
+Events:
+  Menu: "События"
+  PageTitle: "События"
+  Empty: "События не найдены"
+  Filter:
+    From: "С"
+    To: "По"
+    Monitor: "Монитор"
+    Worker: "Обработчик"
+    Status: "Статус"
+    All: "Все"
+    Error: "Ошибка ответа"
+    ErrorPlaceholder: "Поиск по тексту ошибки"
+    PerPage: "На странице"
+    Apply: "Применить"
+  Table:
+    Status: "Статус"
+    Monitor: "Монитор"
+    Worker: "Обработчик"
+    Time: "Время"
+    StatusCode: "Код ответа"
+    ResponseError: "Ошибка ответа"
+  Pagination:
+    Total: "Всего: %d"
 
 Maintenances:
   Menu: "Тех. работы"

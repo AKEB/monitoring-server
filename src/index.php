@@ -71,6 +71,7 @@ require_once("./autoload.php");
 \Template::addJSFile('/js/main.js');
 
 \Template::addMenuItem(new \MenuItem('', \T::Menu_Home(), '/', null, null));
+\Template::addMenuItem(new \MenuItem('bi bi-journal-text', \T::Events_Menu(), '/events/', null, null));
 \Template::addMenuItem(new \MenuItem('bi bi-key', \T::Menu_ApiTokens(), '/settings/api/', null, null));
 \Template::addMenuItem(new \MenuItem('bi bi-hammer', \T::Maintenances_Menu(), '/maintenances/', null, null));
 \Template::addMenuAdminItem(new \MenuItem('bi bi-hdd-network', \T::Worker_Menu(), '/admin/workers/', null, [
@@ -101,6 +102,7 @@ require_once("./autoload.php");
 // Add another Websocket item
 \Websocket::addAction('monitors_update', '\\MonitorsWebsocket');
 \Websocket::addAction('monitor_show_data', '\\MonitorsWebsocket');
+\Websocket::addAction('monitors_dirty', '\\MonitorsWebsocket');
 
 // ADD Another Routes
 // API/MCP first: framework matches routes as URI suffixes (`preg_match('~'.$route.'$~')`),
@@ -145,6 +147,8 @@ require_once("./autoload.php");
 \Routes::addRoute('/maintenances/edit/', '\\App\\Maintenances\\Edit');
 \Routes::addRoute('/maintenances/(?P<action>[^/]+)/(?P<maintenance_id>\d+)/', '\\App\\Maintenances\\Show');
 \Routes::addRoute('/maintenances/', '\\App\\Maintenances\\Show');
+
+\Routes::addRoute('/events/', '\\App\\Events\\Show');
 
 \Routes::addRoute('/admin/dockers/edit/(?P<docker_id>\d+)/', '\\App\\Dockers\\Edit');
 \Routes::addRoute('/admin/dockers/edit/', '\\App\\Dockers\\Edit');

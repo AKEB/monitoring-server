@@ -2,7 +2,10 @@
 let monitorShowTimeout;
 let monitorUpdateTimeout;
 let monitorSearchTimeout;
+let monitorDirtyTimeout;
 let selectedMonitorId;
+let selectedMonitorPeriod = 1;
+let monitorDirtyVersion = null;
 let monitorChart;
 
 /** Matches Monitors::TYPE_EXTERNAL — no response-time metrics/chart. */
@@ -206,10 +209,39 @@ function MonitorsUpdate(count=25) {
 			filterAndHideMonitors();
 		}
 	});
-	// Установка таймаута для следующего обновления через 30 секунд
+	// Safety-net full refresh; dirty-check triggers earlier updates on change.
 	monitorUpdateTimeout = setTimeout(function() {
 		MonitorsUpdate(4);
 	}, 30000);
+}
+
+/**
+ * Cheap version poll: full list/detail refresh only when logs/events changed.
+ */
+function MonitorsDirtyCheck() {
+	clearTimeout(monitorDirtyTimeout);
+	if (typeof wss === 'undefined' || !wss) {
+		monitorDirtyTimeout = setTimeout(MonitorsDirtyCheck, 5000);
+		return;
+	}
+	wss.send('monitors_dirty', {}, (response) => {
+		const payload = response && response.message;
+		const version = payload && payload.version != null ? String(payload.version) : null;
+		if (version !== null) {
+			if (monitorDirtyVersion === null) {
+				monitorDirtyVersion = version;
+			} else if (version !== monitorDirtyVersion) {
+				monitorDirtyVersion = version;
+				MonitorsUpdate(4);
+				if (selectedMonitorId) {
+					const periodEl = document.getElementById('chart-period');
+					const period = periodEl ? periodEl.value : selectedMonitorPeriod;
+					MonitorShowData(selectedMonitorId, period);
+				}
+			}
+		}
+	});
+	monitorDirtyTimeout = setTimeout(MonitorsDirtyCheck, 5000);
 }
 
 /**
@@ -351,6 +383,8 @@ function updateMonitorWorkersLogs(data) {
 	const monitorWorkersLogs = $('#monitor-workers-logs');
 	const keys = Object.keys(data.logs).sort((a, b) => a - b);
 	const last40Keys = keys.slice(-40);
+	const repeat = parseInt(data.monitor && data.monitor.repeat_seconds, 10) || 60;
+	const now = Math.floor(Date.now() / 1000);
 	// Генерация HTML для каждого воркера
 	HTML = '';
 	for (let worker_id in data.workers) {
@@ -361,8 +395,10 @@ function updateMonitorWorkersLogs(data) {
 				HTML += '<div class="wrap"><div class="monitor-states-big" data-monitor-id="7">';
 					for (let i in last40Keys) {
 						const time = last40Keys[i];
+						const slotStart = parseInt(time, 10);
 						const log_workers = data.logs[time];
 						const log = log_workers[worker_id];
+						const isOpenSlot = slotStart <= now && (slotStart + repeat) > now;
 						let className = 'bg-secondary';
 						let title = log_workers.title;
 						if (log) {
@@ -372,6 +408,9 @@ function updateMonitorWorkersLogs(data) {
 								className = "bg-success";
 							}
 							title = log.title;
+						} else if (isOpenSlot) {
+							// Still collecting this minute — treat missing worker as OK.
+							className = "bg-success";
 						}
 						if (data.monitor.maintenances) {
 							// Собираем все заголовки обслуживания в одну строку
@@ -434,60 +473,141 @@ function updateMonitorLastInfo(data) {
 	container.empty().html(HTML);
 }
 
+/**
+ * Builds one events table row (HTML string) with data-event-id for incremental updates.
+ * @param {Object} event
+ * @param {Object} data
+ * @param {boolean} showMonitor
+ * @returns {string}
+ */
+function buildMonitorEventRowHtml(event, data, showMonitor) {
+	const icon = event.status == 1
+		? '<i class="bi bi-check-square text-success"></i>'
+		: '<i class="bi bi-exclamation-square text-danger"></i>';
+	const worker = data.workers[event.worker_id] && data.workers[event.worker_id]['title']
+		? data.workers[event.worker_id]['title']
+		: 'Unknown worker';
+	let monitor = '';
+	if (event.monitor_id && data.monitors && data.monitors[event.monitor_id] && data.monitors[event.monitor_id]['title']) {
+		monitor = data.monitors[event.monitor_id]['title'];
+	}
+	const eventId = event.id ? String(event.id) : '';
+	let HTML = '<tr data-event-id="'+eventId+'">';
+	HTML += '<td>'+icon+'</td>';
+	if (showMonitor) {
+		HTML += '<td>'+monitor+'</td>';
+	}
+	HTML += '<td>'+worker+'</td>';
+	HTML += '<td>'+event.event_time+'</td>';
+	HTML += '<td>'+event.status_code+'</td>';
+	HTML += '<td>'+(event.response_error ? event.response_error : '')+'</td>';
+	HTML += '</tr>';
+	return HTML;
+}
+
+/**
+ * History page URL for the events table link (optionally scoped to a monitor).
+ * @param {Object} data
+ * @returns {string}
+ */
+function monitorEventsHistoryUrl(data) {
+	const monitorId = data && data.monitor && data.monitor.id ? parseInt(data.monitor.id, 10) : 0;
+	if (monitorId > 0) {
+		return '/events/?monitor_id=' + monitorId;
+	}
+	return '/events/';
+}
+
 function updateMonitorEvents(data) {
-	if (!data.events || data.events.length < 1) return;
 	const container = $('#monitor-events');
-	HTML = '';
+	if (!container.length) return;
+
+	const events = Array.isArray(data.events) ? data.events : [];
+	const showMonitor = !data.monitor || !data.monitor.id;
+	const historyUrl = monitorEventsHistoryUrl(data);
+
+	if ($.fn.DataTable.isDataTable('#Table')) {
+		const table = $('#Table').DataTable();
+		const incomingIds = new Set();
+		events.forEach((event) => {
+			if (event && event.id) incomingIds.add(String(event.id));
+		});
+
+		const existingIds = new Set();
+		const rowsToRemove = [];
+		table.rows().every(function() {
+			const id = String($(this.node()).attr('data-event-id') || '');
+			if (id) existingIds.add(id);
+			if (!id || !incomingIds.has(id)) {
+				rowsToRemove.push(this);
+			}
+		});
+		rowsToRemove.forEach((row) => row.remove());
+
+		const newEvents = events.filter((event) => event && event.id && !existingIds.has(String(event.id)));
+		if (newEvents.length > 0) {
+			const pageInfo = table.page.info();
+			const remainingNodes = [];
+			table.rows({ order: 'current' }).every(function() {
+				remainingNodes.push(this.node());
+			});
+			table.clear();
+			newEvents.forEach((event) => {
+				table.row.add($(buildMonitorEventRowHtml(event, data, showMonitor))[0]);
+			});
+			remainingNodes.forEach((node) => table.row.add(node));
+			table.draw(false);
+			if (pageInfo && pageInfo.pages > 0) {
+				const page = Math.min(pageInfo.page, Math.max(0, table.page.info().pages - 1));
+				table.page(page).draw(false);
+			}
+		} else {
+			table.draw(false);
+		}
+
+		const historyLink = container.find('.monitor-events-history-link');
+		if (historyLink.length) {
+			historyLink.attr('href', historyUrl);
+		}
+		return;
+	}
+
+	if (events.length < 1) {
+		container.empty();
+		return;
+	}
+
+	let HTML = '';
 	HTML += '<div class="card monitor-events-card mb-3">';
 	HTML += '<div class="card-body">';
+	HTML += '<div class="d-flex justify-content-between align-items-center mb-2">';
+	HTML += '<div></div>';
+	HTML += '<a class="monitor-events-history-link small" href="'+historyUrl+'">'+Dashboard_Events_History+'</a>';
+	HTML += '</div>';
 	HTML += '<table class="table table-transparent table-responsive" id="Table">';
 
 	HTML += '<thead class=""><tr>';
 	HTML += '<th scope="col" class="align-middle" data-priority="1">'+Dashboard_Events_Status+'</th>';
-	if (!data.monitor.id) {
+	if (showMonitor) {
 		HTML += '<th scope="col" class="align-middle" data-priority="2">'+Dashboard_Events_Monitor+'</th>';
 	}
 	HTML += '<th scope="col" class="align-middle" data-priority="3">'+Dashboard_Events_Worker+'</th>';
 	HTML += '<th scope="col" class="align-middle" data-priority="4">'+Dashboard_Events_Time+'</th>';
 	HTML += '<th scope="col" class="align-middle" data-priority="5">'+Dashboard_Events_StatusCode+'</th>';
 	HTML += '<th scope="col" class="align-middle" data-priority="6">'+Dashboard_Events_ResponseError+'</th>';
-	HTML += '</tr></thead>';
+	HTML += '</tr></thead><tbody>';
 
-	for (let i in data.events) {
-		const event = data.events[i];
-		const icon = event.status == 1 ? '<i class="bi bi-check-square text-success"></i>' : '<i class="bi bi-exclamation-square text-danger"></i>';
-		const worker = data.workers[event.worker_id] && data.workers[event.worker_id]['title'] ? data.workers[event.worker_id]['title'] : 'Unknown worker';
-		let monitor = '';
-		if (event.monitor_id && data.monitors && data.monitors[event.monitor_id] && data.monitors[event.monitor_id]['title']) {
-			monitor = data.monitors[event.monitor_id]['title'];
-		} else {
-			monitor = '';
-		}
-
-		HTML += '<tr>';
-			HTML += '<td>'+icon+'</td>';
-			if (!data.monitor.id) {
-				HTML += '<td>'+monitor+'</td>';
-			}
-			HTML += '<td>'+worker+'</td>';
-			HTML += '<td>'+event.event_time+'</td>';
-			HTML += '<td>'+event.status_code+'</td>';
-			HTML += '<td>'+(event.response_error ? event.response_error : '')+'</td>';
-		HTML += '</tr>';
+	for (let i = 0; i < events.length; i++) {
+		HTML += buildMonitorEventRowHtml(events[i], data, showMonitor);
 	}
-	HTML += '</table>';
+	HTML += '</tbody></table>';
 	HTML += '</div>';
 	HTML += '</div>';
-	// Проверяем, существует ли уже экземпляр DataTable, и уничтожаем его перед повторной инициализацией
-	if ($.fn.DataTable.isDataTable('#Table')) {
-		$('#Table').DataTable().destroy();
-	}
-	// Очищаем контейнер перед новой отрисовкой, чтобы избежать дублирования
 	container.empty().html(HTML);
 	new DataTable('#Table', {
 		paging: true,
 		searching: false,
-		ordering:  false,
+		ordering: false,
 		info: false,
 	});
 }
@@ -953,6 +1073,7 @@ function updateECharts(data) {
 function MonitorShowData(monitorId, period=1) {
 	clearTimeout(monitorShowTimeout); // Очищаем предыдущий таймаут
 	selectedMonitorId = monitorId;
+	selectedMonitorPeriod = period;
 	wss.send('monitor_show_data',{'monitor_id':monitorId, 'period': period},(response)=>{
 		if (response.message == false) {
 			console.log(response);
@@ -964,7 +1085,7 @@ function MonitorShowData(monitorId, period=1) {
 			}
 		}
 	});
-	// Устанавливаем таймаут для автоматического обновления через 60 секунд
+	// Safety-net refresh; dirty-check refreshes sooner when data changes.
 	monitorShowTimeout = setTimeout(function() {
 		MonitorShowData(monitorId, period);
 	}, 30000);

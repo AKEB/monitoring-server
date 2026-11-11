@@ -14,6 +14,11 @@ class MonitorsWebsocket extends \Websocket_Parent {
 			}
 			$data = \MonitoringLogs::getMonitorData($this->params['monitor_id']??0, floatval($this->params['period']??1.0));
 			return $data;
+		} elseif ($this->action == 'monitors_dirty') {
+			if (!$this->get_currentUser()) {
+				return false;
+			}
+			return \MonitoringLogs::getDashboardDirtyVersion();
 		}
 		return false;
 	}

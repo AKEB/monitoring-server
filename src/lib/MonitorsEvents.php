@@ -93,18 +93,21 @@ class MonitorsEvents extends \DB\MySQLObject {
 		}
 	}
 
-	static public function getEventsForMonitor(int $monitor_id): array {
-		// if (!isset($monitor_id) || !$monitor_id) return [];
+	static public function getEventsForMonitor(int $monitor_id, int $since = 0): array {
+		if ($since <= 0) {
+			$since = time() - 86400;
+		}
 		$sql = '';
 		if ($monitor_id > 0) {
 			$sql .= sql_pholder(' AND `monitor_id` = ?', $monitor_id);
 		}
-		$sql .= sql_pholder(' AND `event_time` >= ?', time() - 2 * 24*60*60);
+		$sql .= sql_pholder(' AND `event_time` >= ?', $since);
 		$sql .= ' ORDER BY event_time DESC';
 		$data = static::data(false, $sql);
 		$data_hash = [];
 		foreach($data as $item) {
 			$event = [
+				'id' => intval($item['id']),
 				'worker_id' => intval($item['worker_id']),
 				'status' => intval($item['status']),
 				'event_time' => date("Y-m-d H:i:s", $item['event_time']),
@@ -119,7 +122,102 @@ class MonitorsEvents extends \DB\MySQLObject {
 			$data_hash[] = $event;
 		}
 		return $data_hash;
+	}
 
+	/**
+	 * Filtered events for history page (server-side pagination).
+	 *
+	 * @param array{
+	 *   from?:int,
+	 *   to?:int,
+	 *   monitor_id?:int,
+	 *   worker_id?:int,
+	 *   status?:int|null,
+	 *   q?:string,
+	 *   page?:int,
+	 *   per_page?:int
+	 * } $filters
+	 * @return array{items:list<array<string,mixed>>,total:int,page:int,per_page:int}
+	 */
+	static public function getEventsFiltered(array $filters): array {
+		$from = intval($filters['from'] ?? 0);
+		$to = intval($filters['to'] ?? 0);
+		$monitor_id = intval($filters['monitor_id'] ?? 0);
+		$worker_id = intval($filters['worker_id'] ?? 0);
+		$status = array_key_exists('status', $filters) && $filters['status'] !== null && $filters['status'] !== ''
+			? intval($filters['status'])
+			: null;
+		$q = trim(strval($filters['q'] ?? ''));
+		$page = max(1, intval($filters['page'] ?? 1));
+		$per_page = intval($filters['per_page'] ?? 50);
+		if ($per_page < 10) $per_page = 10;
+		if ($per_page > 200) $per_page = 200;
+
+		$allowed_monitor_ids = [];
+		if ($monitor_id > 0) {
+			if (!\Sessions::checkPermission(\Monitors::PERMISSION_ACCESS, $monitor_id, READ)) {
+				return ['items' => [], 'total' => 0, 'page' => $page, 'per_page' => $per_page];
+			}
+			$allowed_monitor_ids = [$monitor_id];
+		} else {
+			$monitors = \Monitors::get_hash();
+			foreach ($monitors as $mid => $monitor) {
+				if (intval($monitor['type'] ?? -1) === \Monitors::TYPE_FOLDER) continue;
+				if (!\Sessions::checkPermission(\Monitors::PERMISSION_ACCESS, intval($mid), READ)) continue;
+				$allowed_monitor_ids[] = intval($mid);
+			}
+		}
+		if (!$allowed_monitor_ids) {
+			return ['items' => [], 'total' => 0, 'page' => $page, 'per_page' => $per_page];
+		}
+
+		$sql = sql_pholder(' AND `monitor_id` IN (?@)', $allowed_monitor_ids);
+		if ($from > 0) {
+			$sql .= sql_pholder(' AND `event_time` >= ?', $from);
+		}
+		if ($to > 0) {
+			$sql .= sql_pholder(' AND `event_time` <= ?', $to);
+		}
+		if ($worker_id > 0) {
+			$sql .= sql_pholder(' AND `worker_id` = ?', $worker_id);
+		}
+		if ($status !== null) {
+			$sql .= sql_pholder(' AND `status` = ?', $status);
+		}
+		if ($q !== '') {
+			$sql .= sql_pholder(' AND `response_error` LIKE ?', '%'.$q.'%');
+		}
+
+		$total = static::count(false, $sql);
+		$max_page = max(1, intval(ceil($total / $per_page)));
+		if ($page > $max_page) {
+			$page = $max_page;
+		}
+		$offset = ($page - 1) * $per_page;
+		$sql .= ' ORDER BY `event_time` DESC, `id` DESC';
+		$sql .= ' LIMIT '.intval($per_page).' OFFSET '.intval($offset);
+
+		$data = static::data(false, $sql);
+		$items = [];
+		foreach ($data as $item) {
+			$items[] = [
+				'id' => intval($item['id']),
+				'monitor_id' => intval($item['monitor_id']),
+				'worker_id' => intval($item['worker_id']),
+				'status' => intval($item['status']),
+				'event_time' => date('Y-m-d H:i:s', intval($item['event_time'])),
+				'status_code' => intval($item['status_code']),
+				'response_error_num' => intval($item['response_error_num']),
+				'response_error' => strval($item['response_error']),
+			];
+		}
+
+		return [
+			'items' => $items,
+			'total' => $total,
+			'page' => $page,
+			'per_page' => $per_page,
+		];
 	}
 
 	/**

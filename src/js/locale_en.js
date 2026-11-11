@@ -25,5 +25,6 @@ var Dashboard_Events_Worker="Worker"
 var Dashboard_Events_Time="Time"
 var Dashboard_Events_StatusCode="Status code"
 var Dashboard_Events_ResponseError="Response error"
+var Dashboard_Events_History="Full history"
 
 var Maintenance_Title="Maintenances"
