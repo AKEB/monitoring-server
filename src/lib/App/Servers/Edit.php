@@ -406,22 +406,23 @@ SH;
 				</div>
 				<?php if ($disks) { ?>
 					<h5 class="mt-3"><?=\T::Server_Edit_Disks();?></h5>
-					<table class="table table-sm table-transparent"><thead><tr><th>Mount</th><th>Device</th><th>FS</th><th>Used %</th></tr></thead><tbody>
+					<table class="table table-sm table-transparent" id="serverDisksTable"><thead><tr><th>Mount</th><th>Device</th><th>FS</th><th>Used %</th></tr></thead><tbody>
 					<?php foreach ($disks as $d) {
 						if (!is_array($d)) continue;
+						$usedPct = floatval($d['used_pct'] ?? 0);
 						?>
 						<tr>
 							<td><?=htmlspecialchars(strval($d['mount'] ?? ''));?></td>
 							<td><?=htmlspecialchars(strval($d['device'] ?? ''));?></td>
 							<td><?=htmlspecialchars(strval($d['fstype'] ?? ''));?></td>
-							<td><?=number_format(floatval($d['used_pct'] ?? 0), 1);?>%</td>
+							<td data-order="<?=htmlspecialchars(sprintf('%.3f', $usedPct), ENT_QUOTES, 'UTF-8');?>"><?=number_format($usedPct, 1);?>%</td>
 						</tr>
 					<?php } ?>
 					</tbody></table>
 				<?php } ?>
 				<?php if ($network) { ?>
 					<h5 class="mt-3"><?=\T::Server_Edit_Network();?></h5>
-					<table class="table table-sm table-transparent"><thead><tr><th>Iface</th><th>IPs</th><th>Download Mbps</th><th>Upload Mbps</th></tr></thead><tbody>
+					<table class="table table-sm table-transparent" id="serverNetworkTable"><thead><tr><th>Iface</th><th>IPs</th><th>Download Mbps</th><th>Upload Mbps</th></tr></thead><tbody>
 					<?php foreach ($network as $n) {
 						if (!is_array($n)) continue;
 						$addrs = is_array($n['addrs'] ?? null) ? $n['addrs'] : [];
@@ -431,8 +432,8 @@ SH;
 						<tr>
 							<td><?=htmlspecialchars(strval($n['name'] ?? ''));?></td>
 							<td><small><?=htmlspecialchars(implode(', ', $addrs));?></small></td>
-							<td><?=number_format($rxMbps, 2);?></td>
-							<td><?=number_format($txMbps, 2);?></td>
+							<td data-order="<?=htmlspecialchars(sprintf('%.6f', $rxMbps), ENT_QUOTES, 'UTF-8');?>"><?=number_format($rxMbps, 2);?></td>
+							<td data-order="<?=htmlspecialchars(sprintf('%.6f', $txMbps), ENT_QUOTES, 'UTF-8');?>"><?=number_format($txMbps, 2);?></td>
 						</tr>
 					<?php } ?>
 					</tbody></table>
@@ -485,7 +486,7 @@ SH;
 		<div class="card bg-transparent col-xl-10 p-4 mt-2 mb-3">
 			<div class="card-header bg-transparent"><h4><?=\T::Server_Edit_ListenersTitle();?></h4></div>
 			<div class="card-body table-responsive">
-				<table class="table table-sm table-transparent">
+				<table class="table table-sm table-transparent" id="serverListenersTable">
 					<thead><tr>
 						<th><?=\T::Server_Edit_ListenersProtocol();?></th>
 						<th><?=\T::Server_Edit_ListenersIP();?></th>
@@ -499,10 +500,10 @@ SH;
 						<tr>
 							<td><?=htmlspecialchars(strtoupper($l['protocol']));?></td>
 							<td><code><?=htmlspecialchars($l['ip']);?></code></td>
-							<td><?=intval($l['port']);?></td>
+							<td data-order="<?=intval($l['port']);?>"><?=intval($l['port']);?></td>
 							<td><?=htmlspecialchars($l['service']);?></td>
 							<td><?=htmlspecialchars($l['process']);?></td>
-							<td><?=$l['pid'] > 0 ? intval($l['pid']) : '';?></td>
+							<td data-order="<?=intval($l['pid']);?>"><?=$l['pid'] > 0 ? intval($l['pid']) : '';?></td>
 						</tr>
 					<?php } ?>
 					</tbody>
@@ -796,7 +797,7 @@ SH;
 		<div class="card bg-transparent col-xl-10 p-4 mt-2 mb-3">
 			<div class="card-header bg-transparent"><h4><?=\T::Server_Edit_DockerTitle();?></h4></div>
 			<div class="card-body table-responsive">
-				<table class="table table-sm table-transparent">
+				<table class="table table-sm table-transparent" id="serverDockerTable">
 					<thead><tr><th>Name</th><th>State</th><th>Status</th><th>CPU</th><th>Memory</th><th>Image</th><th>Ports</th><th>ID</th></tr></thead>
 					<tbody>
 					<?php foreach ($containers as $c) {
@@ -816,8 +817,8 @@ SH;
 							<td><?=htmlspecialchars(strval($c['name'] ?? ''));?></td>
 							<td class="<?=$class;?>"><?=htmlspecialchars($state);?></td>
 							<td><?=htmlspecialchars(strval($c['status'] ?? ''));?></td>
-							<td><?=htmlspecialchars($cpuText);?></td>
-							<td><?=htmlspecialchars($memText);?></td>
+							<td data-order="<?=htmlspecialchars(sprintf('%.3f', $cpuPct), ENT_QUOTES, 'UTF-8');?>"><?=htmlspecialchars($cpuText);?></td>
+							<td data-order="<?=$memBytes;?>"><?=htmlspecialchars($memText);?></td>
 							<td><small><?=htmlspecialchars(strval($c['image'] ?? ''));?></small></td>
 							<td><small><?=htmlspecialchars(strval($c['ports'] ?? ''));?></small></td>
 							<td><code><?=htmlspecialchars(strval($c['id'] ?? ''));?></code></td>
@@ -852,7 +853,7 @@ SH;
 				<input type="search" class="form-control form-control-sm w-auto" id="systemdFilter" placeholder="<?=\T::Server_Edit_SystemdFilter();?>">
 			</div>
 			<div class="card-body table-responsive">
-				<table class="table table-sm table-transparent" id="systemdTable">
+				<table class="table table-sm table-transparent" id="serverSystemdTable">
 					<thead><tr>
 						<th>Name</th>
 						<th>State</th>
@@ -874,34 +875,20 @@ SH;
 						$mem = intval($u['mem_bytes'] ?? 0);
 						$memPeak = intval($u['mem_peak_bytes'] ?? 0);
 						?>
-						<tr data-name="<?=htmlspecialchars(strtolower($name), ENT_QUOTES, 'UTF-8');?>">
+						<tr>
 							<td><?=htmlspecialchars($name);?></td>
 							<td class="<?=$class;?>"><?=htmlspecialchars($active);?></td>
 							<td><?=htmlspecialchars($sub);?></td>
-							<td><?=number_format($cpu, 2);?>%</td>
-							<td><?=number_format($cpuPeak, 2);?>%</td>
-							<td><?=$mem > 0 ? htmlspecialchars($this->formatBytes($mem)) : '—';?></td>
-							<td><?=$memPeak > 0 ? htmlspecialchars($this->formatBytes($memPeak)) : '—';?></td>
+							<td data-order="<?=htmlspecialchars(sprintf('%.3f', $cpu), ENT_QUOTES, 'UTF-8');?>"><?=number_format($cpu, 2);?>%</td>
+							<td data-order="<?=htmlspecialchars(sprintf('%.3f', $cpuPeak), ENT_QUOTES, 'UTF-8');?>"><?=number_format($cpuPeak, 2);?>%</td>
+							<td data-order="<?=$mem;?>"><?=$mem > 0 ? htmlspecialchars($this->formatBytes($mem)) : '—';?></td>
+							<td data-order="<?=$memPeak;?>"><?=$memPeak > 0 ? htmlspecialchars($this->formatBytes($memPeak)) : '—';?></td>
 						</tr>
 					<?php } ?>
 					</tbody>
 				</table>
 			</div>
 		</div>
-		<script nonce="<?=\CSP::nonceRandom();?>">
-			(function(){
-				const input = document.getElementById('systemdFilter');
-				const table = document.getElementById('systemdTable');
-				if (!input || !table) return;
-				input.addEventListener('input', function(){
-					const q = (input.value || '').toLowerCase();
-					table.querySelectorAll('tbody tr').forEach(function(tr){
-						const name = tr.getAttribute('data-name') || '';
-						tr.style.display = (!q || name.indexOf(q) >= 0) ? '' : 'none';
-					});
-				});
-			})();
-		</script>
 		<?php
 	}
 
@@ -920,7 +907,7 @@ SH;
 		<div class="card bg-transparent col-xl-10 p-4 mt-2 mb-3">
 			<div class="card-header bg-transparent"><h4><?=$title;?></h4></div>
 			<div class="card-body table-responsive">
-				<table class="table table-sm table-transparent">
+				<table class="table table-sm table-transparent" id="serverProxmoxTable">
 					<thead><tr><th>Type</th><th>VMID</th><th>Name</th><th>Status</th><th>CPU</th><th>RAM</th><th>Disk</th><th>Uptime</th></tr></thead>
 					<tbody>
 					<?php foreach ($guests as $g) {
@@ -940,16 +927,17 @@ SH;
 						$memMax = intval($g['maxmem_bytes'] ?? 0);
 						$diskUsed = intval($g['disk_bytes'] ?? 0);
 						$diskMax = intval($g['maxdisk_bytes'] ?? 0);
+						$uptimeSec = intval($g['uptime_sec'] ?? 0);
 						?>
 						<tr>
 							<td><?=htmlspecialchars($typeLabel);?></td>
-							<td><?=intval($g['vmid'] ?? 0);?></td>
+							<td data-order="<?=intval($g['vmid'] ?? 0);?>"><?=intval($g['vmid'] ?? 0);?></td>
 							<td><?=htmlspecialchars(strval($g['name'] ?? ''));?></td>
 							<td class="<?=$class;?>"><?=htmlspecialchars($status);?></td>
-							<td><?=htmlspecialchars($cpuText);?></td>
-							<td><?=htmlspecialchars($this->formatBytesPair($memUsed, $memMax));?></td>
-							<td><?=htmlspecialchars($this->formatBytesPair($diskUsed, $diskMax));?></td>
-							<td><?=htmlspecialchars($this->formatUptime(intval($g['uptime_sec'] ?? 0)));?></td>
+							<td data-order="<?=htmlspecialchars(sprintf('%.3f', $cpuPct), ENT_QUOTES, 'UTF-8');?>"><?=htmlspecialchars($cpuText);?></td>
+							<td data-order="<?=$memUsed;?>"><?=htmlspecialchars($this->formatBytesPair($memUsed, $memMax));?></td>
+							<td data-order="<?=$diskUsed;?>"><?=htmlspecialchars($this->formatBytesPair($diskUsed, $diskMax));?></td>
+							<td data-order="<?=$uptimeSec;?>"><?=htmlspecialchars($this->formatUptime($uptimeSec));?></td>
 						</tr>
 					<?php } ?>
 					</tbody>
@@ -1009,18 +997,20 @@ SH;
 		<div class="card bg-transparent col-xl-10 p-4 mt-2 mb-3">
 			<div class="card-header bg-transparent"><h4><?=\T::Server_Edit_ProcessesTitle();?></h4></div>
 			<div class="card-body table-responsive">
-				<table class="table table-sm table-transparent">
+				<table class="table table-sm table-transparent" id="serverProcessesTable">
 					<thead><tr><th>PID</th><th>Name</th><th>User</th><th>CPU %</th><th>RSS</th><th>Cmd</th></tr></thead>
 					<tbody>
 					<?php foreach ($procs as $p) {
 						if (!is_array($p)) continue;
+						$cpuPct = floatval($p['cpu_pct'] ?? 0);
+						$rss = intval($p['mem_rss'] ?? 0);
 						?>
 						<tr>
-							<td><?=intval($p['pid'] ?? 0);?></td>
+							<td data-order="<?=intval($p['pid'] ?? 0);?>"><?=intval($p['pid'] ?? 0);?></td>
 							<td><?=htmlspecialchars(strval($p['name'] ?? ''));?></td>
 							<td><?=htmlspecialchars(strval($p['user'] ?? ''));?></td>
-							<td><?=number_format(floatval($p['cpu_pct'] ?? 0), 1);?></td>
-							<td><?=number_format(intval($p['mem_rss'] ?? 0) / 1024 / 1024, 1);?> MB</td>
+							<td data-order="<?=htmlspecialchars(sprintf('%.3f', $cpuPct), ENT_QUOTES, 'UTF-8');?>"><?=number_format($cpuPct, 1);?></td>
+							<td data-order="<?=$rss;?>"><?=number_format($rss / 1024 / 1024, 1);?> MB</td>
 							<td><small><?=htmlspecialchars(strval($p['cmdline'] ?? ''));?></small></td>
 						</tr>
 					<?php } ?>
@@ -1039,16 +1029,19 @@ SH;
 		<div class="card bg-transparent col-xl-10 p-4 mt-2 mb-3">
 			<div class="card-header bg-transparent"><h4><?=\T::Server_Edit_AuthTitle();?></h4></div>
 			<div class="card-body table-responsive">
-				<table class="table table-sm table-transparent">
+				<table class="table table-sm table-transparent" id="serverAuthTable">
 					<thead><tr><th>Time</th><th>User</th><th>From</th><th>Method</th><th>OK</th><th>Raw</th></tr></thead>
 					<tbody>
-					<?php foreach ($this->auth_events as $e) { ?>
+					<?php foreach ($this->auth_events as $e) {
+						$eventTime = intval($e['event_time'] ?? 0);
+						$success = !empty($e['success']);
+						?>
 						<tr>
-							<td><?=!empty($e['event_time']) ? date('Y-m-d H:i:s', intval($e['event_time'])) : '';?></td>
+							<td data-order="<?=$eventTime;?>"><?=$eventTime > 0 ? date('Y-m-d H:i:s', $eventTime) : '';?></td>
 							<td><?=htmlspecialchars(strval($e['user'] ?? ''));?></td>
 							<td><?=htmlspecialchars(strval($e['from_host'] ?? ''));?></td>
 							<td><?=htmlspecialchars(strval($e['method'] ?? ''));?></td>
-							<td><?=!empty($e['success']) ? '<span class="text-success">yes</span>' : '<span class="text-danger">no</span>';?></td>
+							<td data-order="<?=$success ? '1' : '0';?>"><?=$success ? '<span class="text-success">yes</span>' : '<span class="text-danger">no</span>';?></td>
 							<td><small><?=htmlspecialchars(strval($e['raw'] ?? ''));?></small></td>
 						</tr>
 					<?php } ?>
@@ -1063,6 +1056,39 @@ SH;
 		?>
 		<script nonce="<?=\CSP::nonceRandom();?>">
 			$(document).ready(function(){
+				const tableIds = [
+					'#serverDisksTable',
+					'#serverNetworkTable',
+					'#serverListenersTable',
+					'#serverDockerTable',
+					'#serverSystemdTable',
+					'#serverProxmoxTable',
+					'#serverProcessesTable',
+					'#serverAuthTable',
+				];
+				tableIds.forEach(function(sel) {
+					const $table = $(sel);
+					if (!$table.length || !$table.find('tbody tr').length) {
+						return;
+					}
+					const opts = {};
+					if (sel === '#serverSystemdTable') {
+						// Keep the custom header filter; hide DataTables' own search box.
+						opts.layout = {
+							topStart: 'pageLength',
+							topEnd: null,
+							bottomStart: 'info',
+							bottomEnd: 'paging',
+						};
+					}
+					const dt = new DataTable(sel, opts);
+					if (sel === '#serverSystemdTable') {
+						$('#systemdFilter').on('input', function() {
+							dt.search(String(this.value || '')).draw();
+						});
+					}
+				});
+
 				$('body').on('click', '.copy-agent-install', function() {
 					const text = ($('#agent-install-script').text() || '').toString();
 					if (!text) return;
