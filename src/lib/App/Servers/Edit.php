@@ -204,10 +204,13 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				$this->payload = is_array($decoded) ? $decoded : null;
 			}
 			$since = time() - 24 * 3600;
-			$this->metrics = array_values(\ServerMetrics::data(
+			// Agents push ~every 15s (~5760 rows/day). Taking ASC LIMIT 1500 showed only the
+			// oldest ~6h of the window (looks like "future" morning labels when viewed at night).
+			$rawMetrics = array_values(\ServerMetrics::data(
 				false,
-				sql_pholder(' AND `server_id` = ? AND `collected_at` >= ? ORDER BY `collected_at` ASC LIMIT 1500', $this->server['id'], $since)
+				sql_pholder(' AND `server_id` = ? AND `collected_at` >= ? ORDER BY `collected_at` ASC', $this->server['id'], $since)
 			) ?: []);
+			$this->metrics = $this->downsampleMetrics($rawMetrics, 1500);
 			$this->auth_events = array_values(\ServerAuthEvents::data(
 				false,
 				sql_pholder(' AND `server_id` = ? ORDER BY `event_time` DESC LIMIT 100', $this->server['id'])
@@ -216,6 +219,26 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 			$this->server['status'] ??= 1;
 			$this->server['online'] = false;
 		}
+	}
+
+	/**
+	 * Evenly sample metric rows so charts cover the full requested window.
+	 *
+	 * @param list<array<string,mixed>> $rows
+	 * @return list<array<string,mixed>>
+	 */
+	private function downsampleMetrics(array $rows, int $maxPoints): array {
+		$n = count($rows);
+		if ($n <= $maxPoints || $maxPoints < 2) {
+			return $rows;
+		}
+		$out = [];
+		$last = $n - 1;
+		for ($i = 0; $i < $maxPoints; $i++) {
+			$idx = (int) round($i * $last / ($maxPoints - 1));
+			$out[] = $rows[$idx];
+		}
+		return $out;
 	}
 
 	private function print_header() {
@@ -528,8 +551,12 @@ SH;
 		$tempSeries = [];
 		$dockerCpuSeries = [];
 		$dockerMemSeries = [];
+		$firstTs = intval($this->metrics[0]['collected_at'] ?? 0);
+		$lastTs = intval($this->metrics[count($this->metrics) - 1]['collected_at'] ?? 0);
+		$crossMidnight = $firstTs > 0 && $lastTs > 0 && date('Y-m-d', $firstTs) !== date('Y-m-d', $lastTs);
+		$labelFmt = $crossMidnight ? 'd.m H:i' : 'H:i';
 		foreach ($this->metrics as $m) {
-			$labels[] = date('H:i', intval($m['collected_at'] ?? 0));
+			$labels[] = date($labelFmt, intval($m['collected_at'] ?? 0));
 			$cpu[] = floatval($m['cpu_usage_pct'] ?? 0);
 			$mem[] = floatval($m['mem_used_pct'] ?? 0);
 			$disk[] = floatval($m['disk_used_pct_max'] ?? 0);
