@@ -41,18 +41,21 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 		$to_raw = trim(strval($_GET['to'] ?? ''));
 
 		if ($from_raw !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $from_raw)) {
-			$parts = explode('-', $from_raw);
-			$this->from = mktime(0, 0, 0, intval($parts[1]), intval($parts[2]), intval($parts[0]));
+			$parsed = \UserTime::parseDateStart($from_raw);
+			if ($parsed !== null) {
+				$this->from = $parsed;
+			}
 		}
 		if ($to_raw !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $to_raw)) {
-			$parts = explode('-', $to_raw);
-			$this->to = mktime(23, 59, 59, intval($parts[1]), intval($parts[2]), intval($parts[0]));
+			$parsed = \UserTime::parseDateEnd($to_raw);
+			if ($parsed !== null) {
+				$this->to = $parsed;
+			}
 		}
 
 		if (!$this->from || !$this->to) {
-			$this->to = mktime(23, 59, 59, intval(date('n')), intval(date('j')), intval(date('Y')));
-			$this->from = $this->to - 7 * 86400 + 1;
-			$this->from = mktime(0, 0, 0, intval(date('n', $this->from)), intval(date('j', $this->from)), intval(date('Y', $this->from)));
+			$this->to = \UserTime::endOfDay(time());
+			$this->from = \UserTime::startOfDay($this->to - 7 * 86400 + 1);
 		}
 		if ($this->from > $this->to) {
 			$tmp = $this->from;
@@ -127,8 +130,8 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 
 	private function filter_query(array $overrides = []): string {
 		$params = [
-			'from' => date('Y-m-d', $this->from),
-			'to' => date('Y-m-d', $this->to),
+			'from' => \UserTime::format($this->from, 'Y-m-d'),
+			'to' => \UserTime::format($this->to, 'Y-m-d'),
 			'monitor_id' => $this->monitor_id,
 			'worker_id' => $this->worker_id,
 			'status' => $this->status === null ? '' : $this->status,
@@ -157,8 +160,8 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 	}
 
 	private function print_filters() {
-		$from = htmlspecialchars(date('Y-m-d', $this->from));
-		$to = htmlspecialchars(date('Y-m-d', $this->to));
+		$from = htmlspecialchars(\UserTime::format($this->from, 'Y-m-d'));
+		$to = htmlspecialchars(\UserTime::format($this->to, 'Y-m-d'));
 		$q = htmlspecialchars($this->q);
 		?>
 		<form method="get" action="/events/" class="card mb-3">

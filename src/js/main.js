@@ -36,6 +36,20 @@ function isValueChartMonitor(data) {
 	return data && data.chart_mode === 'value';
 }
 
+/** Format unix seconds in the user's APP_TIMEZONE (from browser / settings). */
+function formatAppTime(unixSeconds) {
+	const date = new Date(Number(unixSeconds) * 1000);
+	const opts = {};
+	if (typeof window !== 'undefined' && window.APP_TIMEZONE) {
+		opts.timeZone = window.APP_TIMEZONE;
+	}
+	try {
+		return date.toLocaleTimeString(undefined, opts);
+	} catch (e) {
+		return date.toLocaleTimeString();
+	}
+}
+
 function chartUnitLabel(unit) {
 	if (unit === '%') return '%';
 	if (unit === 'Mbps') return 'Mbps';
@@ -898,13 +912,13 @@ function updateECharts(data) {
 					if (currentPeriod.endIndex - currentPeriod.startIndex > 0) {
 						periods.push([
 							{
-								xAxis: (new Date(currentPeriod.start * 1000)).toLocaleTimeString(),
+								xAxis: formatAppTime(currentPeriod.start),
 								itemStyle: {
 									color: currentPeriod.color
 								},
 							},
 							{
-								xAxis: (new Date(currentPeriod.end * 1000)).toLocaleTimeString(),
+								xAxis: formatAppTime(currentPeriod.end),
 							}
 						]);
 					}
@@ -917,13 +931,13 @@ function updateECharts(data) {
 		if (currentPeriod !== null && currentPeriod.endIndex - currentPeriod.startIndex > 0) {
 			periods.push([
 				{ 
-					xAxis: (new Date(currentPeriod.start * 1000)).toLocaleTimeString(),
+					xAxis: formatAppTime(currentPeriod.start),
 					itemStyle: {
 						color: currentPeriod.color
 					},
 				},
 				{ 
-					xAxis: (new Date(currentPeriod.end * 1000)).toLocaleTimeString(),
+					xAxis: formatAppTime(currentPeriod.end),
 				}
 			]);
 		}
@@ -951,8 +965,7 @@ function updateECharts(data) {
 			const time = timeKeys[i];
 			if (xAxisData.length < timeKeys.length) {
 				// Форматируем дату для отображения
-				const date = new Date(time * 1000);
-				xAxisData.push(date.toLocaleTimeString());
+				xAxisData.push(formatAppTime(time));
 			}
 
 			const log_workers = data.logs_chart[time];
@@ -981,7 +994,7 @@ function updateECharts(data) {
 					noDataPeriods.push([
 						{
 							name: "No Data",
-							xAxis: (new Date(time * 1000)).toLocaleTimeString(),
+							xAxis: formatAppTime(time),
 							y: '80%',
 							symbol: 'none',
 							lineStyle: {
@@ -992,7 +1005,7 @@ function updateECharts(data) {
 							}
 						},
 						{
-							xAxis: (new Date(time * 1000)).toLocaleTimeString(),
+							xAxis: formatAppTime(time),
 							y: '15%',
 							symbol: 'none',
 						}
@@ -1008,7 +1021,7 @@ function updateECharts(data) {
 					noDataPeriods.push([
 						{
 							name: "Error",
-							xAxis: (new Date(time * 1000)).toLocaleTimeString(),
+							xAxis: formatAppTime(time),
 							y: '80%',
 							symbol: 'none',
 							lineStyle: {
@@ -1019,7 +1032,7 @@ function updateECharts(data) {
 							}
 						},
 						{
-							xAxis: (new Date(time * 1000)).toLocaleTimeString(),
+							xAxis: formatAppTime(time),
 							y: '15%',
 							symbol: 'none',
 						}

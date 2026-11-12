@@ -805,11 +805,11 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 		if ($this->monitor['id']) {
 			$this->monitor['create_date'] = (
 				isset($this->monitor['create_time']) && $this->monitor['create_time'] > 0 ?
-				date('Y-m-d H:i:s', $this->monitor['create_time']) : ''
+				\UserTime::format(intval($this->monitor['create_time'])) : ''
 			);
 			$this->monitor['update_date'] = (
 				isset($this->monitor['update_time']) && $this->monitor['update_time'] > 0 ?
-				date('Y-m-d H:i:s', $this->monitor['update_time']) : ''
+				\UserTime::format(intval($this->monitor['update_time'])) : ''
 			);
 			if (intval($this->monitor['type'] ?? 0) == \Monitors::TYPE_EXTERNAL) {
 				if (trim(strval($this->monitor['external_hash'] ?? '')) === '') {

@@ -521,11 +521,11 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 		if ($this->notify['id']) {
 			$this->notify['create_date'] = (
 				isset($this->notify['create_time']) && $this->notify['create_time'] > 0 ?
-				date('Y-m-d H:i:s', $this->notify['create_time']) : ''
+				\UserTime::format(intval($this->notify['create_time'])) : ''
 			);
 			$this->notify['update_date'] = (
 				isset($this->notify['update_time']) && $this->notify['update_time'] > 0 ?
-				date('Y-m-d H:i:s', $this->notify['update_time']) : ''
+				\UserTime::format(intval($this->notify['update_time'])) : ''
 			);
 			$this->notify['json_data'] = (
 				isset($this->notify['json_data']) && is_string($this->notify['json_data']) ?

@@ -198,10 +198,10 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 						$params = [
 							'id' => intval($item['id'] ?? 0),
 							'title' => htmlspecialchars(trim($item['title'] ?? '')),
-							'start_time' => $item['start_time'] > 0 ? date("Y-m-d H:i:s", $item['start_time']) : '',
-							'finish_time' => $item['finish_time'] > 0 ? date("Y-m-d H:i:s", $item['finish_time']) : '',
-							'create_time' => $item['create_time'] > 0 ? date("Y-m-d H:i:s", $item['create_time']) : '',
-							'update_time' => $item['update_time'] > 0 ? date("Y-m-d H:i:s", $item['update_time']) : '',
+							'start_time' => $item['start_time'] > 0 ? \UserTime::format(intval($item['start_time'])) : '',
+							'finish_time' => $item['finish_time'] > 0 ? \UserTime::format(intval($item['finish_time'])) : '',
+							'create_time' => $item['create_time'] > 0 ? \UserTime::format(intval($item['create_time'])) : '',
+							'update_time' => $item['update_time'] > 0 ? \UserTime::format(intval($item['update_time'])) : '',
 						];
 
 						$can_read = \Sessions::checkPermission(\Maintenances::PERMISSION_ACCESS, $params['id'], READ);

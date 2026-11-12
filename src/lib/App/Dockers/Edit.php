@@ -355,15 +355,15 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 		if ($this->docker['id']) {
 			$this->docker['create_date'] = (
 				isset($this->docker['create_time']) && $this->docker['create_time'] > 0 ?
-				date('Y-m-d H:i:s', $this->docker['create_time']) : ''
+				\UserTime::format(intval($this->docker['create_time'])) : ''
 			);
 			$this->docker['update_date'] = (
 				isset($this->docker['update_time']) && $this->docker['update_time'] > 0 ?
-				date('Y-m-d H:i:s', $this->docker['update_time']) : ''
+				\UserTime::format(intval($this->docker['update_time'])) : ''
 			);
 			$this->docker['last_success_date'] = (
 				isset($this->docker['last_success_time']) && intval($this->docker['last_success_time']) > 0 ?
-				date('Y-m-d H:i:s', intval($this->docker['last_success_time'])) : ''
+				\UserTime::format(intval($this->docker['last_success_time'])) : ''
 			);
 			$engineInfo = [];
 			if (!empty($this->docker['engine_info'])) {
@@ -564,7 +564,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 										];
 										if (!$params['id']) continue;
 										if ($params['created']) {
-											$params['created'] = date('Y-m-d H:i:s', $params['created']);
+											$params['created'] = \UserTime::format(intval($params['created']));
 										} else {
 											$params['created'] = '';
 										}
@@ -679,10 +679,10 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 									? strval($this->workers_hash[$workerId]['title'] ?? '')
 									: ('#' . intval($workerId));
 								$attempt = intval($poll['update_time'] ?? 0) > 0
-									? date('Y-m-d H:i:s', intval($poll['update_time']))
+									? \UserTime::format(intval($poll['update_time']))
 									: '—';
 								$success = intval($poll['last_success_time'] ?? 0) > 0
-									? date('Y-m-d H:i:s', intval($poll['last_success_time']))
+									? \UserTime::format(intval($poll['last_success_time']))
 									: '—';
 								$ok = intval($poll['last_status'] ?? 0) === 1;
 								$code = intval($poll['last_status_code'] ?? 0);

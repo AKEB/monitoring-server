@@ -356,15 +356,15 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 		if ($this->worker['id']) {
 			$this->worker['create_date'] = (
 				isset($this->worker['create_time']) && $this->worker['create_time'] > 0 ?
-				date('Y-m-d H:i:s', $this->worker['create_time']) : ''
+				\UserTime::format(intval($this->worker['create_time'])) : ''
 			);
 			$this->worker['update_date'] = (
 				isset($this->worker['update_time']) && $this->worker['update_time'] > 0 ?
-				date('Y-m-d H:i:s', $this->worker['update_time']) : ''
+				\UserTime::format(intval($this->worker['update_time'])) : ''
 			);
 			$this->worker['last_active_date'] = (
 				isset($this->worker['last_active_time']) && $this->worker['last_active_time'] > 0 ?
-				date('Y-m-d H:i:s', $this->worker['last_active_time']) : ''
+				\UserTime::format(intval($this->worker['last_active_time'])) : ''
 			);
 			$jobs = \MonitoringJobs::data(['worker_id' => $this->worker['id']], false, '`monitor_id`');
 			if ($jobs) {

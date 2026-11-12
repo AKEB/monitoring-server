@@ -165,11 +165,11 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 							'tls' => intval($item['tls'] ?? 0) == 1 ? '<i class="bi bi-check-lg fs-4 text-success"></i>':'<i class="bi bi-x-lg fs-4 text-danger"></i>',
 							'host' => htmlspecialchars(trim($item['host'] ?? '')),
 							'port' => intval($item['port'] ?? 0),
-							'create_time' => isset($item['create_time']) && $item['create_time'] > 0 ? date("Y-m-d H:i:s", $item['create_time']) : '',
+							'create_time' => isset($item['create_time']) && $item['create_time'] > 0 ? \UserTime::format(intval($item['create_time'])) : '',
 							'update_time' => (
 								isset($item['last_success_time']) && intval($item['last_success_time']) > 0
-									? date("Y-m-d H:i:s", intval($item['last_success_time']))
-									: (isset($item['update_time']) && $item['update_time'] > 0 ? date("Y-m-d H:i:s", $item['update_time']) : '')
+									? \UserTime::format(intval($item['last_success_time']))
+									: (isset($item['update_time']) && $item['update_time'] > 0 ? \UserTime::format(intval($item['update_time'])) : '')
 							),
 							'containers' => '',
 						];

@@ -241,7 +241,7 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 						<td class="align-middle text-center"><?=number_format(floatval($item['load1'] ?? 0), 2);?></td>
 						<td class="align-middle"><small><?=htmlspecialchars(implode(', ', array_slice($ips, 0, 3)));?></small></td>
 						<td class="align-middle text-center"><?=$versionLabel;?></td>
-						<td class="align-middle text-center"><?= !empty($item['last_seen_time']) ? date('Y-m-d H:i:s', intval($item['last_seen_time'])) : '';?></td>
+						<td class="align-middle text-center"><?= !empty($item['last_seen_time']) ? \UserTime::format(intval($item['last_seen_time'])) : '';?></td>
 						<td class="align-middle text-center">
 							<?php if ($can_write) { ?>
 								<i class="bi bi-pencil-square me-2 fs-4 text-info editActionButton pointer" data-object-id="<?=$id;?>" title="<?=\T::Server_Table_Edit();?>"></i>

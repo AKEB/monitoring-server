@@ -231,9 +231,9 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 							'protocol_version' => htmlspecialchars(trim($item['protocol_version'] ?? '')),
 							'worker_version' => $versionLabel,
 							'monitors_count' => intval($item['monitors_count'] ?? 0),
-							'last_active_time' => isset($item['last_active_time']) && $item['last_active_time'] > 0 ? date("Y-m-d H:i:s", $item['last_active_time']) : '',
-							'create_time' => isset($item['create_time']) && $item['create_time'] > 0 ? date("Y-m-d H:i:s", $item['create_time']) : '',
-							'update_time' => isset($item['update_time']) && $item['update_time'] > 0 ? date("Y-m-d H:i:s", $item['update_time']) : '',
+							'last_active_time' => isset($item['last_active_time']) && $item['last_active_time'] > 0 ? \UserTime::format(intval($item['last_active_time'])) : '',
+							'create_time' => isset($item['create_time']) && $item['create_time'] > 0 ? \UserTime::format(intval($item['create_time'])) : '',
+							'update_time' => isset($item['update_time']) && $item['update_time'] > 0 ? \UserTime::format(intval($item['update_time'])) : '',
 						];
 
 						$can_read = \Sessions::checkPermission(\Workers::PERMISSION_ACCESS, $params['id'], READ);

@@ -52,11 +52,13 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 			}
 			if (isset($data['start_time']) && trim($data['start_time']) != '') {
 				$data['start_time'] = trim($data['start_time']);
-				$params['start_time'] = strtotime($data['start_time']);
+				$parsed = \UserTime::parse($data['start_time']);
+				$params['start_time'] = $parsed !== null ? $parsed : false;
 			}
 			if (isset($data['finish_time']) && trim($data['finish_time']) != '') {
 				$data['finish_time'] = trim($data['finish_time']);
-				$params['finish_time'] = strtotime($data['finish_time']);
+				$parsed = \UserTime::parse($data['finish_time']);
+				$params['finish_time'] = $parsed !== null ? $parsed : false;
 			}
 			if (\EntityValidation::maintenanceTimeError(
 				isset($params['start_time']) ? intval($params['start_time']) : null,
@@ -221,8 +223,10 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				common_redirect('/maintenances/');
 			}
 		} while(false);
-		$data['start_time'] = strtotime($data['start_time']);
-		$data['finish_time'] = strtotime($data['finish_time']);
+		$startParsed = isset($data['start_time']) ? \UserTime::parse(strval($data['start_time'])) : null;
+		$finishParsed = isset($data['finish_time']) ? \UserTime::parse(strval($data['finish_time'])) : null;
+		$data['start_time'] = $startParsed !== null ? $startParsed : ($this->maintenance['start_time'] ?? time());
+		$data['finish_time'] = $finishParsed !== null ? $finishParsed : ($this->maintenance['finish_time'] ?? 0);
 
 		foreach($data as $key => $value) {
 			$this->maintenance[$key] = $value;
@@ -256,11 +260,11 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 		if ($this->maintenance['id']) {
 			$this->maintenance['create_date'] = (
 				isset($this->maintenance['create_time']) && $this->maintenance['create_time'] > 0 ?
-				date('Y-m-d H:i:s', $this->maintenance['create_time']) : ''
+				\UserTime::format(intval($this->maintenance['create_time'])) : ''
 			);
 			$this->maintenance['update_date'] = (
 				isset($this->maintenance['update_time']) && $this->maintenance['update_time'] > 0 ?
-				date('Y-m-d H:i:s', $this->maintenance['update_time']) : ''
+				\UserTime::format(intval($this->maintenance['update_time'])) : ''
 			);
 			$this->maintenance['monitor_id'] ??= [];
 			$monitors = \MonitoringMaintenances::data(['maintenance_id' => $this->maintenance['id']]);
@@ -506,12 +510,14 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				});
 
 				pickerStart.dates.clear();
-				const startDate = pickerStart.dates.parseInput(new window.Date(<?=($this->maintenance['start_time']??0)*1000;?>));
-				pickerStart.dates.setValue(startDate, 0);
+				<?php if (!empty($this->maintenance['start_time'])) { ?>
+					const startDate = pickerStart.dates.parseInput('<?=\UserTime::format(intval($this->maintenance['start_time']));?>');
+					pickerStart.dates.setValue(startDate, 0);
+				<?php } ?>
 
 				pickerFinish.dates.clear();
 				<?php if ($this->maintenance['finish_time']??0) { ?>
-					const finishDate = pickerFinish.dates.parseInput(new window.Date(<?=($this->maintenance['finish_time']??0)*1000;?>));
+					const finishDate = pickerFinish.dates.parseInput('<?=\UserTime::format(intval($this->maintenance['finish_time']));?>');
 					pickerFinish.dates.setValue(finishDate, 0);
 				<?php } ?>
 

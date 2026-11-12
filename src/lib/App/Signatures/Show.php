@@ -130,8 +130,8 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 							'title' => htmlspecialchars(trim($item['title'] ?? '')),
 							'status' => intval($item['status'] ?? 0) == 1 ? '<i class="bi bi-check-lg fs-4 text-success"></i>':'<i class="bi bi-x-lg fs-4 text-danger"></i>',
 							'preview' => htmlspecialchars($preview),
-							'create_time' => isset($item['create_time']) && $item['create_time'] > 0 ? date("Y-m-d H:i:s", $item['create_time']) : '',
-							'update_time' => isset($item['update_time']) && $item['update_time'] > 0 ? date("Y-m-d H:i:s", $item['update_time']) : '',
+							'create_time' => isset($item['create_time']) && $item['create_time'] > 0 ? \UserTime::format(intval($item['create_time'])) : '',
+							'update_time' => isset($item['update_time']) && $item['update_time'] > 0 ? \UserTime::format(intval($item['update_time'])) : '',
 						];
 
 						$can_read = \Sessions::checkPermission(\Signatures::PERMISSION_ACCESS, $params['id'], READ);

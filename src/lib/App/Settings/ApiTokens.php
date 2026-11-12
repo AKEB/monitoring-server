@@ -136,8 +136,8 @@ class ApiTokens extends \Routing_Parent implements \Routing_Interface {
 							<th scope="row" class="align-middle"><?=$id;?></th>
 							<td class="align-middle"><?=$title;?></td>
 							<td class="align-middle text-center font-monospace"><?=$prefix;?>…</td>
-							<td class="align-middle text-center"><?=$last_used > 0 ? date('Y-m-d H:i:s', $last_used) : '—';?></td>
-							<td class="align-middle text-center"><?=$create_time > 0 ? date('Y-m-d H:i:s', $create_time) : '';?></td>
+							<td class="align-middle text-center"><?=$last_used > 0 ? \UserTime::format(intval($last_used)) : '—';?></td>
+							<td class="align-middle text-center"><?=$create_time > 0 ? \UserTime::format(intval($create_time)) : '';?></td>
 							<td class="align-middle text-center">
 								<form method="post" class="d-inline" onsubmit="return confirm('<?=\T::Api_Settings_RevokeConfirmation();?>'.replace('{title}', '<?=addslashes($title);?>'));">
 									<?= \Csrf::field(); ?>

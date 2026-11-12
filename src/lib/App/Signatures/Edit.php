@@ -183,11 +183,11 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 		if ($this->signature['id']) {
 			$this->signature['create_date'] = (
 				isset($this->signature['create_time']) && $this->signature['create_time'] > 0 ?
-				date('Y-m-d H:i:s', $this->signature['create_time']) : ''
+				\UserTime::format(intval($this->signature['create_time'])) : ''
 			);
 			$this->signature['update_date'] = (
 				isset($this->signature['update_time']) && $this->signature['update_time'] > 0 ?
-				date('Y-m-d H:i:s', $this->signature['update_time']) : ''
+				\UserTime::format(intval($this->signature['update_time'])) : ''
 			);
 		} else {
 			$this->signature['status'] ??= 1;

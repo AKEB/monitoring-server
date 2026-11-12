@@ -361,13 +361,13 @@ class MonitoringLogs extends \DB\MySQLObject {
 					if (!isset($monitor['states'][$i])) {
 						$monitor['states'][$i] = [
 							'class' => '',
-							'title' => date("Y-m-d H:i:s",$i),
+							'title' => \UserTime::format(intval($i)),
 							'min_state' => static::STATE_ERROR,
 							'max_state' => static::STATE_UNKNOWN,
 							'min_time' => $i,
 							'max_time' => $i+$repeat,
-							'min_date' => date("H:i:s",$i),
-							'max_date' => date("H:i:s",$i+$repeat),
+							'min_date' => \UserTime::format(intval($i), 'H:i:s'),
+							'max_date' => \UserTime::format(intval($i+$repeat), 'H:i:s'),
 							'workers' => [],
 						];
 					}
@@ -597,13 +597,13 @@ class MonitoringLogs extends \DB\MySQLObject {
 				// Include the still-open current interval; UNKNOWN inherits previous later.
 				$monitor['states'][$i] = [
 					'class' => '',
-					'title' => date("Y-m-d H:i:s",$i),
+					'title' => \UserTime::format(intval($i)),
 					'min_state' => static::STATE_ERROR,
 					'max_state' => static::STATE_UNKNOWN,
 					'min_time' => $i,
 					'max_time' => $i+$repeat,
-					'min_date' => date("H:i:s",$i),
-					'max_date' => date("H:i:s",$i+$repeat),
+					'min_date' => \UserTime::format(intval($i), 'H:i:s'),
+					'max_date' => \UserTime::format(intval($i+$repeat), 'H:i:s'),
 					'workers' => [],
 				];
 				foreach($monitor['workers'] as $worker_id=>$start_time) {
@@ -694,7 +694,7 @@ class MonitoringLogs extends \DB\MySQLObject {
 				$cacheGen = intval($genCache->get());
 			}
 		}
-		$cache = new \Cache('monitor_data_'.md5($monitor_id.'__'.$period.'__'.intval(time() / 60).'__'.$cacheGen));
+		$cache = new \Cache('monitor_data_'.md5($monitor_id.'__'.$period.'__'.intval(time() / 60).'__'.$cacheGen.'__'.\UserTime::timezone()));
 		if ($cache->isValid()) {
 			$from_cache = json_decode($cache->get(), true);
 			if ($from_cache && is_array($from_cache)) {
@@ -799,7 +799,7 @@ class MonitoringLogs extends \DB\MySQLObject {
 			if ($maintenances) {
 				$return['monitor']['maintenances'] = [];
 				foreach($maintenances as $item) {
-					$return['monitor']['maintenances'][$item['id']] = date("Y-m-d H:i:s",$item['start_time']).' - '.date("Y-m-d H:i:s",$item['finish_time']);
+					$return['monitor']['maintenances'][$item['id']] = \UserTime::format(intval($item['start_time'])).' - '.\UserTime::format(intval($item['finish_time']));
 				}
 			} else {
 				unset($return['monitor']['maintenances']);
@@ -810,7 +810,7 @@ class MonitoringLogs extends \DB\MySQLObject {
 				if ($time > $now) continue;
 				// Seed the open current interval too; UI inherits previous worker status if empty.
 				$logs_hash[$time] = [
-					'title' => date("Y-m-d H:i:s",$time),
+					'title' => \UserTime::format(intval($time)),
 				];
 			}
 			foreach($logs as $item) {
@@ -820,11 +820,11 @@ class MonitoringLogs extends \DB\MySQLObject {
 				}
 				if (!isset($logs_hash[$intervalTime])) {
 					$logs_hash[$intervalTime] = [
-						'title' => date("H:i:s", $intervalTime),
+						'title' => \UserTime::format(intval($intervalTime), 'H:i:s'),
 					];
 				}
-				$item['title'] = date("Y-m-d H:i:s",$intervalTime).' - '.$item['status_code'].' '.$item['response_error'];
-				$logs_hash[$intervalTime]['title'] = date("H:i:s",$intervalTime);
+				$item['title'] = \UserTime::format(intval($intervalTime)).' - '.$item['status_code'].' '.$item['response_error'];
+				$logs_hash[$intervalTime]['title'] = \UserTime::format(intval($intervalTime), 'H:i:s');
 				$logs_hash[$intervalTime][$item['worker_id']] = $item;
 				$last_data[$item['worker_id']] = $item;
 			}
@@ -928,7 +928,7 @@ class MonitoringLogs extends \DB\MySQLObject {
 				$return['cert_expire_days'] = '';
 			} else {
 				$cert_expire_days = intval( ( $cert_expire_time - time() ) / 86400 );
-				$return['cert_expire'] = date("Y-m-d",$cert_expire_time);
+				$return['cert_expire'] = \UserTime::format(intval($cert_expire_time), 'Y-m-d');
 				$return['cert_expire_days'] = $cert_expire_days . ' '.(\T::declension($cert_expire_days, \T::Dashboard_Day(), \T::Dashboard_Days(), \T::Dashboard_Days5()));
 			}
 			$return['events'] = \MonitorsEvents::getEventsForMonitor($monitor_id);

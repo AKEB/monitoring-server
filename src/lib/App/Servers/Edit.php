@@ -195,9 +195,9 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 
 	private function get_data() {
 		if (!empty($this->server['id'])) {
-			$this->server['create_date'] = !empty($this->server['create_time']) ? date('Y-m-d H:i:s', intval($this->server['create_time'])) : '';
-			$this->server['update_date'] = !empty($this->server['update_time']) ? date('Y-m-d H:i:s', intval($this->server['update_time'])) : '';
-			$this->server['last_seen_date'] = !empty($this->server['last_seen_time']) ? date('Y-m-d H:i:s', intval($this->server['last_seen_time'])) : '';
+			$this->server['create_date'] = !empty($this->server['create_time']) ? \UserTime::format(intval($this->server['create_time'])) : '';
+			$this->server['update_date'] = !empty($this->server['update_time']) ? \UserTime::format(intval($this->server['update_time'])) : '';
+			$this->server['last_seen_date'] = !empty($this->server['last_seen_time']) ? \UserTime::format(intval($this->server['last_seen_time'])) : '';
 			$this->server['online'] = \Servers::isOnline($this->server);
 			if (!empty($this->server['last_payload'])) {
 				$decoded = @json_decode(strval($this->server['last_payload']), true);
@@ -553,10 +553,10 @@ SH;
 		$dockerMemSeries = [];
 		$firstTs = intval($this->metrics[0]['collected_at'] ?? 0);
 		$lastTs = intval($this->metrics[count($this->metrics) - 1]['collected_at'] ?? 0);
-		$crossMidnight = $firstTs > 0 && $lastTs > 0 && date('Y-m-d', $firstTs) !== date('Y-m-d', $lastTs);
+		$crossMidnight = $firstTs > 0 && $lastTs > 0 && \UserTime::format(intval($firstTs), 'Y-m-d') !== \UserTime::format(intval($lastTs), 'Y-m-d');
 		$labelFmt = $crossMidnight ? 'd.m H:i' : 'H:i';
 		foreach ($this->metrics as $m) {
-			$labels[] = date($labelFmt, intval($m['collected_at'] ?? 0));
+			$labels[] = \UserTime::format(intval($m['collected_at'] ?? 0), $labelFmt);
 			$cpu[] = floatval($m['cpu_usage_pct'] ?? 0);
 			$mem[] = floatval($m['mem_used_pct'] ?? 0);
 			$disk[] = floatval($m['disk_used_pct_max'] ?? 0);
@@ -1064,7 +1064,7 @@ SH;
 						$success = !empty($e['success']);
 						?>
 						<tr>
-							<td data-order="<?=$eventTime;?>"><?=$eventTime > 0 ? date('Y-m-d H:i:s', $eventTime) : '';?></td>
+							<td data-order="<?=$eventTime;?>"><?=$eventTime > 0 ? \UserTime::format(intval($eventTime)) : '';?></td>
 							<td><?=htmlspecialchars(strval($e['user'] ?? ''));?></td>
 							<td><?=htmlspecialchars(strval($e['from_host'] ?? ''));?></td>
 							<td><?=htmlspecialchars(strval($e['method'] ?? ''));?></td>
