@@ -1899,8 +1899,8 @@ class T {
 	/**
 	 * Notify_Edit_MaxFetchNoDataWebhook
 	 * 
-	 * @return string "Alert-button webhook is active — Long Poll is unavailable. Message the bot or add it to a chat (the event goes to the webhook), then click «Load from Max» again. Make sure the notify is enabled."
-	 * @return string "Webhook кнопок активен — Long Poll недоступен. Напишите боту или добавьте его в чат (событие пойдёт на webhook), затем нажмите «Получить из Max» снова. Убедитесь, что уведомление включено."
+	 * @return string "No inbound events yet. Message the bot in DM or add it to the chat/channel, wait a couple of seconds, then click «Load from Max» again (the webhook is briefly detached during the request)."
+	 * @return string "Пока нет входящих событий. Напишите боту в личку или добавьте его в нужный чат/канал, подождите пару секунд и нажмите «Получить из Max» снова (webhook на время запроса снимается)."
 	 */
 	public static function Notify_Edit_MaxFetchNoDataWebhook(...$argv): string { return ''; }
 

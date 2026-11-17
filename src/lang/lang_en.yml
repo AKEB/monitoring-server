@@ -269,7 +269,7 @@ Notify:
     MaxFetchHttp: "Max API request failed (HTTP %d)."
     MaxFetchNoMessage: "No incoming text messages in API updates. Write to the bot in DM or a group, then try again."
     MaxFetchNoData: "No incoming message or chat_id. Write to the bot or add it to a chat, then try again."
-    MaxFetchNoDataWebhook: "Alert-button webhook is active — Long Poll is unavailable. Message the bot or add it to a chat (the event goes to the webhook), then click «Load from Max» again. Make sure the notify is enabled."
+    MaxFetchNoDataWebhook: "No inbound events yet. Message the bot in DM or add it to the chat/channel, wait a couple of seconds, then click «Load from Max» again (the webhook is briefly detached during the request)."
     MaxFetchSuccess: "Loaded data from the last message."
     MaxFetchNoMessageText: "(no text — attachments only or empty body; IDs above are still valid)"
     MaxFetchResultTitle: "Last incoming message (Max)"

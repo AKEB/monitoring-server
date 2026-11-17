@@ -443,10 +443,11 @@ class MaxMessenger {
 	 *
 	 * @return array{ok: bool, http_code: int, data: array|null, raw_body: string}
 	 */
-	public static function fetchUpdates(string $accessToken): array {
+	public static function fetchUpdates(string $accessToken, int $timeoutSec = 5): array {
+		$timeoutSec = max(0, min(90, $timeoutSec));
 		return self::request('GET', '/updates', [
 			'limit' => 100,
-			'timeout' => 5,
+			'timeout' => $timeoutSec,
 		], $accessToken);
 	}
 

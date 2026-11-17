@@ -611,11 +611,50 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 		$chats = $store['chats'];
 
 		$subs = \MaxMessenger::listSubscriptions($token);
-		$hasWebhook = !empty($subs['ok']) && $subs['subscriptions'] !== [];
+		$webhookUrls = [];
+		if (!empty($subs['ok'])) {
+			foreach ($subs['subscriptions'] as $sub) {
+				if (!is_array($sub)) {
+					continue;
+				}
+				$url = trim(strval($sub['url'] ?? ''));
+				if ($url !== '') {
+					$webhookUrls[$url] = true;
+				}
+			}
+		}
+		$actionToken = '';
+		if (isset($data['json_data']['alert_action_token'])) {
+			$actionToken = trim(strval($data['json_data']['alert_action_token']));
+		}
+		if ($actionToken === '' && is_array($this->notify['json_data'] ?? null)) {
+			$actionToken = trim(strval($this->notify['json_data']['alert_action_token'] ?? ''));
+		}
+		$actionBase = '';
+		if (is_array($this->notify['json_data'] ?? null)) {
+			$actionBase = strval($this->notify['json_data']['alert_action_base_url'] ?? '');
+		}
+		if ($actionBase === '') {
+			$actionBase = \ExternalMonitors::baseUrl();
+		}
+		if ($actionToken !== '') {
+			$ourUrl = \AlertActions::webhookUrl(\AlertActions::CHANNEL_MAX, $actionToken, $actionBase);
+			if ($ourUrl !== '') {
+				$webhookUrls[$ourUrl] = true;
+			}
+		}
+		$hasWebhook = $webhookUrls !== [];
 
-		// Long Poll работает только без активной webhook-подписки.
-		if (!$hasWebhook) {
-			$updatesRes = \MaxMessenger::fetchUpdates($token);
+		// При активном webhook Long Poll пуст — на время запроса снимаем подписки,
+		// читаем /updates, затем возвращаем webhook с полным набором update_types.
+		$updatesRes = null;
+		try {
+			if ($hasWebhook) {
+				foreach (array_keys($webhookUrls) as $url) {
+					\MaxMessenger::unsubscribeWebhook($token, $url);
+				}
+			}
+			$updatesRes = \MaxMessenger::fetchUpdates($token, $hasWebhook ? 8 : 5);
 			if ($updatesRes['ok'] && is_array($updatesRes['data'])) {
 				$fromUpdates = \MaxMessenger::parseLastMessageFromUpdates($updatesRes['data']);
 				$chatsFromUpdates = \MaxMessenger::parseChatsFromUpdates($updatesRes['data']);
@@ -625,14 +664,41 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				foreach ($chatsFromUpdates as $c) {
 					$chats = \MaxMessenger::mergeSeenChat($chats, $c, false);
 				}
-			} elseif (!$updatesRes['ok'] && $parsed === null && $chats === []) {
-				$this->error = \T::Notify_Edit_MaxFetchHttp(intval($updatesRes['http_code']));
-				return;
 			}
+		} finally {
+			foreach (array_keys($webhookUrls) as $url) {
+				\MaxMessenger::subscribeWebhook($token, $url);
+			}
+		}
+
+		if ($updatesRes !== null && empty($updatesRes['ok']) && $parsed === null && $chats === []) {
+			$this->error = \T::Notify_Edit_MaxFetchHttp(intval($updatesRes['http_code']));
+			return;
 		}
 
 		$hasData = ($parsed !== null || $chats !== []);
 		if ($hasData) {
+			if ($this->notify_id > 0 && $chats !== []) {
+				$row = \Notify::get(['id' => $this->notify_id]);
+				if ($row) {
+					$jd = $row['json_data'] ?? [];
+					if (is_string($jd)) {
+						$jd = json_decode($jd, true) ?: [];
+					}
+					if (!is_array($jd)) {
+						$jd = [];
+					}
+					$jd['max_seen_chats'] = $chats;
+					if ($parsed !== null) {
+						$jd['max_last_inbound'] = $parsed;
+					}
+					\Notify::save([
+						'id' => $this->notify_id,
+						'json_data' => json_encode($jd, JSON_UNESCAPED_UNICODE),
+						'update_time' => time(),
+					]);
+				}
+			}
 			$this->maxFetchParsed = [
 				'last_message' => $parsed,
 				'chats' => $chats,

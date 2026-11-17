@@ -651,6 +651,14 @@ class AlertActions extends \DB\MySQLObject {
 			foreach (\MaxMessenger::normalizeSeenChats($json['max_seen_chats'] ?? []) as $chat) {
 				$chats = \MaxMessenger::mergeSeenChat($chats, $chat, false);
 			}
+			$receiver = trim(strval($row['receiver'] ?? ''));
+			if (preg_match('/^-?\d+$/', $receiver) && $receiver !== '0' && $receiver !== '-0') {
+				$chats = \MaxMessenger::mergeSeenChat($chats, [
+					'chat_id' => $receiver,
+					'type' => ($receiver[0] === '-') ? 'chat' : 'dialog',
+					'title' => strval($row['title'] ?? ''),
+				], false);
+			}
 			if ($lastInbound === null && isset($json['max_last_inbound']) && is_array($json['max_last_inbound'])) {
 				$li = $json['max_last_inbound'];
 				if ((string) ($li['chat_id'] ?? '') !== '' || (string) ($li['user_id'] ?? '') !== '') {
