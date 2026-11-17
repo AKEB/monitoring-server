@@ -518,4 +518,54 @@ class Monitors extends \DB\MySQLObject implements \PermissionSubject_Interface {
 		}
 		return $enable;
 	}
+
+	/**
+	 * Non-folder monitor ids under $root_id (recursive).
+	 * Includes $root_id itself when it is not a folder.
+	 *
+	 * @param array<int,array<string,mixed>>|null $monitors_hash
+	 * @return list<int>
+	 */
+	static public function get_leaf_monitor_ids_under(int $root_id, ?array $monitors_hash = null): array {
+		if ($root_id < 1) {
+			return [];
+		}
+		$monitors_hash ??= static::get_hash();
+		if (!isset($monitors_hash[$root_id])) {
+			return [];
+		}
+
+		/** @var array<int,list<int>> $children */
+		$children = [];
+		foreach ($monitors_hash as $id => $monitor) {
+			$parent_id = intval($monitor['parent_id'] ?? 0);
+			if ($parent_id < 1) {
+				continue;
+			}
+			$children[$parent_id][] = intval($id);
+		}
+
+		$ids = [];
+		$stack = [$root_id];
+		$seen = [];
+		while ($stack) {
+			$id = array_pop($stack);
+			if (isset($seen[$id])) {
+				continue;
+			}
+			$seen[$id] = true;
+			$monitor = $monitors_hash[$id] ?? null;
+			if (!$monitor) {
+				continue;
+			}
+			$type = intval($monitor['type'] ?? -1);
+			if ($type !== static::TYPE_FOLDER) {
+				$ids[] = $id;
+			}
+			foreach ($children[$id] ?? [] as $child_id) {
+				$stack[] = $child_id;
+			}
+		}
+		return $ids;
+	}
 }

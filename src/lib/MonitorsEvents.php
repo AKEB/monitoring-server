@@ -158,7 +158,10 @@ class MonitorsEvents extends \DB\MySQLObject {
 			if (!\Sessions::checkPermission(\Monitors::PERMISSION_ACCESS, $monitor_id, READ)) {
 				return ['items' => [], 'total' => 0, 'page' => $page, 'per_page' => $per_page];
 			}
-			$allowed_monitor_ids = [$monitor_id];
+			foreach (\Monitors::get_leaf_monitor_ids_under($monitor_id) as $mid) {
+				if (!\Sessions::checkPermission(\Monitors::PERMISSION_ACCESS, $mid, READ)) continue;
+				$allowed_monitor_ids[] = $mid;
+			}
 		} else {
 			$monitors = \Monitors::get_hash();
 			foreach ($monitors as $mid => $monitor) {

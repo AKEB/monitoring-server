@@ -99,4 +99,23 @@ class MonitorsTest extends PHPUnit\Framework\TestCase {
 			'PATCH' => 'PATCH',
 		], \Monitors::HTTP_methods());
 	}
+
+	function test_get_leaf_monitor_ids_under_expands_folder_recursively() {
+		$hash = [
+			10 => ['id' => 10, 'title' => 'root', 'type' => \Monitors::TYPE_FOLDER, 'parent_id' => 0],
+			11 => ['id' => 11, 'title' => 'nested', 'type' => \Monitors::TYPE_FOLDER, 'parent_id' => 10],
+			12 => ['id' => 12, 'title' => 'ping', 'type' => \Monitors::TYPE_PING, 'parent_id' => 11],
+			13 => ['id' => 13, 'title' => 'https', 'type' => \Monitors::TYPE_HTTPS, 'parent_id' => 10],
+			14 => ['id' => 14, 'title' => 'other', 'type' => \Monitors::TYPE_TCP, 'parent_id' => 0],
+		];
+
+		$ids = \Monitors::get_leaf_monitor_ids_under(10, $hash);
+		sort($ids);
+		$this->assertSame([12, 13], $ids);
+
+		$this->assertSame([12], \Monitors::get_leaf_monitor_ids_under(11, $hash));
+		$this->assertSame([14], \Monitors::get_leaf_monitor_ids_under(14, $hash));
+		$this->assertSame([], \Monitors::get_leaf_monitor_ids_under(999, $hash));
+		$this->assertSame([], \Monitors::get_leaf_monitor_ids_under(0, $hash));
+	}
 }
