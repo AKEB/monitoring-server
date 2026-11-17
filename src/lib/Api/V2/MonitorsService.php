@@ -295,6 +295,11 @@ class MonitorsService {
 			}
 			$row['signature_id'] = $sigId;
 		}
+		foreach (['notify_success_text', 'notify_fail_text'] as $notifyTextField) {
+			if ($creating || array_key_exists($notifyTextField, $payload)) {
+				$row[$notifyTextField] = mb_substr(trim(strval($payload[$notifyTextField] ?? '')), 0, 65000);
+			}
+		}
 
 		if ($type === \Monitors::TYPE_HTTPS || $type === \Monitors::TYPE_HTTP_JSON) {
 			foreach (['url', 'method', 'proxy_host', 'request_headers', 'json_path', 'json_expected_value', 'json_expected_type'] as $field) {

@@ -1298,6 +1298,8 @@
           "workers": {"type": "array", "items": {"type": "integer"}},
           "notify": {"type": "array", "items": {"type": "integer"}},
           "signature_id": {"type": "integer"},
+          "notify_success_text": {"type": "string", "description": "Custom success notification body; replaces default text when non-empty"},
+          "notify_fail_text": {"type": "string", "description": "Custom fail notification body; replaces default text, fail details and signature when non-empty"},
           "parent_id": {"type": "integer"}
         },
         "additionalProperties": true
@@ -1342,6 +1344,8 @@
           "alert_fail_mode": {"type": "integer", "description": "0 all, 1 majority, 2 any"},
           "parent_id": {"type": "integer"},
           "signature_id": {"type": "integer"},
+          "notify_success_text": {"type": "string", "description": "Custom success notification body; replaces default text when non-empty"},
+          "notify_fail_text": {"type": "string", "description": "Custom fail notification body; replaces default text, fail details and signature when non-empty"},
           "workers": {"type": "array", "items": {"type": "integer"}},
           "notify": {"type": "array", "items": {"type": "integer"}}
         },

@@ -54,9 +54,14 @@ class NotifyWebhook {
 			$labels['instance'] = mb_substr($instance, 0, 255);
 		}
 
+		$summary = static::stripHtml($title);
+		$description = static::stripHtml($text);
+		if ($summary === '' && $description !== '') {
+			$summary = mb_substr($description, 0, 255);
+		}
 		$annotations = [
-			'summary' => static::stripHtml($title),
-			'description' => static::stripHtml($text),
+			'summary' => $summary,
+			'description' => $description,
 		];
 
 		$alert = [

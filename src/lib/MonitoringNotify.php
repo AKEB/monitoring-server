@@ -59,7 +59,10 @@ class MonitoringNotify extends \DB\MySQLObject {
 		return $notifications;
 	}
 
-	static public function sendNotification(int $monitor_id, string $text, ?string $title='', ?bool $status=false): bool {
+	/**
+	 * @param bool $omitAlertFooter When true (custom monitor texts), skip channel "Alert: …" footer.
+	 */
+	static public function sendNotification(int $monitor_id, string $text, ?string $title='', ?bool $status=false, bool $omitAlertFooter=false): bool {
 		if (!$monitor_id) return false;
 		if (!$text) return false;
 		$notifications = static::getNotificationsForMonitor($monitor_id);
@@ -83,8 +86,12 @@ class MonitoringNotify extends \DB\MySQLObject {
 			$notifyButtons = $withButtons && \AlertActions::buttonsEnabled($notify['json_data']);
 
 			if ($notify['type'] == \Notify::TYPE_TELEGRAM) {
-				$text_send = $title_send."\n".$text_send;
-				$text_send .= "\n\n".'<i>Alert: '.$notify['title'].'</i>';
+				if ($title_send !== '') {
+					$text_send = $title_send."\n".$text_send;
+				}
+				if (!$omitAlertFooter) {
+					$text_send .= "\n\n".'<i>Alert: '.$notify['title'].'</i>';
+				}
 				if ($actionBlock !== '') {
 					$text_send = rtrim($text_send)."\n\n".$actionBlock;
 				}
@@ -104,10 +111,12 @@ class MonitoringNotify extends \DB\MySQLObject {
 					if ($notifyButtons && $notifyId > 0) {
 						$replyMarkup = \AlertActions::telegramKeyboard($monitor_id, $notifyId);
 					}
+					// BotApi: disablePreview=true means no link preview.
+					$disablePreview = !static::linkPreviewEnabled($notify['json_data'], \Notify::TYPE_TELEGRAM);
 					$message = @$bot->sendMessage(
 						$telegram_chat_id,
 						$text_send,
-						'HTML', true, null, $replyMarkup, false,
+						'HTML', $disablePreview, null, $replyMarkup, false,
 						$telegram_thread_id
 					);
 					if ($notifyButtons && $message && method_exists($message, 'getMessageId')) {
@@ -145,8 +154,10 @@ class MonitoringNotify extends \DB\MySQLObject {
 						'title'       => $title_send,
 						'text'        => $text_send,
 						'ts'          => strval(time()),
-						'footer'      => 'Alert: '.$notify['title'],
 					];
+					if (!$omitAlertFooter) {
+						$attachment['footer'] = 'Alert: '.$notify['title'];
+					}
 					if ($notifyButtons && $notifyId > 0) {
 						$token = \AlertActions::ensureToken($notify['json_data']);
 						$baseUrl = strval($notify['json_data']['alert_action_base_url'] ?? '');
@@ -190,8 +201,12 @@ class MonitoringNotify extends \DB\MySQLObject {
 
 			} elseif ($notify['type'] == \Notify::TYPE_GOTIFY) {
 				try {
-					$text_send = $title_send."\n".$text_send;
-					$text_send .= "\n\n".'<i>Alert: '.$notify['title'].'</i>';
+					if ($title_send !== '') {
+						$text_send = $title_send."\n".$text_send;
+					}
+					if (!$omitAlertFooter) {
+						$text_send .= "\n\n".'<i>Alert: '.$notify['title'].'</i>';
+					}
 					if ($actionBlock !== '') {
 						$text_send = rtrim($text_send)."\n\n".$actionBlock;
 					}
@@ -212,8 +227,12 @@ class MonitoringNotify extends \DB\MySQLObject {
 				continue;
 			} elseif ($notify['type'] == \Notify::TYPE_MAX) {
 				try {
-					$text_send = $title_send."\n".$text_send;
-					$text_send .= "\n\n".'<i>Alert: '.$notify['title'].'</i>';
+					if ($title_send !== '') {
+						$text_send = $title_send."\n".$text_send;
+					}
+					if (!$omitAlertFooter) {
+						$text_send .= "\n\n".'<i>Alert: '.$notify['title'].'</i>';
+					}
 					if ($actionBlock !== '') {
 						$text_send = rtrim($text_send)."\n\n".$actionBlock;
 					}
@@ -226,12 +245,14 @@ class MonitoringNotify extends \DB\MySQLObject {
 					if ($notifyButtons && $notifyId > 0) {
 						$attachments = [\AlertActions::maxInlineKeyboard($monitor_id, $notifyId)];
 					}
+					$disableLinkPreview = !static::linkPreviewEnabled($notify['json_data'], \Notify::TYPE_MAX);
 					$sent = \MaxMessenger::send(
 						$token,
 						trim((string) $notify['receiver']),
 						$body,
 						'html',
-						$attachments
+						$attachments,
+						$disableLinkPreview
 					);
 					if ($notifyButtons && !empty($sent['ok']) && !empty($sent['message_id'])) {
 						\AlertActions::saveMessage(
@@ -275,6 +296,21 @@ class MonitoringNotify extends \DB\MySQLObject {
 			}
 		}
 		return true;
+	}
+
+	/**
+	 * Whether link/URL preview should be shown for this notify channel.
+	 * Missing key keeps previous defaults: Telegram off, MAX on.
+	 */
+	static public function linkPreviewEnabled(array $jsonData, int $type): bool {
+		if (!array_key_exists('link_preview_enabled', $jsonData)) {
+			return $type === \Notify::TYPE_MAX;
+		}
+		$raw = $jsonData['link_preview_enabled'];
+		if ($raw === true || $raw === 'true') {
+			return true;
+		}
+		return intval($raw) === 1;
 	}
 
 	static public function telegramBot(string $token): ?\TelegramBot\Api\BotApi {

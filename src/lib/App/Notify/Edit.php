@@ -40,18 +40,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 		$this->maxFetchParsed = null;
 		if (isset($data['maxFetchLastMessage']) && $data['maxFetchLastMessage'] === 'true') {
 			$this->handleMaxFetchLastMessage($data);
-			foreach ($data as $key => $value) {
-				$this->notify[$key] = $value;
-			}
-			if (!isset($this->notify['json_data']) || !is_array($this->notify['json_data'])) {
-				$this->notify['json_data'] = [];
-			}
-			$rawButtons = $data['json_data']['alert_buttons_enabled'] ?? null;
-			if ($rawButtons === true || $rawButtons === 'true' || intval($rawButtons) === 1) {
-				$this->notify['json_data']['alert_buttons_enabled'] = 1;
-			} else {
-				$this->notify['json_data']['alert_buttons_enabled'] = 0;
-			}
+			$this->applyPostedFormState($data);
 			return;
 		}
 
@@ -138,16 +127,19 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 			}
 
 			$buttonTypes = [\Notify::TYPE_TELEGRAM, \Notify::TYPE_MATTERMOST, \Notify::TYPE_MAX];
-			if (in_array(intval($params['type'] ?? -1), $buttonTypes, true)) {
+			$notifyType = intval($params['type'] ?? -1);
+			if (in_array($notifyType, $buttonTypes, true)) {
 				if (!isset($params['json_data']) || !is_array($params['json_data'])) {
 					$params['json_data'] = [];
 				}
-				$rawButtons = $data['json_data']['alert_buttons_enabled'] ?? null;
-				if ($rawButtons === true || $rawButtons === 'true' || intval($rawButtons) === 1) {
-					$params['json_data']['alert_buttons_enabled'] = 1;
-				} else {
-					$params['json_data']['alert_buttons_enabled'] = 0;
+				$params['json_data']['alert_buttons_enabled'] = static::postedSwitchOn($data['json_data']['alert_buttons_enabled'] ?? null) ? 1 : 0;
+			}
+			$previewTypes = [\Notify::TYPE_TELEGRAM, \Notify::TYPE_MAX];
+			if (in_array($notifyType, $previewTypes, true)) {
+				if (!isset($params['json_data']) || !is_array($params['json_data'])) {
+					$params['json_data'] = [];
 				}
+				$params['json_data']['link_preview_enabled'] = static::postedSwitchOn($data['json_data']['link_preview_enabled'] ?? null) ? 1 : 0;
 			}
 
 			if ($testNotify) {
@@ -456,9 +448,56 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				common_redirect('/admin/notify/');
 			}
 		} while(false);
-		foreach($data as $key => $value) {
+		$this->applyPostedFormState($data);
+	}
+
+	/**
+	 * Keep form values after Test / Max fetch / validation errors.
+	 * Checkbox switches arrive as "true" strings (or are absent when off) — normalize to 0/1.
+	 *
+	 * @param array<string,mixed> $data
+	 */
+	private function applyPostedFormState(array $data): void {
+		$existingJson = is_array($this->notify['json_data'] ?? null) ? $this->notify['json_data'] : [];
+		$skip = ['testNotify', 'maxFetchLastMessage', 'editNotify', 'createNotify', '_csrf'];
+		foreach ($data as $key => $value) {
+			if (in_array($key, $skip, true)) {
+				continue;
+			}
+			if ($key === 'json_data' && is_array($value)) {
+				// Keep tokens / action fields that are not posted (empty secret inputs, readonly token).
+				$merged = $existingJson;
+				foreach ($value as $jk => $jv) {
+					if (is_string($jv) && trim($jv) === '' && isset($existingJson[$jk]) && $existingJson[$jk] !== '') {
+						continue;
+					}
+					$merged[$jk] = $jv;
+				}
+				$this->notify['json_data'] = $merged;
+				continue;
+			}
 			$this->notify[$key] = $value;
 		}
+		$this->notify['status'] = static::postedSwitchOn($data['status'] ?? null) ? 1 : 0;
+		if (!isset($this->notify['json_data']) || !is_array($this->notify['json_data'])) {
+			$this->notify['json_data'] = [];
+		}
+		$type = intval($this->notify['type'] ?? ($data['type'] ?? -1));
+		if (in_array($type, [\Notify::TYPE_TELEGRAM, \Notify::TYPE_MATTERMOST, \Notify::TYPE_MAX], true)) {
+			$this->notify['json_data']['alert_buttons_enabled'] = static::postedSwitchOn(
+				$data['json_data']['alert_buttons_enabled'] ?? null
+			) ? 1 : 0;
+		}
+		if (in_array($type, [\Notify::TYPE_TELEGRAM, \Notify::TYPE_MAX], true)) {
+			$this->notify['json_data']['link_preview_enabled'] = static::postedSwitchOn(
+				$data['json_data']['link_preview_enabled'] ?? null
+			) ? 1 : 0;
+		}
+	}
+
+	/** @param mixed $raw */
+	static private function postedSwitchOn($raw): bool {
+		return $raw === true || $raw === 'true' || intval($raw) === 1;
 	}
 
 	private function registerAlertActionWebhooks(array $notify): void {
@@ -753,9 +792,8 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					echo $this->template->html_switch("status", intval($this->notify['status']??0), \T::Notify_Edit_Status(), false,[
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
-					$alertButtonsVal = \AlertActions::buttonsEnabled(
-						is_array($this->notify['json_data'] ?? null) ? $this->notify['json_data'] : []
-					) ? 1 : 0;
+					$jsonData = is_array($this->notify['json_data'] ?? null) ? $this->notify['json_data'] : [];
+					$alertButtonsVal = \AlertActions::buttonsEnabled($jsonData) ? 1 : 0;
 					echo $this->template->html_switch(
 						"json_data[alert_buttons_enabled]",
 						$alertButtonsVal,
@@ -772,6 +810,28 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					?>
 					<div class="type-dependence type-<?=\Notify::TYPE_TELEGRAM;?> type-<?=\Notify::TYPE_MATTERMOST;?> type-<?=\Notify::TYPE_MAX;?> col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6 mb-2">
 						<small class="text-muted"><?=\T::Notify_Edit_AlertButtonsEnabledHint();?></small>
+					</div>
+					<?php
+					$notifyTypeForPreview = intval($this->notify['type'] ?? \Notify::TYPE_TELEGRAM);
+					if ($notifyTypeForPreview !== \Notify::TYPE_TELEGRAM && $notifyTypeForPreview !== \Notify::TYPE_MAX) {
+						$notifyTypeForPreview = \Notify::TYPE_TELEGRAM;
+					}
+					$linkPreviewVal = \MonitoringNotify::linkPreviewEnabled($jsonData, $notifyTypeForPreview) ? 1 : 0;
+					echo $this->template->html_switch(
+						"json_data[link_preview_enabled]",
+						$linkPreviewVal,
+						\T::Notify_Edit_LinkPreviewEnabled(),
+						false,
+						[
+							'id' => 'link_preview_enabled',
+							'global-class' => 'type-dependence type-'.\Notify::TYPE_TELEGRAM
+								.' type-'.\Notify::TYPE_MAX,
+							'readonly' => !($this->can_write || $this->can_create),
+						]
+					);
+					?>
+					<div class="type-dependence type-<?=\Notify::TYPE_TELEGRAM;?> type-<?=\Notify::TYPE_MAX;?> col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6 mb-2">
+						<small class="text-muted"><?=\T::Notify_Edit_LinkPreviewEnabledHint();?></small>
 					</div>
 					<?php
 					echo $this->template->html_input("receiver", $this->notify['receiver']??'', \T::Notify_Edit_Receiver(), true, [

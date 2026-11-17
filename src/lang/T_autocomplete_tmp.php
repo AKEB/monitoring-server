@@ -1185,6 +1185,30 @@ class T {
 	public static function Monitor_Edit_SignatureEmptyProject(...$argv): string { return ''; }
 
 	/**
+	 * Monitor_Edit_NotifySuccessText
+	 * 
+	 * @return string "Custom success message"
+	 * @return string "Свой текст при успехе"
+	 */
+	public static function Monitor_Edit_NotifySuccessText(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_NotifyFailText
+	 * 
+	 * @return string "Custom error message"
+	 * @return string "Свой текст при ошибке"
+	 */
+	public static function Monitor_Edit_NotifyFailText(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_NotifyCustomTextsHint
+	 * 
+	 * @return string "If filled, completely replaces the default notification body (HTML allowed). The Success/Error header with date is always kept; channel footer Alert: … is omitted. On error, signature and fail details are not appended."
+	 * @return string "Если заполнено — полностью заменяет стандартное тело уведомления (можно HTML). Заголовок Success/Error с датой всегда сохраняется; подпись канала Alert: … не добавляется. При ошибке подпись и детали сбоя не добавляются."
+	 */
+	public static function Monitor_Edit_NotifyCustomTextsHint(...$argv): string { return ''; }
+
+	/**
 	 * Monitor_Edit_SendRepeatMinute
 	 * 
 	 * @return string "Resending error notifications in minutes"
@@ -1834,7 +1858,7 @@ class T {
 
 	/**
 	 * Notify_Edit_MaxReceiverHint
-	 *
+	 * 
 	 * @return string "In «Receiver»: positive user_id for a DM, or negative chat_id for a group chat. Chat_id arrives via the alert-button webhook: save the notify, message the bot or add it to a chat, then click «Load from Max»."
 	 * @return string "В поле «Получатель»: положительный user_id личного чата или отрицательный chat_id группы. Chat_id приходит через webhook кнопок: сохраните уведомление, напишите боту или добавьте его в чат, затем нажмите «Получить из Max»."
 	 */
@@ -1970,7 +1994,7 @@ class T {
 
 	/**
 	 * Notify_Edit_MaxFetchSectionLastMessage
-	 *
+	 * 
 	 * @return string "Last incoming message"
 	 * @return string "Последнее входящее сообщение"
 	 */
@@ -1978,7 +2002,7 @@ class T {
 
 	/**
 	 * Notify_Edit_MaxFetchSectionChats
-	 *
+	 * 
 	 * @return string "Known chats (webhook / updates)"
 	 * @return string "Известные чаты (webhook / updates)"
 	 */
@@ -2073,6 +2097,38 @@ class T {
 	public static function Notify_Edit_WebHookPassword(...$argv): string { return ''; }
 
 	/**
+	 * Notify_Edit_AlertButtonsEnabled
+	 * 
+	 * @return string "Alert buttons"
+	 * @return string "Кнопки алерта"
+	 */
+	public static function Notify_Edit_AlertButtonsEnabled(...$argv): string { return ''; }
+
+	/**
+	 * Notify_Edit_AlertButtonsEnabledHint
+	 * 
+	 * @return string "Disables inline buttons (Resolve, Mute, etc.) for this notification only. Does not affect other Notify rows that share the same bot."
+	 * @return string "Выключает inline-кнопки (Решить, Mute и т.д.) только для этого уведомления. Не влияет на другие Notify с тем же ботом."
+	 */
+	public static function Notify_Edit_AlertButtonsEnabledHint(...$argv): string { return ''; }
+
+	/**
+	 * Notify_Edit_LinkPreviewEnabled
+	 * 
+	 * @return string "Link preview"
+	 * @return string "Превью ссылок"
+	 */
+	public static function Notify_Edit_LinkPreviewEnabled(...$argv): string { return ''; }
+
+	/**
+	 * Notify_Edit_LinkPreviewEnabledHint
+	 * 
+	 * @return string "Show link previews in Telegram / MAX messages (disable_web_page_preview / disable_link_preview)."
+	 * @return string "Показывать превью ссылок в сообщениях Telegram / MAX (disable_web_page_preview / disable_link_preview)."
+	 */
+	public static function Notify_Edit_LinkPreviewEnabledHint(...$argv): string { return ''; }
+
+	/**
 	 * Notify_Edit_AlertActionWebhook
 	 * 
 	 * @return string "Alert action webhook"
@@ -2097,24 +2153,8 @@ class T {
 	public static function Notify_Edit_AlertActionWebhookMattermostHint(...$argv): string { return ''; }
 
 	/**
-	 * Notify_Edit_AlertButtonsEnabled
-	 *
-	 * @return string "Alert buttons"
-	 * @return string "Кнопки алерта"
-	 */
-	public static function Notify_Edit_AlertButtonsEnabled(...$argv): string { return ''; }
-
-	/**
-	 * Notify_Edit_AlertButtonsEnabledHint
-	 *
-	 * @return string "Disables inline buttons (Resolve, Mute, etc.) for this notification only. Does not affect other Notify rows that share the same bot."
-	 * @return string "Выключает inline-кнопки (Решить, Mute и т.д.) только для этого уведомления. Не влияет на другие Notify с тем же ботом."
-	 */
-	public static function Notify_Edit_AlertButtonsEnabledHint(...$argv): string { return ''; }
-
-	/**
 	 * Notify_Edit_AlertActionWebhookMaxHint
-	 *
+	 * 
 	 * @return string "One webhook per bot token. Multiple Notify rows with the same token share this URL. On save the subscription covers alert buttons and chat_id events (message_created, bot_added, etc.)."
 	 * @return string "Один webhook на токен бота. Несколько Notify с одним токеном делят URL. Подписка при сохранении получает и кнопки, и события для chat_id (message_created, bot_added и т.д.)."
 	 */
@@ -4913,6 +4953,30 @@ class T {
 	public static function Framework_Settings_UserProfile_TelegramId(...$argv): string { return ''; }
 
 	/**
+	 * Framework_Settings_UserProfile_Timezone
+	 * 
+	 * @return string "Timezone"
+	 * @return string "Часовой пояс"
+	 */
+	public static function Framework_Settings_UserProfile_Timezone(...$argv): string { return ''; }
+
+	/**
+	 * Framework_Settings_UserProfile_TimezoneHint
+	 * 
+	 * @return string "Detected from your browser. Dates and times on the site use this timezone."
+	 * @return string "Определяется из браузера. Даты и время на сайте показываются в этом поясе."
+	 */
+	public static function Framework_Settings_UserProfile_TimezoneHint(...$argv): string { return ''; }
+
+	/**
+	 * Framework_Settings_UserProfile_TimezoneManual
+	 * 
+	 * @return string "Keep my choice (do not auto-update from browser)"
+	 * @return string "Сохранить мой выбор (не обновлять автоматически из браузера)"
+	 */
+	public static function Framework_Settings_UserProfile_TimezoneManual(...$argv): string { return ''; }
+
+	/**
 	 * Framework_Settings_UserProfile_Change
 	 * 
 	 * @return string "Change Profile"
@@ -5031,6 +5095,14 @@ class T {
 	 * @return string "Уведомления"
 	 */
 	public static function Framework_Notifications_Title(...$argv): string { return ''; }
+
+	/**
+	 * Framework_Notifications_ClearList
+	 * 
+	 * @return string "Clear list"
+	 * @return string "Очистить список"
+	 */
+	public static function Framework_Notifications_ClearList(...$argv): string { return ''; }
 
 	/**
 	 * Framework_Common_Cancel

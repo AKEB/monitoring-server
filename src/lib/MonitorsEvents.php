@@ -277,7 +277,7 @@ class MonitorsEvents extends \DB\MySQLObject {
 		if (!isset($monitors) || !count($monitors)) return;
 		$monitor_ids = array_keys($monitors);
 		if (!count($monitor_ids)) return;
-		$monitors = \Monitors::data(false, sql_pholder(' AND `id` IN (?@) AND `status` = ?', $monitor_ids, \Monitors::STATUS_ENABLED), '`id`, `title`, `type`, `docker`, `last_send_status`, `last_send_time`, `alert_start_time`, `send_repeat_minute`, `alert_fail_mode`, `alert_muted`, `signature_id`, `external_log`');
+		$monitors = \Monitors::data(false, sql_pholder(' AND `id` IN (?@) AND `status` = ?', $monitor_ids, \Monitors::STATUS_ENABLED), '`id`, `title`, `type`, `docker`, `last_send_status`, `last_send_time`, `alert_start_time`, `send_repeat_minute`, `alert_fail_mode`, `alert_muted`, `signature_id`, `notify_success_text`, `notify_fail_text`, `external_log`');
 		$monitors_hash = [];
 		$dockers_monitor_hash = [];
 		foreach($monitors as $monitor) {
@@ -338,6 +338,7 @@ class MonitorsEvents extends \DB\MySQLObject {
 			}
 			$title = '';
 			$text = '';
+			$omitAlertFooter = false;
 			$success = 1;
 			$clear_alert_start = false;
 			$workers_total = count($jobs_hash[$monitor_id]);
@@ -345,9 +346,8 @@ class MonitorsEvents extends \DB\MySQLObject {
 			if ($global_good == $workers_total) {
 				// Все обработчики вернули успех
 				if ($monitor['last_send_status'] != \MonitoringLogs::STATUS_GOOD) {
-					$title = "✅ Success ".date("Y-m-d H:i:s");
 					$success = 1;
-					$text = '<b>'.\Monitors::get_monitor_title_with_folders($monitor['id'])."</b> is up ";
+					[$title, $text, $omitAlertFooter] = static::composeSuccessAlert($monitor);
 					\Monitors::save([
 						'id' => $monitor_id,
 						'last_send_status' => \MonitoringLogs::STATUS_GOOD,
@@ -360,12 +360,8 @@ class MonitorsEvents extends \DB\MySQLObject {
 			} elseif (\Monitors::is_alert_fail_threshold($alert_fail_mode, $global_failed, $workers_total)) {
 				// Порог ошибок по настройке монитора (все / большинство / любой)
 				if ($monitor['last_send_status'] != \MonitoringLogs::STATUS_FAIL) {
-					$title = "🚫 Error ".date("Y-m-d H:i:s");
 					$success = 0;
-					$text = '<b>'.\Monitors::get_monitor_title_with_folders($monitor['id'])."</b> is down ";
-					$text .= static::failDescriptionHtml($monitor, $descriptions);
-					$signature_text = \Signatures::resolveText(intval($monitor['signature_id'] ?? 0));
-					if ($signature_text) $text .= "\n\n". $signature_text;
+					[$title, $text, $omitAlertFooter] = static::composeFailAlert($monitor, $descriptions);
 					\Monitors::save([
 						'id' => $monitor_id,
 						'last_send_status' => \MonitoringLogs::STATUS_FAIL,
@@ -378,12 +374,8 @@ class MonitorsEvents extends \DB\MySQLObject {
 					if (intval($monitor['alert_muted'] ?? 0) === 1) {
 						// Mute: не шлём повторные алерты до зелёного
 					} elseif ($monitor['last_send_time'] + $monitor['send_repeat_minute'] * 60 < time()) {
-						$title = "🚫 Error ".date("Y-m-d H:i:s");
 						$success = 0;
-						$text = '<b>'.\Monitors::get_monitor_title_with_folders($monitor['id'])."</b> is down ";
-						$text .= static::failDescriptionHtml($monitor, $descriptions);
-						$signature_text = \Signatures::resolveText(intval($monitor['signature_id'] ?? 0));
-						if ($signature_text) $text .= "\n\n". $signature_text;
+						[$title, $text, $omitAlertFooter] = static::composeFailAlert($monitor, $descriptions);
 						\Monitors::save([
 							'id' => $monitor_id,
 							'last_send_status' => \MonitoringLogs::STATUS_FAIL,
@@ -394,7 +386,7 @@ class MonitorsEvents extends \DB\MySQLObject {
 				}
 			}
 			if ($text) {
-				\MonitoringNotify::sendNotification($monitor_id, $text, $title, $success);
+				\MonitoringNotify::sendNotification($monitor_id, $text, $title, $success, $omitAlertFooter);
 				if ($clear_alert_start) {
 					\AlertActions::clearForMonitor($monitor_id);
 					\Monitors::save([
@@ -406,13 +398,53 @@ class MonitorsEvents extends \DB\MySQLObject {
 				}
 				$subs = \MonitoringSubscribe::data(false, sql_pholder(' AND `monitor_id` = ? AND `expire_time` >= ? ', $monitor_id, time()), '`user_id`');
 				if (is_array($subs) && $subs) {
+					$inAppTitle = $title !== '' ? $title : ($success ? '✅ Success' : '🚫 Error');
 					foreach($subs as $sub) {
 						if (!$sub['user_id']) continue;
-						\Notifications::sendNotification($title, str_replace("\n","<br/>",$text), $success, $sub['user_id']);
+						\Notifications::sendNotification($inAppTitle, str_replace("\n","<br/>",$text), $success, $sub['user_id']);
 					}
 				}
 			}
 		}
+	}
+
+	/**
+	 * @return array{0:string,1:string,2:bool} [title, text, omitAlertFooter]
+	 */
+	static private function composeSuccessAlert(array $monitor): array {
+		$title = "✅ Success ".date("Y-m-d H:i:s");
+		$custom = trim(strval($monitor['notify_success_text'] ?? ''));
+		if ($custom !== '') {
+			// Custom body; Success header stays; channel Alert footer omitted.
+			return [$title, $custom, true];
+		}
+		return [
+			$title,
+			'<b>'.\Monitors::get_monitor_title_with_folders($monitor['id'])."</b> is up ",
+			false,
+		];
+	}
+
+	/**
+	 * Custom notify_fail_text replaces default body, fail details, and signature.
+	 * Error header with date always stays. Channel Alert footer omitted only for custom.
+	 *
+	 * @param array<int|string,string> $descriptions
+	 * @return array{0:string,1:string,2:bool} [title, text, omitAlertFooter]
+	 */
+	static private function composeFailAlert(array $monitor, array $descriptions): array {
+		$title = "🚫 Error ".date("Y-m-d H:i:s");
+		$custom = trim(strval($monitor['notify_fail_text'] ?? ''));
+		if ($custom !== '') {
+			return [$title, $custom, true];
+		}
+		$text = '<b>'.\Monitors::get_monitor_title_with_folders($monitor['id'])."</b> is down ";
+		$text .= static::failDescriptionHtml($monitor, $descriptions);
+		$signature_text = \Signatures::resolveText(intval($monitor['signature_id'] ?? 0));
+		if ($signature_text) {
+			$text .= "\n\n".$signature_text;
+		}
+		return [$title, $text, false];
 	}
 
 	/**

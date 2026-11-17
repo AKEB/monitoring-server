@@ -281,6 +281,14 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				$params['signature_id'] = 0;
 			}
 
+			foreach (['notify_success_text', 'notify_fail_text'] as $notifyTextField) {
+				if (array_key_exists($notifyTextField, $data)) {
+					$params[$notifyTextField] = mb_substr(trim(strval($data[$notifyTextField])), 0, 65000);
+				} else {
+					$params[$notifyTextField] = '';
+				}
+			}
+
 			if ($data['type'] == \Monitors::TYPE_HTTPS || $data['type'] == \Monitors::TYPE_HTTP_JSON) {
 				if (isset($data['url'])) {
 					$data['url'] = trim($data['url']);
@@ -879,6 +887,8 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 			$this->monitor['response_code'] ??= [2];
 			$this->monitor['parent_id'] ??= $this->parent_id;
 			$this->monitor['signature_id'] ??= 0;
+			$this->monitor['notify_success_text'] ??= '';
+			$this->monitor['notify_fail_text'] ??= '';
 			$this->monitor['value'] ??= 80;
 			$this->monitor['request_headers'] ??= '';
 			$this->monitor['json_path'] ??= '';
@@ -1361,6 +1371,27 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					echo '<a href="/admin/signatures/edit/'.$current_signature_id.'/" id="signature-edit-link" target="_blank" rel="noopener">'.\T::Monitor_Edit_SignatureEditLink().'</a>';
 					echo '</div></div>';
 					echo '<script type="application/json" id="signatures-data">'.json_encode(array_values($signatures_list), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT).'</script>';
+
+					echo $this->template->html_input("notify_success_text", $this->monitor['notify_success_text']??'', \T::Monitor_Edit_NotifySuccessText(), false, [
+						'type' => 'textarea',
+						'rows' => '4',
+						'cols' => '60',
+						'global-class' => $signature_type_class,
+						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+						'readonly' => !($this->can_write || $this->can_create),
+					]);
+					echo $this->template->html_input("notify_fail_text", $this->monitor['notify_fail_text']??'', \T::Monitor_Edit_NotifyFailText(), false, [
+						'type' => 'textarea',
+						'rows' => '4',
+						'cols' => '60',
+						'global-class' => $signature_type_class,
+						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+						'readonly' => !($this->can_write || $this->can_create),
+					]);
+					echo '<div class="mb-3 row '.$signature_type_class.'">';
+					echo '<label class="col-xs-12 col-sm-12 col-md-3 col-form-label"></label>';
+					echo '<div class="col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6 text-muted small">'.\T::Monitor_Edit_NotifyCustomTextsHint().'</div>';
+					echo '</div>';
 
 					echo $this->template->html_input("proxy_host", $this->monitor['proxy_host']??'', \T::Monitor_Edit_ProxyHost(), false, [
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',

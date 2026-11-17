@@ -83,6 +83,7 @@ class MaxMessenger {
 	 * @param string $text тело сообщения (до 4000 символов на стороне API)
 	 * @param string|null $format "html"|"markdown"|null
 	 * @param array|null $attachments вложения (например inline_keyboard)
+	 * @param bool $disableLinkPreview true = не показывать превью ссылок
 	 * @return array{ok: bool, message_id: string, data: array|null}
 	 */
 	public static function send(
@@ -90,7 +91,8 @@ class MaxMessenger {
 		$receiverId,
 		string $text,
 		?string $format = 'html',
-		?array $attachments = null
+		?array $attachments = null,
+		bool $disableLinkPreview = false
 	): array {
 		$raw = trim((string) $receiverId);
 		if ($raw === '' || !preg_match('/^-?\d+$/', $raw)) {
@@ -99,7 +101,7 @@ class MaxMessenger {
 		if ($raw === '0' || $raw === '-0' || $raw === '+0') {
 			return ['ok' => false, 'message_id' => '', 'data' => null];
 		}
-		$query = ['disable_link_preview' => false];
+		$query = ['disable_link_preview' => $disableLinkPreview];
 		if ($raw[0] === '-') {
 			$query['chat_id'] = $raw;
 		} else {
