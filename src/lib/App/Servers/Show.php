@@ -48,7 +48,7 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 		}
 		$version = \AppOptions::normalizeVersion(strval($data['desired_agent_version'] ?? ''));
 		\AppOptions::setDesiredAgentVersion($version);
-		// Reset cooldown so next reports pick up the new target.
+		// Clear per-server overrides and cooldown so the global target actually applies.
 		foreach (\Servers::data() ?: [] as $row) {
 			$id = intval($row['id'] ?? 0);
 			if ($id < 1) {
@@ -56,7 +56,9 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 			}
 			\Servers::save([
 				'id' => $id,
+				'desired_agent_version' => '',
 				'update_requested_at' => 0,
+				'update_error' => '',
 				'update_time' => time(),
 				'_mode' => \DB\Common::CSMODE_UPDATE,
 			]);

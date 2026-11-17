@@ -47,6 +47,7 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 		}
 		$version = \AppOptions::normalizeVersion(strval($data['desired_worker_version'] ?? ''));
 		\AppOptions::setDesiredWorkerVersion($version);
+		// Clear per-worker overrides and cooldown so the global target actually applies.
 		foreach (\Workers::data() ?: [] as $row) {
 			$id = intval($row['id'] ?? 0);
 			if ($id < 1) {
@@ -54,7 +55,9 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 			}
 			\Workers::save([
 				'id' => $id,
+				'desired_worker_version' => '',
 				'update_requested_at' => 0,
+				'update_error' => '',
 				'update_time' => time(),
 				'_mode' => \DB\Common::CSMODE_UPDATE,
 			]);
