@@ -223,4 +223,36 @@ class MonitoringLogsMetricTest extends PHPUnit\Framework\TestCase {
 	function test_monitor_data_cache_gen_key() {
 		$this->assertSame('monitor_data_gen_58', \MonitoringLogs::monitorDataCacheGenKey(58));
 	}
+
+	function test_merge_worker_log_for_slot_prefers_fail() {
+		$fail = [
+			'worker_id' => 7,
+			'status' => \MonitoringLogs::STATUS_FAIL,
+			'status_code' => 0,
+			'response_error' => 'dns: server misbehaving',
+			'total_time_us' => 10000,
+		];
+		$ok = [
+			'worker_id' => 7,
+			'status' => \MonitoringLogs::STATUS_GOOD,
+			'status_code' => 200,
+			'response_error' => '',
+			'total_time_us' => 9000000,
+		];
+
+		// Success after fail in the same bucket must not hide the error on detail bars.
+		$merged = \MonitoringLogs::mergeWorkerLogForSlot($fail, $ok);
+		$this->assertSame(\MonitoringLogs::STATUS_FAIL, intval($merged['status']));
+		$this->assertSame(0, intval($merged['status_code']));
+		$this->assertSame('dns: server misbehaving', $merged['response_error']);
+		$this->assertSame(9000000, intval($merged['total_time_us']));
+
+		// Fail after success must still keep the fail.
+		$merged = \MonitoringLogs::mergeWorkerLogForSlot($ok, $fail);
+		$this->assertSame(\MonitoringLogs::STATUS_FAIL, intval($merged['status']));
+		$this->assertSame(0, intval($merged['status_code']));
+		$this->assertSame(9000000, intval($merged['total_time_us']));
+
+		$this->assertSame($ok, \MonitoringLogs::mergeWorkerLogForSlot(null, $ok));
+	}
 }

@@ -17,6 +17,35 @@ class MonitoringLogs extends \DB\MySQLObject {
 	const STATE_ERROR = 2;
 
 	/**
+	 * Merge two worker logs for one timeline slot.
+	 * Prefer FAIL over GOOD (same as chart min(status) / list max(STATE)).
+	 * When statuses tie, keep the later row but take the larger response time.
+	 *
+	 * @param array<string, mixed>|null $existing
+	 * @param array<string, mixed> $incoming
+	 * @return array<string, mixed>
+	 */
+	static public function mergeWorkerLogForSlot(?array $existing, array $incoming): array {
+		if ($existing === null) {
+			return $incoming;
+		}
+		$existingStatus = intval($existing['status'] ?? static::STATUS_GOOD);
+		$incomingStatus = intval($incoming['status'] ?? static::STATUS_GOOD);
+		if ($incomingStatus < $existingStatus) {
+			$merged = $incoming;
+		} elseif ($incomingStatus > $existingStatus) {
+			$merged = $existing;
+		} else {
+			$merged = $incoming;
+		}
+		$merged['total_time_us'] = max(
+			intval($existing['total_time_us'] ?? 0),
+			intval($incoming['total_time_us'] ?? 0)
+		);
+		return $merged;
+	}
+
+	/**
 	 * Persist metric + optional error for server-agent / value monitors.
 	 * Always keeps value=… so charts can plot history on both OK and FAIL.
 	 */
@@ -823,10 +852,15 @@ class MonitoringLogs extends \DB\MySQLObject {
 						'title' => \UserTime::format(intval($intervalTime), 'H:i:s'),
 					];
 				}
-				$item['title'] = \UserTime::format(intval($intervalTime)).' - '.$item['status_code'].' '.$item['response_error'];
 				$logs_hash[$intervalTime]['title'] = \UserTime::format(intval($intervalTime), 'H:i:s');
-				$logs_hash[$intervalTime][$item['worker_id']] = $item;
-				$last_data[$item['worker_id']] = $item;
+				$workerId = $item['worker_id'];
+				$existing = isset($logs_hash[$intervalTime][$workerId]) && is_array($logs_hash[$intervalTime][$workerId])
+					? $logs_hash[$intervalTime][$workerId]
+					: null;
+				$merged = static::mergeWorkerLogForSlot($existing, $item);
+				$merged['title'] = \UserTime::format(intval($intervalTime)).' - '.$merged['status_code'].' '.$merged['response_error'];
+				$logs_hash[$intervalTime][$workerId] = $merged;
+				$last_data[$workerId] = $merged;
 			}
 			// Keep the open interval even when empty — UI inherits previous worker status.
 			$return['logs'] = $logs_hash;
