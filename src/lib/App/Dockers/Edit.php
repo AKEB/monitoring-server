@@ -738,6 +738,9 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 
 			$(document).ready(function(){
 				$('#Table').DataTable();
+				if ($('#WorkersPollTable').length && $('#WorkersPollTable tbody tr').length) {
+					new DataTable('#WorkersPollTable');
+				}
 
 				docker_tls_change();
 				$('#tls').change(function(){

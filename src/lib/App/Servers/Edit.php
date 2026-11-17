@@ -1110,7 +1110,9 @@ SH;
 					}
 					const dt = new DataTable(sel, opts);
 					if (sel === '#serverSystemdTable') {
-						$('#systemdFilter').on('input', function() {
+						const $filter = $('#systemdFilter');
+						$filter.val(dt.search());
+						$filter.on('input', function() {
 							dt.search(String(this.value || '')).draw();
 						});
 					}
