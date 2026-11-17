@@ -43,6 +43,15 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 			foreach ($data as $key => $value) {
 				$this->notify[$key] = $value;
 			}
+			if (!isset($this->notify['json_data']) || !is_array($this->notify['json_data'])) {
+				$this->notify['json_data'] = [];
+			}
+			$rawButtons = $data['json_data']['alert_buttons_enabled'] ?? null;
+			if ($rawButtons === true || $rawButtons === 'true' || intval($rawButtons) === 1) {
+				$this->notify['json_data']['alert_buttons_enabled'] = 1;
+			} else {
+				$this->notify['json_data']['alert_buttons_enabled'] = 0;
+			}
 			return;
 		}
 
@@ -125,6 +134,19 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					if (isset($data['json_data']['webhook_password']) && $data['json_data']['webhook_password'] && trim($data['json_data']['webhook_password']) != '') {
 						$params['json_data']['webhook_password'] = trim($data['json_data']['webhook_password']);
 					}
+				}
+			}
+
+			$buttonTypes = [\Notify::TYPE_TELEGRAM, \Notify::TYPE_MATTERMOST, \Notify::TYPE_MAX];
+			if (in_array(intval($params['type'] ?? -1), $buttonTypes, true)) {
+				if (!isset($params['json_data']) || !is_array($params['json_data'])) {
+					$params['json_data'] = [];
+				}
+				$rawButtons = $data['json_data']['alert_buttons_enabled'] ?? null;
+				if ($rawButtons === true || $rawButtons === 'true' || intval($rawButtons) === 1) {
+					$params['json_data']['alert_buttons_enabled'] = 1;
+				} else {
+					$params['json_data']['alert_buttons_enabled'] = 0;
 				}
 			}
 
@@ -538,6 +560,10 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 			);
 		} else {
 			$this->notify['status'] ??= 1;
+			if (!isset($this->notify['json_data']) || !is_array($this->notify['json_data'])) {
+				$this->notify['json_data'] = [];
+			}
+			$this->notify['json_data']['alert_buttons_enabled'] ??= 1;
 		}
 	}
 
@@ -580,12 +606,29 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 			}
 		}
 
-		$updatesRes = \MaxMessenger::fetchUpdates($token);
-		$parsed = null;
-		$chats = [];
-		if ($updatesRes['ok'] && is_array($updatesRes['data'])) {
-			$parsed = \MaxMessenger::parseLastMessageFromUpdates($updatesRes['data']);
-			$chats = \MaxMessenger::parseChatsFromUpdates($updatesRes['data']);
+		$store = \AlertActions::loadMaxSeenStore($token, $this->notify_id);
+		$parsed = $store['last_inbound'];
+		$chats = $store['chats'];
+
+		$subs = \MaxMessenger::listSubscriptions($token);
+		$hasWebhook = !empty($subs['ok']) && $subs['subscriptions'] !== [];
+
+		// Long Poll работает только без активной webhook-подписки.
+		if (!$hasWebhook) {
+			$updatesRes = \MaxMessenger::fetchUpdates($token);
+			if ($updatesRes['ok'] && is_array($updatesRes['data'])) {
+				$fromUpdates = \MaxMessenger::parseLastMessageFromUpdates($updatesRes['data']);
+				$chatsFromUpdates = \MaxMessenger::parseChatsFromUpdates($updatesRes['data']);
+				if ($fromUpdates !== null) {
+					$parsed = $fromUpdates;
+				}
+				foreach ($chatsFromUpdates as $c) {
+					$chats = \MaxMessenger::mergeSeenChat($chats, $c, false);
+				}
+			} elseif (!$updatesRes['ok'] && $parsed === null && $chats === []) {
+				$this->error = \T::Notify_Edit_MaxFetchHttp(intval($updatesRes['http_code']));
+				return;
+			}
 		}
 
 		$hasData = ($parsed !== null || $chats !== []);
@@ -596,8 +639,8 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 			];
 			return;
 		}
-		if (!$updatesRes['ok']) {
-			$this->error = \T::Notify_Edit_MaxFetchHttp(intval($updatesRes['http_code']));
+		if ($hasWebhook) {
+			$this->error = \T::Notify_Edit_MaxFetchNoDataWebhook();
 			return;
 		}
 		$this->error = \T::Notify_Edit_MaxFetchNoData();
@@ -644,6 +687,27 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					echo $this->template->html_switch("status", intval($this->notify['status']??0), \T::Notify_Edit_Status(), false,[
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
+					$alertButtonsVal = \AlertActions::buttonsEnabled(
+						is_array($this->notify['json_data'] ?? null) ? $this->notify['json_data'] : []
+					) ? 1 : 0;
+					echo $this->template->html_switch(
+						"json_data[alert_buttons_enabled]",
+						$alertButtonsVal,
+						\T::Notify_Edit_AlertButtonsEnabled(),
+						false,
+						[
+							'id' => 'alert_buttons_enabled',
+							'global-class' => 'type-dependence type-'.\Notify::TYPE_TELEGRAM
+								.' type-'.\Notify::TYPE_MATTERMOST
+								.' type-'.\Notify::TYPE_MAX,
+							'readonly' => !($this->can_write || $this->can_create),
+						]
+					);
+					?>
+					<div class="type-dependence type-<?=\Notify::TYPE_TELEGRAM;?> type-<?=\Notify::TYPE_MATTERMOST;?> type-<?=\Notify::TYPE_MAX;?> col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6 mb-2">
+						<small class="text-muted"><?=\T::Notify_Edit_AlertButtonsEnabledHint();?></small>
+					</div>
+					<?php
 					echo $this->template->html_input("receiver", $this->notify['receiver']??'', \T::Notify_Edit_Receiver(), true, [
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
 						'readonly' => !($this->can_write || $this->can_create),

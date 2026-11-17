@@ -170,6 +170,29 @@ class AlertAction extends \Routing_Parent implements \Routing_Interface {
 		} elseif (isset($data['updates']) && is_array($data['updates'])) {
 			$updates = $data['updates'];
 		}
+
+		$json = is_array($notify['json_data'] ?? null) ? $notify['json_data'] : [];
+		$storeChanged = false;
+		foreach ($updates as $u) {
+			if (!is_array($u)) {
+				continue;
+			}
+			if (\MaxMessenger::applyUpdateToNotifyJson($json, $u)) {
+				$storeChanged = true;
+			}
+		}
+		if ($storeChanged) {
+			$notifyId = intval($notify['id'] ?? 0);
+			if ($notifyId > 0) {
+				\Notify::save([
+					'id' => $notifyId,
+					'json_data' => json_encode($json, JSON_UNESCAPED_UNICODE),
+					'update_time' => time(),
+				]);
+			}
+			$notify['json_data'] = $json;
+		}
+
 		foreach ($updates as $u) {
 			if (!is_array($u) || ($u['update_type'] ?? '') !== 'message_callback') {
 				continue;

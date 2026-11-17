@@ -91,6 +91,20 @@ class AlertActions extends \DB\MySQLObject {
 	}
 
 	/**
+	 * Inline-кнопки алерта для этого notify (по умолчанию включены).
+	 */
+	static public function buttonsEnabled(array $jsonData): bool {
+		if (!array_key_exists('alert_buttons_enabled', $jsonData)) {
+			return true;
+		}
+		$raw = $jsonData['alert_buttons_enabled'];
+		if ($raw === true || $raw === 'true') {
+			return true;
+		}
+		return intval($raw) === 1;
+	}
+
+	/**
 	 * Telegram/MAX: один webhook на бота. Несколько Notify с одним токеном бота
 	 * должны делить один alert_action_token (иначе setWebhook перетирает URL).
 	 */
@@ -596,5 +610,59 @@ class AlertActions extends \DB\MySQLObject {
 			}
 		}
 		return null;
+	}
+
+	/**
+	 * Чаты/last inbound, накопленные webhook'ом для ботов с данным max_token.
+	 *
+	 * @return array{chats: array<int, array{chat_id: string, type: string, title: string}>, last_inbound: array{chat_id: string, user_id: string, message: string, message_empty: bool}|null}
+	 */
+	static public function loadMaxSeenStore(string $maxToken, int $preferNotifyId = 0): array {
+		$maxToken = trim($maxToken);
+		$chats = [];
+		$lastInbound = null;
+		if ($maxToken === '') {
+			return ['chats' => [], 'last_inbound' => null];
+		}
+		$rows = \Notify::data(false, sql_pholder(' AND `type` = ?', \Notify::TYPE_MAX));
+		if (!is_array($rows)) {
+			return ['chats' => [], 'last_inbound' => null];
+		}
+		$ordered = [];
+		foreach ($rows as $row) {
+			$id = intval($row['id'] ?? 0);
+			if ($preferNotifyId > 0 && $id === $preferNotifyId) {
+				array_unshift($ordered, $row);
+			} else {
+				$ordered[] = $row;
+			}
+		}
+		foreach ($ordered as $row) {
+			$json = $row['json_data'] ?? [];
+			if (is_string($json)) {
+				$json = json_decode($json, true) ?: [];
+			}
+			if (!is_array($json)) {
+				continue;
+			}
+			if (trim(strval($json['max_token'] ?? '')) !== $maxToken) {
+				continue;
+			}
+			foreach (\MaxMessenger::normalizeSeenChats($json['max_seen_chats'] ?? []) as $chat) {
+				$chats = \MaxMessenger::mergeSeenChat($chats, $chat, false);
+			}
+			if ($lastInbound === null && isset($json['max_last_inbound']) && is_array($json['max_last_inbound'])) {
+				$li = $json['max_last_inbound'];
+				if ((string) ($li['chat_id'] ?? '') !== '' || (string) ($li['user_id'] ?? '') !== '') {
+					$lastInbound = [
+						'chat_id' => (string) ($li['chat_id'] ?? ''),
+						'user_id' => (string) ($li['user_id'] ?? ''),
+						'message' => (string) ($li['message'] ?? ''),
+						'message_empty' => !empty($li['message_empty']) || (string) ($li['message'] ?? '') === '',
+					];
+				}
+			}
+		}
+		return ['chats' => $chats, 'last_inbound' => $lastInbound];
 	}
 }

@@ -182,8 +182,19 @@ class MaxMessenger {
 		return self::request('POST', '/answers', ['callback_id' => $callbackId], $accessToken, $body)['ok'];
 	}
 
+	/** Типы событий webhook: кнопки алерта + сбор chat_id (Long Poll при подписке недоступен). */
+	public const WEBHOOK_UPDATE_TYPES = [
+		'message_callback',
+		'message_created',
+		'bot_added',
+		'bot_started',
+		'bot_removed',
+	];
+
+	private const SEEN_CHATS_CAP = 50;
+
 	/**
-	 * Подписка на webhook (если API поддерживает).
+	 * Подписка на webhook (кнопки + события для сбора chat_id).
 	 */
 	public static function subscribeWebhook(string $accessToken, string $url): bool {
 		$url = trim($url);
@@ -192,9 +203,217 @@ class MaxMessenger {
 		}
 		$res = self::request('POST', '/subscriptions', [], $accessToken, [
 			'url' => $url,
-			'update_types' => ['message_callback'],
+			'update_types' => self::WEBHOOK_UPDATE_TYPES,
 		]);
 		return !empty($res['ok']);
+	}
+
+	/**
+	 * GET /subscriptions — список активных webhook-подписок.
+	 *
+	 * @return array{ok: bool, http_code: int, subscriptions: array<int, array>}
+	 */
+	public static function listSubscriptions(string $accessToken): array {
+		$res = self::request('GET', '/subscriptions', [], $accessToken);
+		$subs = [];
+		if (is_array($res['data'])) {
+			$raw = $res['data']['subscriptions'] ?? $res['data'];
+			if (is_array($raw)) {
+				foreach ($raw as $s) {
+					if (is_array($s)) {
+						$subs[] = $s;
+					}
+				}
+			}
+		}
+		return [
+			'ok' => !empty($res['ok']),
+			'http_code' => intval($res['http_code']),
+			'subscriptions' => $subs,
+		];
+	}
+
+	/**
+	 * DELETE /subscriptions?url=… — отписка от webhook (Long Poll снова доступен).
+	 */
+	public static function unsubscribeWebhook(string $accessToken, string $url): bool {
+		$url = trim($url);
+		if ($url === '') {
+			return false;
+		}
+		return !empty(self::request('DELETE', '/subscriptions', ['url' => $url], $accessToken)['ok']);
+	}
+
+	/**
+	 * Из одного Update: chat_id / type / title (для хранения и UI).
+	 *
+	 * @return array{chat_id: string, type: string, title: string}|null
+	 */
+	public static function extractChatFromUpdate(array $u): ?array {
+		$chatId = '';
+		$type = '';
+		$title = '';
+
+		if (isset($u['chat_id']) && (string) $u['chat_id'] !== '' && (string) $u['chat_id'] !== '0') {
+			$chatId = (string) $u['chat_id'];
+		}
+		if (isset($u['is_channel'])) {
+			$type = !empty($u['is_channel']) ? 'channel' : 'chat';
+		}
+		$updateType = (string) ($u['update_type'] ?? '');
+		if ($updateType === 'chat_title_changed' && isset($u['title'])) {
+			$title = (string) $u['title'];
+		}
+		if (($updateType === 'bot_added' || $updateType === 'bot_started') && isset($u['title'])) {
+			$title = (string) $u['title'];
+		}
+
+		if (isset($u['message']) && is_array($u['message'])) {
+			$msg = $u['message'];
+			$recipient = isset($msg['recipient']) && is_array($msg['recipient']) ? $msg['recipient'] : [];
+			if ($chatId === '' && isset($recipient['chat_id'])) {
+				$chatId = (string) $recipient['chat_id'];
+			}
+			if ($chatId === '' && isset($msg['chat_id'])) {
+				$chatId = (string) $msg['chat_id'];
+			}
+			if ($type === '' && isset($recipient['chat_type'])) {
+				$type = (string) $recipient['chat_type'];
+			}
+		}
+
+		if ($chatId === '' || $chatId === '0') {
+			return null;
+		}
+		return ['chat_id' => $chatId, 'type' => $type, 'title' => $title];
+	}
+
+	/**
+	 * Последнее входящее из одного Update (для max_last_inbound).
+	 *
+	 * @return array{chat_id: string, user_id: string, message: string, message_empty: bool}|null
+	 */
+	public static function extractInboundFromUpdate(array $u): ?array {
+		$parsed = self::parseLastMessageFromUpdates(['updates' => [$u]]);
+		if ($parsed !== null) {
+			return $parsed;
+		}
+		$chat = self::extractChatFromUpdate($u);
+		if ($chat === null) {
+			return null;
+		}
+		$userId = '';
+		if (isset($u['user']['user_id'])) {
+			$userId = (string) $u['user']['user_id'];
+		} elseif (isset($u['user_id'])) {
+			$userId = (string) $u['user_id'];
+		}
+		return [
+			'chat_id' => $chat['chat_id'],
+			'user_id' => $userId,
+			'message' => '',
+			'message_empty' => true,
+		];
+	}
+
+	/**
+	 * Слить чат в список; кап SEEN_CHATS_CAP. При removed — удалить.
+	 *
+	 * @param array<int, array{chat_id: string, type?: string, title?: string}> $existing
+	 * @param array{chat_id: string, type?: string, title?: string} $chat
+	 * @return array<int, array{chat_id: string, type: string, title: string}>
+	 */
+	public static function mergeSeenChat(array $existing, array $chat, bool $removed = false): array {
+		$chatId = (string) ($chat['chat_id'] ?? '');
+		if ($chatId === '' || $chatId === '0') {
+			return self::normalizeSeenChats($existing);
+		}
+		$byId = [];
+		foreach (self::normalizeSeenChats($existing) as $row) {
+			$byId[$row['chat_id']] = $row;
+		}
+		if ($removed) {
+			unset($byId[$chatId]);
+			return array_values($byId);
+		}
+		$prev = $byId[$chatId] ?? ['chat_id' => $chatId, 'type' => '', 'title' => ''];
+		$type = trim((string) ($chat['type'] ?? ''));
+		$title = trim((string) ($chat['title'] ?? ''));
+		if ($type !== '') {
+			$prev['type'] = $type;
+		}
+		if ($title !== '') {
+			$prev['title'] = $title;
+		}
+		unset($byId[$chatId]);
+		$byId = [$chatId => $prev] + $byId;
+		return array_slice(array_values($byId), 0, self::SEEN_CHATS_CAP);
+	}
+
+	/**
+	 * @param mixed $raw
+	 * @return array<int, array{chat_id: string, type: string, title: string}>
+	 */
+	public static function normalizeSeenChats($raw): array {
+		if (!is_array($raw)) {
+			return [];
+		}
+		$out = [];
+		foreach ($raw as $row) {
+			if (!is_array($row)) {
+				continue;
+			}
+			$chatId = (string) ($row['chat_id'] ?? '');
+			if ($chatId === '' || $chatId === '0') {
+				continue;
+			}
+			$out[] = [
+				'chat_id' => $chatId,
+				'type' => (string) ($row['type'] ?? ''),
+				'title' => (string) ($row['title'] ?? ''),
+			];
+		}
+		return $out;
+	}
+
+	/**
+	 * Применить один Update к json_data notify: max_seen_chats + max_last_inbound.
+	 * Возвращает true, если json нужно сохранить.
+	 *
+	 * @param array<string,mixed> $jsonData
+	 */
+	public static function applyUpdateToNotifyJson(array &$jsonData, array $u): bool {
+		$updateType = (string) ($u['update_type'] ?? '');
+		$chat = self::extractChatFromUpdate($u);
+		$changed = false;
+
+		if ($chat !== null) {
+			$removed = ($updateType === 'bot_removed');
+			$prev = self::normalizeSeenChats($jsonData['max_seen_chats'] ?? []);
+			$next = self::mergeSeenChat($prev, $chat, $removed);
+			if ($next !== $prev) {
+				$jsonData['max_seen_chats'] = $next;
+				$changed = true;
+			}
+			if ($removed && isset($jsonData['max_last_inbound']) && is_array($jsonData['max_last_inbound'])
+				&& (string) ($jsonData['max_last_inbound']['chat_id'] ?? '') === $chat['chat_id']
+			) {
+				unset($jsonData['max_last_inbound']);
+				$changed = true;
+			}
+		}
+
+		if ($updateType === 'message_callback' || $updateType === 'message_created'
+			|| $updateType === 'bot_started' || $updateType === 'bot_added'
+		) {
+			$inbound = self::extractInboundFromUpdate($u);
+			if ($inbound !== null && ($inbound['chat_id'] !== '' || $inbound['user_id'] !== '')) {
+				$jsonData['max_last_inbound'] = $inbound;
+				$changed = true;
+			}
+		}
+
+		return $changed;
 	}
 
 	private static function extractMessageId(array $data): string {
@@ -247,52 +466,14 @@ class MaxMessenger {
 			if (!is_array($u)) {
 				continue;
 			}
-
-			$chatId = '';
-			$type = '';
-			$title = '';
-
-			if (isset($u['chat_id']) && (string) $u['chat_id'] !== '' && (string) $u['chat_id'] !== '0') {
-				$chatId = (string) $u['chat_id'];
-			}
-			if (isset($u['is_channel'])) {
-				$type = !empty($u['is_channel']) ? 'channel' : 'chat';
-			}
-			if (($u['update_type'] ?? '') === 'chat_title_changed' && isset($u['title'])) {
-				$title = (string) $u['title'];
-			}
-
-			if (isset($u['message']) && is_array($u['message'])) {
-				$msg = $u['message'];
-				$recipient = isset($msg['recipient']) && is_array($msg['recipient']) ? $msg['recipient'] : [];
-				if ($chatId === '' && isset($recipient['chat_id'])) {
-					$chatId = (string) $recipient['chat_id'];
-				}
-				if ($chatId === '' && isset($msg['chat_id'])) {
-					$chatId = (string) $msg['chat_id'];
-				}
-				if ($type === '' && isset($recipient['chat_type'])) {
-					$type = (string) $recipient['chat_type'];
-				}
-			}
-
-			if ($chatId === '' || $chatId === '0') {
+			$chat = self::extractChatFromUpdate($u);
+			if ($chat === null) {
 				continue;
 			}
-
-			if (!isset($chats[$chatId])) {
-				$chats[$chatId] = ['chat_id' => $chatId, 'type' => $type, 'title' => $title];
-				continue;
-			}
-			if ($type !== '') {
-				$chats[$chatId]['type'] = $type;
-			}
-			if ($title !== '') {
-				$chats[$chatId]['title'] = $title;
-			}
+			$chats = self::mergeSeenChat($chats, $chat, false);
 		}
 
-		return array_values($chats);
+		return $chats;
 	}
 
 	/**

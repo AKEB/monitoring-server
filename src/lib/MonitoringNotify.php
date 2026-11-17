@@ -80,6 +80,7 @@ class MonitoringNotify extends \DB\MySQLObject {
 				$notify['json_data'] = [];
 			}
 			$notifyId = intval($notify['id'] ?? 0);
+			$notifyButtons = $withButtons && \AlertActions::buttonsEnabled($notify['json_data']);
 
 			if ($notify['type'] == \Notify::TYPE_TELEGRAM) {
 				$text_send = $title_send."\n".$text_send;
@@ -100,7 +101,7 @@ class MonitoringNotify extends \DB\MySQLObject {
 						continue;
 					}
 					$replyMarkup = null;
-					if ($withButtons && $notifyId > 0) {
+					if ($notifyButtons && $notifyId > 0) {
 						$replyMarkup = \AlertActions::telegramKeyboard($monitor_id, $notifyId);
 					}
 					$message = @$bot->sendMessage(
@@ -109,7 +110,7 @@ class MonitoringNotify extends \DB\MySQLObject {
 						'HTML', true, null, $replyMarkup, false,
 						$telegram_thread_id
 					);
-					if ($withButtons && $message && method_exists($message, 'getMessageId')) {
+					if ($notifyButtons && $message && method_exists($message, 'getMessageId')) {
 						\AlertActions::saveMessage(
 							$monitor_id,
 							$notifyId,
@@ -146,7 +147,7 @@ class MonitoringNotify extends \DB\MySQLObject {
 						'ts'          => strval(time()),
 						'footer'      => 'Alert: '.$notify['title'],
 					];
-					if ($withButtons && $notifyId > 0) {
+					if ($notifyButtons && $notifyId > 0) {
 						$token = \AlertActions::ensureToken($notify['json_data']);
 						$baseUrl = strval($notify['json_data']['alert_action_base_url'] ?? '');
 						$webhookUrl = \AlertActions::webhookUrl(\AlertActions::CHANNEL_MATTERMOST, $token, $baseUrl !== '' ? $baseUrl : null);
@@ -172,7 +173,7 @@ class MonitoringNotify extends \DB\MySQLObject {
 							$props
 						);
 					}
-					if ($withButtons && $postId) {
+					if ($notifyButtons && $postId) {
 						\AlertActions::saveMessage(
 							$monitor_id,
 							$notifyId,
@@ -222,7 +223,7 @@ class MonitoringNotify extends \DB\MySQLObject {
 					}
 					$body = mb_substr($text_send, 0, 4000);
 					$attachments = null;
-					if ($withButtons && $notifyId > 0) {
+					if ($notifyButtons && $notifyId > 0) {
 						$attachments = [\AlertActions::maxInlineKeyboard($monitor_id, $notifyId)];
 					}
 					$sent = \MaxMessenger::send(
@@ -232,7 +233,7 @@ class MonitoringNotify extends \DB\MySQLObject {
 						'html',
 						$attachments
 					);
-					if ($withButtons && !empty($sent['ok']) && !empty($sent['message_id'])) {
+					if ($notifyButtons && !empty($sent['ok']) && !empty($sent['message_id'])) {
 						\AlertActions::saveMessage(
 							$monitor_id,
 							$notifyId,

@@ -55,6 +55,16 @@ class AlertActionsTest extends PHPUnit\Framework\TestCase {
 		$this->assertSame($created, \AlertActions::ensureToken($json));
 	}
 
+	function test_buttons_enabled_default_and_flag() {
+		$this->assertTrue(\AlertActions::buttonsEnabled([]));
+		$this->assertTrue(\AlertActions::buttonsEnabled(['alert_buttons_enabled' => 1]));
+		$this->assertTrue(\AlertActions::buttonsEnabled(['alert_buttons_enabled' => 'true']));
+		$this->assertTrue(\AlertActions::buttonsEnabled(['alert_buttons_enabled' => true]));
+		$this->assertFalse(\AlertActions::buttonsEnabled(['alert_buttons_enabled' => 0]));
+		$this->assertFalse(\AlertActions::buttonsEnabled(['alert_buttons_enabled' => '0']));
+		$this->assertFalse(\AlertActions::buttonsEnabled(['alert_buttons_enabled' => false]));
+	}
+
 	function test_bot_secret_field() {
 		$this->assertSame('telegram_bot_token', \AlertActions::botSecretField(\Notify::TYPE_TELEGRAM));
 		$this->assertSame('max_token', \AlertActions::botSecretField(\Notify::TYPE_MAX));

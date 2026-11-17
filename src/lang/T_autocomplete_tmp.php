@@ -1834,9 +1834,9 @@ class T {
 
 	/**
 	 * Notify_Edit_MaxReceiverHint
-	 * 
-	 * @return string "In «Receiver»: positive user_id for a DM, or negative chat_id for a group chat."
-	 * @return string "В поле «Получатель»: положительный user_id личного чата или отрицательный chat_id группы."
+	 *
+	 * @return string "In «Receiver»: positive user_id for a DM, or negative chat_id for a group chat. Chat_id arrives via the alert-button webhook: save the notify, message the bot or add it to a chat, then click «Load from Max»."
+	 * @return string "В поле «Получатель»: положительный user_id личного чата или отрицательный chat_id группы. Chat_id приходит через webhook кнопок: сохраните уведомление, напишите боту или добавьте его в чат, затем нажмите «Получить из Max»."
 	 */
 	public static function Notify_Edit_MaxReceiverHint(...$argv): string { return ''; }
 
@@ -1891,10 +1891,18 @@ class T {
 	/**
 	 * Notify_Edit_MaxFetchNoData
 	 * 
-	 * @return string "No matching incoming message or chat_id in /updates. Write to the bot or add it to a chat, then try again."
-	 * @return string "В /updates нет подходящего входящего сообщения и chat_id. Напишите боту или добавьте его в чат и нажмите снова."
+	 * @return string "No incoming message or chat_id. Write to the bot or add it to a chat, then try again."
+	 * @return string "Нет входящего сообщения и chat_id. Напишите боту или добавьте его в чат и нажмите снова."
 	 */
 	public static function Notify_Edit_MaxFetchNoData(...$argv): string { return ''; }
+
+	/**
+	 * Notify_Edit_MaxFetchNoDataWebhook
+	 * 
+	 * @return string "Alert-button webhook is active — Long Poll is unavailable. Message the bot or add it to a chat (the event goes to the webhook), then click «Load from Max» again. Make sure the notify is enabled."
+	 * @return string "Webhook кнопок активен — Long Poll недоступен. Напишите боту или добавьте его в чат (событие пойдёт на webhook), затем нажмите «Получить из Max» снова. Убедитесь, что уведомление включено."
+	 */
+	public static function Notify_Edit_MaxFetchNoDataWebhook(...$argv): string { return ''; }
 
 	/**
 	 * Notify_Edit_MaxFetchSuccess
@@ -1962,17 +1970,17 @@ class T {
 
 	/**
 	 * Notify_Edit_MaxFetchSectionLastMessage
-	 * 
-	 * @return string "Last incoming message (/updates)"
-	 * @return string "Последнее входящее сообщение (/updates)"
+	 *
+	 * @return string "Last incoming message"
+	 * @return string "Последнее входящее сообщение"
 	 */
 	public static function Notify_Edit_MaxFetchSectionLastMessage(...$argv): string { return ''; }
 
 	/**
 	 * Notify_Edit_MaxFetchSectionChats
-	 * 
-	 * @return string "Chats from /updates history"
-	 * @return string "Чаты из истории /updates"
+	 *
+	 * @return string "Known chats (webhook / updates)"
+	 * @return string "Известные чаты (webhook / updates)"
 	 */
 	public static function Notify_Edit_MaxFetchSectionChats(...$argv): string { return ''; }
 
@@ -2089,10 +2097,26 @@ class T {
 	public static function Notify_Edit_AlertActionWebhookMattermostHint(...$argv): string { return ''; }
 
 	/**
+	 * Notify_Edit_AlertButtonsEnabled
+	 *
+	 * @return string "Alert buttons"
+	 * @return string "Кнопки алерта"
+	 */
+	public static function Notify_Edit_AlertButtonsEnabled(...$argv): string { return ''; }
+
+	/**
+	 * Notify_Edit_AlertButtonsEnabledHint
+	 *
+	 * @return string "Disables inline buttons (Resolve, Mute, etc.) for this notification only. Does not affect other Notify rows that share the same bot."
+	 * @return string "Выключает inline-кнопки (Решить, Mute и т.д.) только для этого уведомления. Не влияет на другие Notify с тем же ботом."
+	 */
+	public static function Notify_Edit_AlertButtonsEnabledHint(...$argv): string { return ''; }
+
+	/**
 	 * Notify_Edit_AlertActionWebhookMaxHint
-	 * 
-	 * @return string "One webhook per bot token. Multiple Notify rows with the same token share this URL. Subscription on save when supported; otherwise paste the URL in the Max cabinet."
-	 * @return string "Один webhook на токен бота. Несколько Notify с одним токеном делят URL. Подписка при сохранении, если API поддерживает; иначе укажите URL в кабинете Max."
+	 *
+	 * @return string "One webhook per bot token. Multiple Notify rows with the same token share this URL. On save the subscription covers alert buttons and chat_id events (message_created, bot_added, etc.)."
+	 * @return string "Один webhook на токен бота. Несколько Notify с одним токеном делят URL. Подписка при сохранении получает и кнопки, и события для chat_id (message_created, bot_added и т.д.)."
 	 */
 	public static function Notify_Edit_AlertActionWebhookMaxHint(...$argv): string { return ''; }
 
