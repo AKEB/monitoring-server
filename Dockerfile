@@ -19,6 +19,7 @@ RUN apt-get update \
 COPY ./src/ /app/
 COPY default.conf /etc/nginx/conf.d/default.conf
 COPY run_on_start.sh /run_on_start.sh
+COPY php-fpm.conf /etc/php/8.4/fpm/php-fpm.conf
 
 RUN composer config --unset repositories.framework \
     && rm -rf vendor/ composer.lock \
