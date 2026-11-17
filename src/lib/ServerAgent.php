@@ -91,6 +91,13 @@ class ServerAgent {
 		if ($collectedAt < 1) {
 			$collectedAt = $now;
 		}
+		// Detect reconnect before last_seen_time is refreshed; keep catch-up briefly.
+		$skipEvents = \MonitorsEvents::noteContactAndShouldSkipEvents(
+			'server',
+			$serverId,
+			intval($server['last_seen_time'] ?? 0),
+			$now
+		);
 
 		$agentVersion = mb_substr(strval($data['agent_version'] ?? ''), 0, 64);
 		$updateError = mb_substr(trim(strval($data['update_error'] ?? '')), 0, 512);
@@ -158,7 +165,7 @@ class ServerAgent {
 			]);
 		}
 
-		static::evaluateMonitors($serverId, $server, $data);
+		static::evaluateMonitors($serverId, $server, $data, $skipEvents);
 
 		$response = ['server_id' => $serverId];
 		$updateCmd = \AgentUpdate::buildCommand($server, $data, false);
@@ -173,7 +180,7 @@ class ServerAgent {
 	 * @param array<string,mixed> $server
 	 * @param array<string,mixed> $payload
 	 */
-	static public function evaluateMonitors(int $serverId, array $server, array $payload): void {
+	static public function evaluateMonitors(int $serverId, array $server, array $payload, bool $skipEvents = false): void {
 		$monitors = \Monitors::data([
 			'server' => $serverId,
 			'status' => \Monitors::STATUS_ENABLED,
@@ -201,7 +208,7 @@ class ServerAgent {
 			}
 			[$status, $statusCode, $error, $result] = static::evalOne($type, $monitor, $server, $payload, true);
 			$log = static::writeLog($monitorId, $status, $statusCode, $error, $result, $bucket);
-			if ($log) {
+			if ($log && !$skipEvents) {
 				\MonitorsEvents::updateEvent($log);
 				$notificationCheck[$monitorId] = true;
 			}

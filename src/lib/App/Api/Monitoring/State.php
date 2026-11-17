@@ -6,6 +6,7 @@ class State extends \Routing_Parent implements \Routing_Interface {
 
 	private ?array $worker;
 	private ?array $data;
+	private bool $skipEventsAfterGap = false;
 
 	public function Run() {
 		$this->worker = [];
@@ -23,6 +24,11 @@ class State extends \Routing_Parent implements \Routing_Interface {
 			]);
 			return;
 		}
+		$this->skipEventsAfterGap = \MonitorsEvents::noteContactAndShouldSkipEvents(
+			'worker',
+			intval($this->worker['id'] ?? 0),
+			intval($this->worker['last_active_time'] ?? 0)
+		);
 		$this->updateWorker();
 		if ($this->updateStates()) {
 			$this->responseSuccess();
@@ -145,6 +151,7 @@ class State extends \Routing_Parent implements \Routing_Interface {
 			'`id`, `container`'
 		);
 		if (!is_array($monitors) || !$monitors) return false;
+		$skipEvents = $this->skipEventsAfterGap;
 		$notification_check_monitors = [];
 		foreach ($monitors as $monitor) {
 			if (!isset($monitor['id']) || !$monitor['id']) continue;
@@ -174,6 +181,9 @@ class State extends \Routing_Parent implements \Routing_Interface {
 			];
 			$monitor_log['id'] = \MonitoringLogs::save($monitor_log);
 			$monitor_log = \MonitoringLogs::get(['id' => $monitor_log['id']]);
+			if ($skipEvents) {
+				continue;
+			}
 			\MonitorsEvents::updateEvent($monitor_log);
 			$notification_check_monitors[$monitor['id']] = true;
 		}
@@ -274,6 +284,7 @@ class State extends \Routing_Parent implements \Routing_Interface {
 		foreach ($jobs as $job) {
 			$result = $this->updateJobState($this->worker['id'], $job);
 			if (!$result) continue;
+			if ($this->skipEventsAfterGap) continue;
 			if (
 				isset($result['monitor_id']) && $result['monitor_id'] &&
 				isset($result['worker_id']) && $result['worker_id']

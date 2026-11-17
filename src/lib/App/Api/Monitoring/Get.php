@@ -82,6 +82,12 @@ class Get extends \Routing_Parent implements \Routing_Interface {
 				$save_data['update_time'] = time();
 			}
 		}
+		// Mark catch-up before refreshing last_active so /state/ can skip events.
+		\MonitorsEvents::noteContactAndShouldSkipEvents(
+			'worker',
+			intval($this->worker['id'] ?? 0),
+			intval($this->worker['last_active_time'] ?? 0)
+		);
 		if ($this->worker['last_active_time'] + 60 < time()) {
 			$save_data['last_active_time'] = time();
 		}

@@ -52,4 +52,13 @@ class MonitorsEventsTest extends PHPUnit\Framework\TestCase {
 		]);
 		$this->assertNotSame($fail, $ok);
 	}
+
+	function test_should_skip_after_ingest_gap() {
+		$now = 1_700_000_000;
+		$this->assertFalse(\MonitorsEvents::shouldSkipAfterIngestGap(0, $now));
+		$this->assertFalse(\MonitorsEvents::shouldSkipAfterIngestGap($now - 60, $now));
+		$this->assertFalse(\MonitorsEvents::shouldSkipAfterIngestGap($now - 179, $now));
+		$this->assertTrue(\MonitorsEvents::shouldSkipAfterIngestGap($now - 180, $now));
+		$this->assertTrue(\MonitorsEvents::shouldSkipAfterIngestGap($now - 3600, $now));
+	}
 }

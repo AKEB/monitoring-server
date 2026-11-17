@@ -3,6 +3,53 @@
 class MonitorsEvents extends \DB\MySQLObject {
 	static public $table = 'monitoring_events';
 
+	/**
+	 * After monitoring was down / unreachable, the first reconnect wave from
+	 * agents and workers must not create events or fire notifications
+	 * (otherwise catch-up becomes a self-DDOS). Matches the 3-minute
+	 * worker/server "online" window used in the UI.
+	 */
+	const INGEST_GAP_SKIP_EVENTS_SECONDS = 180;
+
+	/** How long catch-up mode lasts after a reconnect gap is detected. */
+	const INGEST_CATCHUP_TTL_SECONDS = 120;
+
+	/**
+	 * True when the previous successful contact was long enough ago that this
+	 * ingest is a reconnect after downtime. First-ever contact (0) is not skipped.
+	 */
+	static public function shouldSkipAfterIngestGap(int $lastContactTime, ?int $now = null): bool {
+		$now ??= time();
+		if ($lastContactTime < 1) {
+			return false;
+		}
+		return ($now - $lastContactTime) >= static::INGEST_GAP_SKIP_EVENTS_SECONDS;
+	}
+
+	/**
+	 * Workers often hit /get/ before /state/; /get/ refreshes last_active_time.
+	 * Remember catch-up for a short TTL so /state/ still skips events.
+	 */
+	static public function noteContactAndShouldSkipEvents(string $kind, int $id, int $lastContactTime, ?int $now = null): bool {
+		if ($id < 1) {
+			return false;
+		}
+		$cache = new \Cache(static::ingestCatchupCacheKey($kind, $id));
+		if ($cache->isValid()) {
+			return true;
+		}
+		if (!static::shouldSkipAfterIngestGap($lastContactTime, $now)) {
+			return false;
+		}
+		$cache->update('1', static::INGEST_CATCHUP_TTL_SECONDS);
+		return true;
+	}
+
+	static private function ingestCatchupCacheKey(string $kind, int $id): string {
+		$kind = preg_replace('/[^a-z0-9_]/i', '', $kind) ?: 'unknown';
+		return 'ingest_catchup_'.$kind.'_'.$id;
+	}
+
 	static public function getLastEvent(int $monitor_id, int $worker_id) {
 		if (!isset($monitor_id) || !$monitor_id) return false;
 		if (!isset($worker_id) || !$worker_id) return false;
