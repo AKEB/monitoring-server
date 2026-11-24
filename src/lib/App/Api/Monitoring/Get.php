@@ -142,7 +142,9 @@ class Get extends \Routing_Parent implements \Routing_Interface {
 			));
 			$fields = 't.`id` AS `job_id`, t.`update_time`, M.`id`, M.`type`, M.`url`, M.`method`, M.`host`, M.`port`, '
 				. 'M.`timeout`, M.`repeat_seconds`, M.`request_headers`, M.`proxy_host`, M.`proxy_type`, M.`ssl_verify`, M.`ssl_verify_host`, '
-				. 'M.`max_redirects`, M.`json_path`, M.`json_expected_value`, M.`json_expected_type`';
+				. 'M.`max_redirects`, M.`json_path`, M.`json_expected_value`, M.`json_expected_type`, '
+				. 'M.`domain_expire_alert_days`, M.`dns_record_type`, M.`dns_resolver`, M.`dns_transport`, '
+				. 'M.`dns_doh_url`, M.`dns_match_mode`, M.`dns_expected`';
 			$jobs = \MonitoringJobs::data(
 				[
 					'worker_id' => $this->worker['id']

@@ -713,6 +713,62 @@ class T {
 	public static function Monitor_Expire_Days5(...$argv): string { return ''; }
 
 	/**
+	 * Monitor_DomainExpire_Title
+	 * 
+	 * @return string "Domain expires"
+	 * @return string "Истекает домен"
+	 */
+	public static function Monitor_DomainExpire_Title(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_DomainExpire_TitleExpired
+	 * 
+	 * @return string "Domain expired"
+	 * @return string "Домен истёк"
+	 */
+	public static function Monitor_DomainExpire_TitleExpired(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_DomainExpire_Text
+	 * 
+	 * @return string "Domain %s expires in %d %s"
+	 * @return string "Домен %s истекает через %d %s"
+	 */
+	public static function Monitor_DomainExpire_Text(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_DomainExpire_TextExpired
+	 * 
+	 * @return string "Domain %s has expired"
+	 * @return string "Домен %s уже истёк"
+	 */
+	public static function Monitor_DomainExpire_TextExpired(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_DomainExpire_Day
+	 * 
+	 * @return string "day"
+	 * @return string "день"
+	 */
+	public static function Monitor_DomainExpire_Day(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_DomainExpire_Days
+	 * 
+	 * @return string "days"
+	 * @return string "дня"
+	 */
+	public static function Monitor_DomainExpire_Days(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_DomainExpire_Days5
+	 * 
+	 * @return string "days"
+	 * @return string "дней"
+	 */
+	public static function Monitor_DomainExpire_Days5(...$argv): string { return ''; }
+
+	/**
 	 * Monitor_Edit_CreateTitle
 	 * 
 	 * @return string "Create monitor"
@@ -903,6 +959,86 @@ class T {
 	 * @return string "За сколько дней до истечения TLS-сертификата уведомлять"
 	 */
 	public static function Monitor_Edit_SSLCertExpireAlertDays(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_Domain
+	 * 
+	 * @return string "Domain"
+	 * @return string "Домен"
+	 */
+	public static function Monitor_Edit_Domain(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_DomainExpireAlertDays
+	 * 
+	 * @return string "Fail when days until expiry is at most"
+	 * @return string "FAIL, если дней до истечения не больше"
+	 */
+	public static function Monitor_Edit_DomainExpireAlertDays(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_DnsRecordType
+	 * 
+	 * @return string "DNS record type"
+	 * @return string "Тип DNS-записи"
+	 */
+	public static function Monitor_Edit_DnsRecordType(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_DnsResolver
+	 * 
+	 * @return string "DNS resolver (empty = system)"
+	 * @return string "DNS-резолвер (пусто = системный)"
+	 */
+	public static function Monitor_Edit_DnsResolver(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_DnsTransport
+	 * 
+	 * @return string "DNS transport"
+	 * @return string "Транспорт DNS"
+	 */
+	public static function Monitor_Edit_DnsTransport(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_DnsDohUrl
+	 * 
+	 * @return string "DoH URL"
+	 * @return string "URL DoH"
+	 */
+	public static function Monitor_Edit_DnsDohUrl(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_DnsDohPreset
+	 * 
+	 * @return string "DoH preset"
+	 * @return string "Пресет DoH"
+	 */
+	public static function Monitor_Edit_DnsDohPreset(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_DnsMatchMode
+	 * 
+	 * @return string "Match mode"
+	 * @return string "Режим сравнения"
+	 */
+	public static function Monitor_Edit_DnsMatchMode(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_DnsExpected
+	 * 
+	 * @return string "Expected values (one per line)"
+	 * @return string "Ожидаемые значения (по одному на строку)"
+	 */
+	public static function Monitor_Edit_DnsExpected(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_DnsExpectedHint
+	 * 
+	 * @return string "A/AAAA: IP addresses. CNAME/NS: hostnames. MX: \"10 mail.example.com\" or hostname depending on match mode. TXT: full or partial text."
+	 * @return string "A/AAAA: IP. CNAME/NS: имена. MX: \"10 mail.example.com\" или hostname. TXT: полный или частичный текст."
+	 */
+	public static function Monitor_Edit_DnsExpectedHint(...$argv): string { return ''; }
 
 	/**
 	 * Monitor_Edit_ResponseCode
@@ -1519,6 +1655,22 @@ class T {
 	 * @return string "Сервер systemd память"
 	 */
 	public static function Monitor_Type_ServerSystemdMemory(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Type_Domain
+	 * 
+	 * @return string "Domain expiry"
+	 * @return string "Истечение домена"
+	 */
+	public static function Monitor_Type_Domain(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Type_DNS
+	 * 
+	 * @return string "DNS"
+	 * @return string "DNS"
+	 */
+	public static function Monitor_Type_DNS(...$argv): string { return ''; }
 
 	/**
 	 * Dashboard_Response

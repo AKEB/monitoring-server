@@ -277,7 +277,7 @@ class MonitorsEvents extends \DB\MySQLObject {
 		if (!isset($monitors) || !count($monitors)) return;
 		$monitor_ids = array_keys($monitors);
 		if (!count($monitor_ids)) return;
-		$monitors = \Monitors::data(false, sql_pholder(' AND `id` IN (?@) AND `status` = ?', $monitor_ids, \Monitors::STATUS_ENABLED), '`id`, `title`, `type`, `docker`, `last_send_status`, `last_send_time`, `alert_start_time`, `send_repeat_minute`, `alert_fail_mode`, `alert_muted`, `signature_id`, `notify_success_text`, `notify_fail_text`, `external_log`');
+		$monitors = \Monitors::data(false, sql_pholder(' AND `id` IN (?@) AND `status` = ?', $monitor_ids, \Monitors::STATUS_ENABLED), '`id`, `title`, `type`, `host`, `docker`, `last_send_status`, `last_send_time`, `alert_start_time`, `send_repeat_minute`, `alert_fail_mode`, `alert_muted`, `signature_id`, `notify_success_text`, `notify_fail_text`, `external_log`');
 		$monitors_hash = [];
 		$dockers_monitor_hash = [];
 		foreach($monitors as $monitor) {
@@ -438,8 +438,51 @@ class MonitorsEvents extends \DB\MySQLObject {
 		if ($custom !== '') {
 			return [$title, $custom, true];
 		}
+		if (intval($monitor['type'] ?? 0) === \Monitors::TYPE_DOMAIN) {
+			return static::composeDomainFailAlert($monitor, $descriptions);
+		}
 		$text = '<b>'.\Monitors::get_monitor_title_with_folders($monitor['id'])."</b> is down ";
 		$text .= static::failDescriptionHtml($monitor, $descriptions);
+		$signature_text = \Signatures::resolveText(intval($monitor['signature_id'] ?? 0));
+		if ($signature_text) {
+			$text .= "\n\n".$signature_text;
+		}
+		return [$title, $text, false];
+	}
+
+	/**
+	 * Domain expiry: separate copy for expired vs soon-to-expire.
+	 *
+	 * @param array<int|string,string> $descriptions
+	 * @return array{0:string,1:string,2:bool}
+	 */
+	static private function composeDomainFailAlert(array $monitor, array $descriptions): array {
+		$daysLeft = null;
+		foreach ($descriptions as $desc) {
+			$desc = trim(strval($desc));
+			if ($desc !== '' && is_numeric($desc)) {
+				$daysLeft = intval($desc);
+				break;
+			}
+		}
+		$domain = strval($monitor['host'] ?? $monitor['title'] ?? '');
+		if ($daysLeft !== null && $daysLeft <= 0) {
+			$title = \T::Monitor_DomainExpire_TitleExpired();
+			$text = \T::Monitor_DomainExpire_TextExpired($domain);
+		} elseif ($daysLeft !== null) {
+			$title = \T::Monitor_DomainExpire_Title();
+			$unit = \T::declension(
+				$daysLeft,
+				\T::Monitor_DomainExpire_Day(),
+				\T::Monitor_DomainExpire_Days(),
+				\T::Monitor_DomainExpire_Days5()
+			);
+			$text = \T::Monitor_DomainExpire_Text($domain, $daysLeft, $unit);
+		} else {
+			$title = "🚫 Error ".date("Y-m-d H:i:s");
+			$text = '<b>'.\Monitors::get_monitor_title_with_folders($monitor['id'])."</b> is down ";
+			$text .= static::failDescriptionHtml($monitor, $descriptions);
+		}
 		$signature_text = \Signatures::resolveText(intval($monitor['signature_id'] ?? 0));
 		if ($signature_text) {
 			$text .= "\n\n".$signature_text;

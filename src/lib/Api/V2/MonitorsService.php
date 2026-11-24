@@ -350,6 +350,50 @@ class MonitorsService {
 			if ($creating || array_key_exists('host', $payload)) {
 				$row['host'] = trim(strval($payload['host'] ?? ''));
 			}
+		} elseif ($type === \Monitors::TYPE_DOMAIN) {
+			if ($creating || array_key_exists('host', $payload)) {
+				$row['host'] = strtolower(trim(strval($payload['host'] ?? '')));
+			}
+			if ($creating || array_key_exists('domain_expire_alert_days', $payload)) {
+				$row['domain_expire_alert_days'] = static::normalizeDomainDays($payload['domain_expire_alert_days'] ?? null);
+			}
+			if ($creating && !array_key_exists('repeat_seconds', $payload)) {
+				$row['repeat_seconds'] = 3600;
+			}
+			if ($creating && !array_key_exists('send_repeat_minute', $payload)) {
+				$row['send_repeat_minute'] = 1440;
+			}
+			if ($creating && !array_key_exists('timeout', $payload)) {
+				$row['timeout'] = 30;
+			}
+		} elseif ($type === \Monitors::TYPE_DNS) {
+			if ($creating || array_key_exists('host', $payload)) {
+				$row['host'] = trim(strval($payload['host'] ?? ''));
+			}
+			if ($creating || array_key_exists('dns_record_type', $payload)) {
+				$row['dns_record_type'] = \Monitors::normalize_dns_record_type($payload['dns_record_type'] ?? 'A');
+			}
+			if ($creating || array_key_exists('dns_resolver', $payload)) {
+				$row['dns_resolver'] = trim(strval($payload['dns_resolver'] ?? ''));
+			}
+			if ($creating || array_key_exists('dns_transport', $payload)) {
+				$row['dns_transport'] = \Monitors::normalize_dns_transport($payload['dns_transport'] ?? 'auto');
+			}
+			if ($creating || array_key_exists('dns_doh_url', $payload)) {
+				$row['dns_doh_url'] = trim(strval($payload['dns_doh_url'] ?? ''));
+			}
+			if ($creating || array_key_exists('dns_match_mode', $payload)) {
+				$row['dns_match_mode'] = \Monitors::normalize_dns_match_mode($payload['dns_match_mode'] ?? 'exact_set');
+			}
+			if ($creating || array_key_exists('dns_expected', $payload)) {
+				$row['dns_expected'] = \Monitors::normalize_dns_expected($payload['dns_expected'] ?? '');
+			}
+			if ($creating || array_key_exists('port', $payload)) {
+				$row['port'] = intval($payload['port'] ?? 0);
+			} elseif ($creating) {
+				$transport = $row['dns_transport'] ?? 'auto';
+				$row['port'] = $transport === 'dot' ? 853 : ($transport === 'doh' ? 0 : 53);
+			}
 		} elseif ($type === \Monitors::TYPE_DOCKER) {
 			if ($creating || array_key_exists('docker', $payload)) {
 				$dockerId = intval($payload['docker'] ?? 0);
@@ -499,6 +543,19 @@ class MonitorsService {
 		}
 		$days = array_values(array_intersect($days, $allowed));
 		return $days ? implode(',', $days) : \Monitors::ssl_cert_expire_alert_days_default();
+	}
+
+	static private function normalizeDomainDays(mixed $raw): string {
+		$allowed = \Monitors::domain_expire_alert_days_list();
+		if (is_array($raw)) {
+			$days = array_map('intval', $raw);
+		} elseif (is_string($raw) && trim($raw) !== '') {
+			$days = array_map('intval', array_map('trim', explode(',', $raw)));
+		} else {
+			return \Monitors::domain_expire_alert_days_default();
+		}
+		$days = array_values(array_intersect($days, $allowed));
+		return $days ? implode(',', $days) : \Monitors::domain_expire_alert_days_default();
 	}
 
 	static private function normalizeResponseCodes(mixed $raw): string {

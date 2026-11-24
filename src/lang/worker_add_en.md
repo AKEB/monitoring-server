@@ -20,6 +20,7 @@ Create a `docker-compose.yml` file
           - WORKER_KEY_HASH=${WORKER_KEY_HASH} # Worker hash. Get it from your server
           - PROTOCOL_VERSION=2.0 # Required (monitoring-server v2.1+)
           - DEBUG=${DEBUG:-false} # Debug mode
+          - IMMEDIATE_ERROR_RETRY=${IMMEDIATE_ERROR_RETRY:-false} # Retry failed job on next loop tick; false — wait repeat_seconds
           - CURL_DEBUG=${CURL_DEBUG:-false} # HTTP request/response trace
           - DOCKER_DEBUG=${DOCKER_DEBUG:-false} # Debug mode for Docker
           - WORKER_THREADS=${WORKER_THREADS:-10} # Worker threads count

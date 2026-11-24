@@ -37,6 +37,8 @@ class Monitors extends \DB\MySQLObject implements \PermissionSubject_Interface {
 	const TYPE_SERVER_SYSTEMD         = 23;
 	const TYPE_SERVER_SYSTEMD_CPU     = 24;
 	const TYPE_SERVER_SYSTEMD_MEMORY  = 25;
+	const TYPE_DOMAIN                 = 26;
+	const TYPE_DNS                    = 27;
 
 	/** Virtual worker_id for push-based External monitors (never a real Workers row). */
 	const EXTERNAL_WORKER_ID = -1;
@@ -92,6 +94,8 @@ class Monitors extends \DB\MySQLObject implements \PermissionSubject_Interface {
 			static::TYPE_SERVER_SYSTEMD => \T::Monitor_Type_ServerSystemd(),
 			static::TYPE_SERVER_SYSTEMD_CPU => \T::Monitor_Type_ServerSystemdCPU(),
 			static::TYPE_SERVER_SYSTEMD_MEMORY => \T::Monitor_Type_ServerSystemdMemory(),
+			static::TYPE_DOMAIN => \T::Monitor_Type_Domain(),
+			static::TYPE_DNS => \T::Monitor_Type_DNS(),
 			// static::TYPE_EXPORTER_CPU => \T::Monitor_Type_ExporterCPU(),
 		];
 	}
@@ -157,6 +161,7 @@ class Monitors extends \DB\MySQLObject implements \PermissionSubject_Interface {
 			static::TYPE_SERVER_CONTAINER_MEMORY,
 			static::TYPE_SERVER_SYSTEMD_CPU,
 			static::TYPE_SERVER_SYSTEMD_MEMORY,
+			static::TYPE_DOMAIN,
 		], true);
 	}
 
@@ -168,6 +173,7 @@ class Monitors extends \DB\MySQLObject implements \PermissionSubject_Interface {
 				static::TYPE_EXPORTER_DISK,
 				static::TYPE_EXPORTER_MEMORY,
 				static::TYPE_EXPORTER_CPU,
+				static::TYPE_DOMAIN,
 			], true);
 	}
 
@@ -184,6 +190,9 @@ class Monitors extends \DB\MySQLObject implements \PermissionSubject_Interface {
 		}
 		if ($type === static::TYPE_SERVER_SYSTEMD_MEMORY) {
 			return 'MB';
+		}
+		if ($type === static::TYPE_DOMAIN) {
+			return 'days';
 		}
 		return '%';
 	}
@@ -280,6 +289,115 @@ class Monitors extends \DB\MySQLObject implements \PermissionSubject_Interface {
 		$days = array_map('intval', array_map('trim', explode(',', $value)));
 		$days = array_values(array_intersect($days, $allowed));
 		return $days ?: $allowed;
+	}
+
+	/** @return list<int> */
+	static public function domain_expire_alert_days_list(): array {
+		return [14, 7, 6, 5, 4, 3, 2, 1, 0];
+	}
+
+	static public function domain_expire_alert_days_hash(): array {
+		$return = [];
+		foreach (static::domain_expire_alert_days_list() as $day) {
+			$return[$day] = (string)$day;
+		}
+		return $return;
+	}
+
+	static public function domain_expire_alert_days_default(): string {
+		return implode(',', static::domain_expire_alert_days_list());
+	}
+
+	/** @return int[] */
+	static public function parse_domain_expire_alert_days(?string $value): array {
+		$allowed = static::domain_expire_alert_days_list();
+		if ($value === null || trim($value) === '') {
+			return $allowed;
+		}
+		$days = array_map('intval', array_map('trim', explode(',', $value)));
+		$days = array_values(array_intersect($days, $allowed));
+		return $days ?: $allowed;
+	}
+
+	/** Max selected alert day (FAIL while remaining days <= this). */
+	static public function domain_expire_alert_days_max(?string $value): int {
+		$days = static::parse_domain_expire_alert_days($value);
+		return $days ? max($days) : max(static::domain_expire_alert_days_list());
+	}
+
+	/** @return array<string,string> */
+	static public function dns_record_type_hash(): array {
+		return [
+			'A' => 'A',
+			'AAAA' => 'AAAA',
+			'CNAME' => 'CNAME',
+			'MX' => 'MX',
+			'TXT' => 'TXT',
+			'NS' => 'NS',
+		];
+	}
+
+	static public function normalize_dns_record_type(mixed $raw): string {
+		$v = strtoupper(trim(strval($raw ?? '')));
+		return isset(static::dns_record_type_hash()[$v]) ? $v : 'A';
+	}
+
+	/** @return array<string,string> */
+	static public function dns_transport_hash(): array {
+		return [
+			'auto' => 'Auto (UDP→TCP)',
+			'udp' => 'UDP',
+			'tcp' => 'TCP',
+			'dot' => 'DoT (TLS)',
+			'doh' => 'DoH (HTTPS)',
+		];
+	}
+
+	static public function normalize_dns_transport(mixed $raw): string {
+		$v = strtolower(trim(strval($raw ?? '')));
+		return isset(static::dns_transport_hash()[$v]) ? $v : 'auto';
+	}
+
+	/** @return array<string,string> */
+	static public function dns_match_mode_hash(): array {
+		return [
+			'exact' => 'Exact (one value)',
+			'any' => 'Any of list',
+			'all' => 'All of list present',
+			'exact_set' => 'Exact set (full match)',
+			'contains' => 'Contains (TXT)',
+			'regex' => 'Regex (TXT)',
+			'mx_host' => 'MX hostname only',
+			'mx_priority_host' => 'MX priority + hostname',
+			'nxdomain' => 'Must not exist (NXDOMAIN)',
+		];
+	}
+
+	static public function normalize_dns_match_mode(mixed $raw): string {
+		$v = strtolower(trim(strval($raw ?? '')));
+		return isset(static::dns_match_mode_hash()[$v]) ? $v : 'exact_set';
+	}
+
+	/** @return array<string,string> DoH preset label => URL */
+	static public function dns_doh_presets(): array {
+		return [
+			'Google' => 'https://dns.google/dns-query',
+			'Cloudflare' => 'https://cloudflare-dns.com/dns-query',
+			'Quad9' => 'https://dns.quad9.net/dns-query',
+		];
+	}
+
+	/** Normalize expected DNS answers: one value per line. */
+	static public function normalize_dns_expected(mixed $raw): string {
+		if (is_array($raw)) {
+			$lines = array_map(static fn($v) => trim(strval($v)), $raw);
+		} else {
+			$text = str_replace(["\r\n", "\r"], "\n", strval($raw ?? ''));
+			$lines = preg_split('/\n+/', $text) ?: [];
+			$lines = array_map('trim', $lines);
+		}
+		$lines = array_values(array_filter($lines, static fn($v) => $v !== ''));
+		return implode("\n", $lines);
 	}
 
 	static private function setAccessForChild(&$data) {

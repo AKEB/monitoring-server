@@ -107,6 +107,14 @@ Monitor:
     Day: "day"
     Days: "days"
     Days5: "days"
+  DomainExpire:
+    Title: "Domain expires"
+    TitleExpired: "Domain expired"
+    Text: "Domain %s expires in %d %s"
+    TextExpired: "Domain %s has expired"
+    Day: "day"
+    Days: "days"
+    Days5: "days"
   Edit:
     CreateTitle: "Create monitor"
     EditTitle: "Edit monitor &quot;%s&quot; [ID=%d]"
@@ -132,6 +140,16 @@ Monitor:
     SSLVerifyHost: "SSL verify host"
     SSLCertExpireAlert: "SSL certificate expire notifications"
     SSLCertExpireAlertDays: "Notify how many days before TLS certificate expiry"
+    Domain: "Domain"
+    DomainExpireAlertDays: "Fail when days until expiry is at most"
+    DnsRecordType: "DNS record type"
+    DnsResolver: "DNS resolver (empty = system)"
+    DnsTransport: "DNS transport"
+    DnsDohUrl: "DoH URL"
+    DnsDohPreset: "DoH preset"
+    DnsMatchMode: "Match mode"
+    DnsExpected: "Expected values (one per line)"
+    DnsExpectedHint: "A/AAAA: IP addresses. CNAME/NS: hostnames. MX: \"10 mail.example.com\" or hostname depending on match mode. TXT: full or partial text."
     ResponseCode: "Allowed status codes"
     ProxyHost: "Proxy host"
     ProxyType: "Proxy type"
@@ -211,6 +229,8 @@ Monitor:
     ServerSystemd: "Server systemd service"
     ServerSystemdCPU: "Server systemd CPU"
     ServerSystemdMemory: "Server systemd memory"
+    Domain: "Domain expiry"
+    DNS: "DNS"
 
 
 

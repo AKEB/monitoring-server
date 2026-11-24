@@ -20,6 +20,7 @@
           - WORKER_KEY_HASH=${WORKER_KEY_HASH} # Хеш воркера с сервера
           - PROTOCOL_VERSION=2.0 # Обязательно (monitoring-server v2.1+)
           - DEBUG=${DEBUG:-false} # Отладка
+          - IMMEDIATE_ERROR_RETRY=${IMMEDIATE_ERROR_RETRY:-false} # Сразу повторять упавшую задачу; false — ждать repeat_seconds
           - CURL_DEBUG=${CURL_DEBUG:-false} # Трассировка HTTP-запросов
           - DOCKER_DEBUG=${DOCKER_DEBUG:-false} # Отладка Docker
           - WORKER_THREADS=${WORKER_THREADS:-10} # Число потоков

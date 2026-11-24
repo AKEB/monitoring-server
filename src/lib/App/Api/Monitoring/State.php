@@ -367,6 +367,33 @@ class State extends \Routing_Parent implements \Routing_Interface {
 			if ($job_response['response']['status'] == 1) {
 				$status = \MonitoringLogs::STATUS_GOOD;
 			}
+		} elseif ($monitor['type'] == \Monitors::TYPE_DOMAIN) {
+			$lookupOk = intval($job_response['response']['status'] ?? 0) === 1
+				&& intval($job_response['response']['domain_expire'] ?? 0) > 0;
+			if ($lookupOk) {
+				$expire = intval($job_response['response']['domain_expire']);
+				$daysLeft = intval(($expire - time()) / 86400);
+				if (isset($job_response['response']['result'])) {
+					$daysLeft = intval($job_response['response']['result']);
+				}
+				$maxDays = \Monitors::domain_expire_alert_days_max($monitor['domain_expire_alert_days'] ?? null);
+				if ($daysLeft > $maxDays) {
+					$status = \MonitoringLogs::STATUS_GOOD;
+				} else {
+					$status = \MonitoringLogs::STATUS_FAIL;
+				}
+				$job_response['response']['response_error'] = (string)$daysLeft;
+				$job_response['response']['cert_expire'] = $expire;
+			} else {
+				$status = \MonitoringLogs::STATUS_FAIL;
+				if (!isset($job_response['response']['response_error']) || !$job_response['response']['response_error']) {
+					$job_response['response']['response_error'] = 'Domain expiry lookup failed';
+				}
+			}
+		} elseif ($monitor['type'] == \Monitors::TYPE_DNS) {
+			if ($job_response['response']['status'] == 1) {
+				$status = \MonitoringLogs::STATUS_GOOD;
+			}
 		} elseif ($monitor['type'] == \Monitors::TYPE_EXPORTER_DISK || $monitor['type'] == \Monitors::TYPE_EXPORTER_MEMORY || $monitor['type'] == \Monitors::TYPE_EXPORTER_CPU) {
 			if (isset($job_response['response']['result'])) {
 				if ($job_response['response']['result'] <= $monitor['value']) {

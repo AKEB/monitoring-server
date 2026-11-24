@@ -393,6 +393,46 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					$data['host'] = trim($data['host']);
 					$params['host'] = $data['host'];
 				}
+			} elseif (intval($data['type']) == \Monitors::TYPE_DOMAIN) {
+				if (isset($data['host'])) {
+					$params['host'] = strtolower(trim(strval($data['host'])));
+				}
+				$allowed_domain_days = \Monitors::domain_expire_alert_days_list();
+				if (isset($data['domain_expire_alert_days']) && is_array($data['domain_expire_alert_days'])) {
+					$domain_days = array_map('intval', array_map('trim', $data['domain_expire_alert_days']));
+					$domain_days = array_values(array_intersect($domain_days, $allowed_domain_days));
+					$params['domain_expire_alert_days'] = $domain_days
+						? implode(',', $domain_days)
+						: \Monitors::domain_expire_alert_days_default();
+				} else {
+					$params['domain_expire_alert_days'] = \Monitors::domain_expire_alert_days_default();
+				}
+				if (!isset($data['repeat_seconds'])) {
+					$params['repeat_seconds'] = 3600;
+				}
+				if (!isset($data['send_repeat_minute'])) {
+					$params['send_repeat_minute'] = 1440;
+				}
+				if (!isset($data['timeout'])) {
+					$params['timeout'] = 30;
+				}
+			} elseif (intval($data['type']) == \Monitors::TYPE_DNS) {
+				if (isset($data['host'])) {
+					$params['host'] = trim(strval($data['host']));
+				}
+				$params['dns_record_type'] = \Monitors::normalize_dns_record_type($data['dns_record_type'] ?? 'A');
+				$params['dns_resolver'] = trim(strval($data['dns_resolver'] ?? ''));
+				$params['dns_transport'] = \Monitors::normalize_dns_transport($data['dns_transport'] ?? 'auto');
+				$params['dns_doh_url'] = trim(strval($data['dns_doh_url'] ?? ''));
+				$params['dns_match_mode'] = \Monitors::normalize_dns_match_mode($data['dns_match_mode'] ?? 'exact_set');
+				$params['dns_expected'] = \Monitors::normalize_dns_expected($data['dns_expected'] ?? '');
+				if (isset($data['port'])) {
+					$params['port'] = intval($data['port']);
+				} elseif ($params['dns_transport'] === 'dot') {
+					$params['port'] = 853;
+				} elseif ($params['dns_transport'] !== 'doh') {
+					$params['port'] = 53;
+				}
 			} elseif ($data['type'] == \Monitors::TYPE_DOCKER) {
 				if (isset($data['docker'])) {
 					$data['docker'] = trim($data['docker']);
@@ -860,6 +900,13 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 						: null
 				);
 			}
+			if (!isset($this->monitor['domain_expire_alert_days']) || !is_array($this->monitor['domain_expire_alert_days'])) {
+				$this->monitor['domain_expire_alert_days'] = \Monitors::parse_domain_expire_alert_days(
+					is_string($this->monitor['domain_expire_alert_days'] ?? null)
+						? $this->monitor['domain_expire_alert_days']
+						: null
+				);
+			}
 
 		} else {
 			$this->monitor['status'] ??= \Monitors::STATUS_ENABLED;
@@ -894,6 +941,13 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 			$this->monitor['json_path'] ??= '';
 			$this->monitor['json_expected_value'] ??= 'true';
 			$this->monitor['json_expected_type'] ??= 'bool';
+			$this->monitor['domain_expire_alert_days'] ??= \Monitors::domain_expire_alert_days_list();
+			$this->monitor['dns_record_type'] ??= 'A';
+			$this->monitor['dns_resolver'] ??= '';
+			$this->monitor['dns_transport'] ??= 'auto';
+			$this->monitor['dns_doh_url'] ??= '';
+			$this->monitor['dns_match_mode'] ??= 'exact_set';
+			$this->monitor['dns_expected'] ??= '';
 		}
 
 		$this->workers_hash = [];
@@ -992,7 +1046,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					]);
 					echo $this->template->html_switch("api_enabled", intval($this->monitor['api_enabled']??0), \T::Monitor_Edit_ApiEnabled(), false,[
 						'readonly' => !($this->can_write || $this->can_create),
-						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_HTTP_JSON.' type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_UDP.' type-'.\Monitors::TYPE_PING.' type-'.\Monitors::TYPE_DOCKER.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU.' type-'.\Monitors::TYPE_EXTERNAL,
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_HTTP_JSON.' type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_UDP.' type-'.\Monitors::TYPE_PING.' type-'.\Monitors::TYPE_DOCKER.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU.' type-'.\Monitors::TYPE_EXTERNAL.' type-'.\Monitors::TYPE_DOMAIN.' type-'.\Monitors::TYPE_DNS,
 					]);
 					$api_description_class = 'api-description-dependence';
 					echo $this->template->html_input("api_description_ru", htmlspecialchars(strval($this->monitor['api_description_ru']??''), ENT_QUOTES, 'UTF-8'), \T::Monitor_Edit_ApiDescriptionRu(), false, [
@@ -1105,13 +1159,19 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 
 					echo $this->template->html_input("host", $this->monitor['host']??'', \T::Monitor_Edit_Host(), false, [
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
-						'global-class' => 'type-dependence type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_UDP.' type-'.\Monitors::TYPE_PING.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU,
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_UDP.' type-'.\Monitors::TYPE_PING.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU.' type-'.\Monitors::TYPE_DNS,
+						'readonly' => !($this->can_write || $this->can_create),
+					]);
+					echo $this->template->html_input("host", $this->monitor['host']??'', \T::Monitor_Edit_Domain(), false, [
+						'id' => 'host_domain',
+						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_DOMAIN,
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 
 					echo $this->template->html_input("port", $this->monitor['port']??'', \T::Monitor_Edit_Port(), false, [
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
-						'global-class' => 'type-dependence type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_UDP.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU.' type-'.\Monitors::TYPE_SERVER_PORT,
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_UDP.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU.' type-'.\Monitors::TYPE_SERVER_PORT.' type-'.\Monitors::TYPE_DNS,
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 
@@ -1202,7 +1262,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 
 					echo $this->template->html_params("workers[]", $this->workers_hash, $this->monitor['workers']??[], \T::Monitor_Edit_Workers(),false,[
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
-						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_HTTP_JSON.' type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_UDP.' type-'.\Monitors::TYPE_PING.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU,
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_HTTP_JSON.' type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_UDP.' type-'.\Monitors::TYPE_PING.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU.' type-'.\Monitors::TYPE_DOMAIN.' type-'.\Monitors::TYPE_DNS,
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 
@@ -1219,13 +1279,13 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					echo $this->template->html_input("timeout", $this->monitor['timeout']??0, \T::Monitor_Edit_Timeout(), false, [
 						'type' => 'number',
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
-						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_HTTP_JSON.' type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_UDP.' type-'.\Monitors::TYPE_PING.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU,
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_HTTP_JSON.' type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_UDP.' type-'.\Monitors::TYPE_PING.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU.' type-'.\Monitors::TYPE_DOMAIN.' type-'.\Monitors::TYPE_DNS,
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 					echo $this->template->html_input("repeat_seconds", $this->monitor['repeat_seconds']??0, \T::Monitor_Edit_RepeatSeconds(), false, [
 						'type' => 'number',
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
-						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_HTTP_JSON.' type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_UDP.' type-'.\Monitors::TYPE_PING.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU,
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_HTTP_JSON.' type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_UDP.' type-'.\Monitors::TYPE_PING.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU.' type-'.\Monitors::TYPE_DOMAIN.' type-'.\Monitors::TYPE_DNS,
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 					echo $this->template->html_input("max_redirects", $this->monitor['max_redirects']??0, \T::Monitor_Edit_MaxRedirects(), false, [
@@ -1234,7 +1294,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_HTTP_JSON,
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
-					$send_repeat_type_class = 'type-dependence type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_HTTP_JSON.' type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_UDP.' type-'.\Monitors::TYPE_PING.' type-'.\Monitors::TYPE_DOCKER.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU.' type-'.\Monitors::TYPE_EXTERNAL;
+					$send_repeat_type_class = 'type-dependence type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_HTTP_JSON.' type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_UDP.' type-'.\Monitors::TYPE_PING.' type-'.\Monitors::TYPE_DOCKER.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU.' type-'.\Monitors::TYPE_EXTERNAL.' type-'.\Monitors::TYPE_DOMAIN.' type-'.\Monitors::TYPE_DNS;
 					foreach (\Monitors::server_types() as $st) {
 						$send_repeat_type_class .= ' type-'.$st;
 					}
@@ -1246,7 +1306,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					]);
 					echo $this->template?->html_select('alert_fail_mode', \Monitors::alert_fail_mode_hash(), intval($this->monitor['alert_fail_mode']??\Monitors::ALERT_FAIL_MODE_MAJORITY), \T::Monitor_Edit_AlertFailMode(), false,[
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
-						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_HTTP_JSON.' type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_UDP.' type-'.\Monitors::TYPE_PING.' type-'.\Monitors::TYPE_DOCKER.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU,
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_HTTP_JSON.' type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_UDP.' type-'.\Monitors::TYPE_PING.' type-'.\Monitors::TYPE_DOCKER.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU.' type-'.\Monitors::TYPE_DOMAIN.' type-'.\Monitors::TYPE_DNS,
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 					echo $this->template?->html_select('response_code[]', \Monitors::response_code_hash(), $this->monitor['response_code']??[], \T::Monitor_Edit_ResponseCode(), false,[
@@ -1273,6 +1333,56 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_HTTP_JSON,
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
+					echo $this->template?->html_select('domain_expire_alert_days[]', \Monitors::domain_expire_alert_days_hash(), $this->monitor['domain_expire_alert_days']??[], \T::Monitor_Edit_DomainExpireAlertDays(), false,[
+						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+						'multiple' => 'multiple',
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_DOMAIN,
+						'readonly' => !($this->can_write || $this->can_create),
+					]);
+					echo $this->template?->html_select('dns_record_type', \Monitors::dns_record_type_hash(), $this->monitor['dns_record_type']??'A', \T::Monitor_Edit_DnsRecordType(), false,[
+						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_DNS,
+						'readonly' => !($this->can_write || $this->can_create),
+					]);
+					echo $this->template->html_input("dns_resolver", $this->monitor['dns_resolver']??'', \T::Monitor_Edit_DnsResolver(), false, [
+						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_DNS,
+						'readonly' => !($this->can_write || $this->can_create),
+						'placeholder' => '8.8.8.8 / 2001:4860:4860::8888',
+					]);
+					echo $this->template?->html_select('dns_transport', \Monitors::dns_transport_hash(), $this->monitor['dns_transport']??'auto', \T::Monitor_Edit_DnsTransport(), false,[
+						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_DNS,
+						'readonly' => !($this->can_write || $this->can_create),
+					]);
+					$doh_presets = ['' => '—'] + \Monitors::dns_doh_presets();
+					echo $this->template?->html_select('dns_doh_preset', $doh_presets, '', \T::Monitor_Edit_DnsDohPreset(), false,[
+						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_DNS,
+						'readonly' => !($this->can_write || $this->can_create),
+						'global-id' => 'dns-doh-preset-div',
+					]);
+					echo $this->template->html_input("dns_doh_url", $this->monitor['dns_doh_url']??'', \T::Monitor_Edit_DnsDohUrl(), false, [
+						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_DNS,
+						'readonly' => !($this->can_write || $this->can_create),
+						'placeholder' => 'https://dns.google/dns-query',
+						'global-id' => 'dns-doh-url-div',
+					]);
+					echo $this->template?->html_select('dns_match_mode', \Monitors::dns_match_mode_hash(), $this->monitor['dns_match_mode']??'exact_set', \T::Monitor_Edit_DnsMatchMode(), false,[
+						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_DNS,
+						'readonly' => !($this->can_write || $this->can_create),
+					]);
+					echo $this->template->html_input("dns_expected", $this->monitor['dns_expected']??'', \T::Monitor_Edit_DnsExpected(), false, [
+						'type' => 'textarea',
+						'rows' => '4',
+						'cols' => '60',
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_DNS,
+						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+						'readonly' => !($this->can_write || $this->can_create),
+					]);
+					echo '<div class="mb-3 row type-dependence type-'.\Monitors::TYPE_DNS.'"><div class="col-xs-12 col-sm-12 col-md-3"></div><div class="col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6"><p class="form-text text-muted mb-0">'.\T::Monitor_Edit_DnsExpectedHint().'</p></div></div>';
 					echo $this->template->html_input("request_headers", $this->monitor['request_headers']??'', \T::Monitor_Edit_RequestHeaders(), false, [
 						'type' => 'textarea',
 						'rows' => '4',
@@ -1301,7 +1411,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 
-					$signature_type_class = 'type-dependence type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_UDP.' type-'.\Monitors::TYPE_PING.' type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_HTTP_JSON.' type-'.\Monitors::TYPE_DOCKER.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU.' type-'.\Monitors::TYPE_EXTERNAL;
+					$signature_type_class = 'type-dependence type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_UDP.' type-'.\Monitors::TYPE_PING.' type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_HTTP_JSON.' type-'.\Monitors::TYPE_DOCKER.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU.' type-'.\Monitors::TYPE_EXTERNAL.' type-'.\Monitors::TYPE_DOMAIN.' type-'.\Monitors::TYPE_DNS;
 					foreach (\Monitors::server_types() as $st) {
 						$signature_type_class .= ' type-'.$st;
 					}
@@ -1462,7 +1572,19 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					const $wrap = $(this).closest('.type-dependence');
 					$(this).prop('disabled', !$wrap.is(':visible'));
 				});
+				// Domain and DNS both use name="host" — only the visible one should submit.
+				$('input[name="host"]').each(function(){
+					const $wrap = $(this).closest('.type-dependence');
+					$(this).prop('disabled', !$wrap.is(':visible'));
+				});
 				monitor_api_fields_toggle();
+				<?php if (empty($this->monitor['id'])): ?>
+				if (selected_type == '<?=intval(\Monitors::TYPE_DOMAIN);?>') {
+					$('#repeat_seconds').val(3600);
+					$('#send_repeat_minute').val(1440);
+					$('#timeout').val(30);
+				}
+				<?php endif; ?>
 				if (selected_type == '<?=intval(\Monitors::TYPE_SERVER_DISK);?>') {
 					monitor_server_disks_select();
 				}
@@ -1693,6 +1815,12 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				});
 				$('#api_enabled').on('change', function(){
 					monitor_api_fields_toggle();
+				});
+				$('#dns_doh_preset').on('changed.bs.select change', function(){
+					const url = ($(this).val() || '').toString();
+					if (url) {
+						$('#dns_doh_url').val(url);
+					}
 				});
 
 				monitor_docker_select();

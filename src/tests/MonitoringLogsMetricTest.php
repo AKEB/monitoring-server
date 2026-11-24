@@ -37,6 +37,8 @@ class MonitoringLogsMetricTest extends PHPUnit\Framework\TestCase {
 		$this->assertFalse(\Monitors::is_metric_value_type(\Monitors::TYPE_SERVER_CONTAINER));
 		$this->assertFalse(\Monitors::is_metric_value_type(\Monitors::TYPE_SERVER_SYSTEMD));
 		$this->assertFalse(\Monitors::is_metric_value_type(\Monitors::TYPE_HTTPS));
+		$this->assertTrue(\Monitors::is_metric_value_type(\Monitors::TYPE_DOMAIN));
+		$this->assertFalse(\Monitors::is_metric_value_type(\Monitors::TYPE_DNS));
 
 		foreach ([
 			\Monitors::TYPE_SERVER_DISK,
@@ -63,6 +65,7 @@ class MonitoringLogsMetricTest extends PHPUnit\Framework\TestCase {
 		$this->assertSame('°C', \Monitors::metric_chart_unit(\Monitors::TYPE_SERVER_TEMP));
 		$this->assertSame('min', \Monitors::metric_chart_unit(\Monitors::TYPE_SERVER_UPTIME));
 		$this->assertSame('MB', \Monitors::metric_chart_unit(\Monitors::TYPE_SERVER_SYSTEMD_MEMORY));
+		$this->assertSame('days', \Monitors::metric_chart_unit(\Monitors::TYPE_DOMAIN));
 	}
 
 	function test_server_worker_title_fallback() {

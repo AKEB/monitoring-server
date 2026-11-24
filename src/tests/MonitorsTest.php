@@ -31,6 +31,8 @@ class MonitorsTest extends PHPUnit\Framework\TestCase {
 		$this->assertSame(23, \Monitors::TYPE_SERVER_SYSTEMD);
 		$this->assertSame(24, \Monitors::TYPE_SERVER_SYSTEMD_CPU);
 		$this->assertSame(25, \Monitors::TYPE_SERVER_SYSTEMD_MEMORY);
+		$this->assertSame(26, \Monitors::TYPE_DOMAIN);
+		$this->assertSame(27, \Monitors::TYPE_DNS);
 		$this->assertSame(-1, \Monitors::EXTERNAL_WORKER_ID);
 		$this->assertSame(-2, \Servers::SERVER_WORKER_ID);
 	}
@@ -38,7 +40,7 @@ class MonitorsTest extends PHPUnit\Framework\TestCase {
 	function test_type_hash_excludes_exporter_cpu() {
 		$keys = array_keys(\Monitors::type_hash());
 		sort($keys);
-		$this->assertSame([0, 1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25], $keys);
+		$this->assertSame([0, 1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27], $keys);
 		$this->assertArrayNotHasKey(\Monitors::TYPE_EXPORTER_CPU, \Monitors::type_hash());
 	}
 
@@ -84,6 +86,28 @@ class MonitorsTest extends PHPUnit\Framework\TestCase {
 		$this->assertSame([15, 7, 6, 5, 4, 3, 2, 1], \Monitors::parse_ssl_cert_expire_alert_days(''));
 		$this->assertSame([15, 3], \Monitors::parse_ssl_cert_expire_alert_days('15, 3, 99'));
 		$this->assertSame([15, 7, 6, 5, 4, 3, 2, 1], \Monitors::parse_ssl_cert_expire_alert_days('99'));
+	}
+
+	function test_domain_expire_days() {
+		$this->assertSame([14, 7, 6, 5, 4, 3, 2, 1, 0], \Monitors::domain_expire_alert_days_list());
+		$this->assertSame('14,7,6,5,4,3,2,1,0', \Monitors::domain_expire_alert_days_default());
+		$this->assertSame([14, 7], \Monitors::parse_domain_expire_alert_days('14, 7, 99'));
+		$this->assertSame(14, \Monitors::domain_expire_alert_days_max('14,7,0'));
+		$this->assertTrue(\Monitors::is_metric_value_type(\Monitors::TYPE_DOMAIN));
+		$this->assertSame('days', \Monitors::metric_chart_unit(\Monitors::TYPE_DOMAIN));
+		$this->assertFalse(\Monitors::is_server_type(\Monitors::TYPE_DOMAIN));
+		$this->assertFalse(\Monitors::is_server_type(\Monitors::TYPE_DNS));
+	}
+
+	function test_dns_helpers() {
+		$this->assertSame('AAAA', \Monitors::normalize_dns_record_type('aaaa'));
+		$this->assertSame('A', \Monitors::normalize_dns_record_type('bogus'));
+		$this->assertSame('doh', \Monitors::normalize_dns_transport('DoH'));
+		$this->assertSame('auto', \Monitors::normalize_dns_transport('nope'));
+		$this->assertSame('exact_set', \Monitors::normalize_dns_match_mode(''));
+		$this->assertSame('nxdomain', \Monitors::normalize_dns_match_mode('NXDOMAIN'));
+		$this->assertSame("1.2.3.4\n5.6.7.8", \Monitors::normalize_dns_expected("1.2.3.4\n\n5.6.7.8\n"));
+		$this->assertArrayHasKey('Google', \Monitors::dns_doh_presets());
 	}
 
 	function test_http_methods() {
