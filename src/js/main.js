@@ -445,11 +445,16 @@ function updateMonitorWorkersLogs(data) {
 							title = log.title;
 							prevClassName = className;
 							prevTitle = title;
-						} else if (isOpenSlot) {
-							// Still collecting this minute — soft provisional color from previous status.
-							className = toSubtleStatusClass(prevClassName);
-							if (prevTitle) {
-								title = prevTitle;
+						} else if (isOpenSlot || repeat > 60) {
+							// Fast monitors: soft color only on the still-open minute.
+							// Slow monitors (repeat > 60s): carry previous solid bubble until next check.
+							if (prevClassName && prevClassName !== 'bg-secondary' && prevClassName !== 'bg-body-secondary') {
+								className = (isOpenSlot && repeat <= 60)
+									? toSubtleStatusClass(prevClassName)
+									: prevClassName;
+								if (prevTitle) {
+									title = prevTitle;
+								}
 							}
 						} else {
 							prevClassName = 'bg-secondary';

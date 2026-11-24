@@ -102,6 +102,16 @@ class MonitoringLogsMetricTest extends PHPUnit\Framework\TestCase {
 		$this->assertFalse(\MonitoringLogs::isOpenInterval(960, 0, 1000));
 	}
 
+	function test_list_display_repeat_for_slow_monitors() {
+		$this->assertSame(60, \MonitoringLogs::listDisplayRepeatSeconds(3600));
+		$this->assertSame(60, \MonitoringLogs::listDisplayRepeatSeconds(61));
+		$this->assertSame(60, \MonitoringLogs::listDisplayRepeatSeconds(60));
+		$this->assertSame(30, \MonitoringLogs::listDisplayRepeatSeconds(30));
+		$this->assertTrue(\MonitoringLogs::listShouldCarryStatus(3600));
+		$this->assertFalse(\MonitoringLogs::listShouldCarryStatus(60));
+		$this->assertFalse(\MonitoringLogs::listShouldCarryStatus(30));
+	}
+
 	function test_open_unknown_inherits_previous_worker_states() {
 		$workers = [1 => 1, 2 => 1, 3 => 1];
 		$openStates = [

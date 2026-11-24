@@ -72,6 +72,22 @@ class MonitoringLogs extends \DB\MySQLObject {
 	}
 
 	/**
+	 * List/folder oval step. Checks rarer than once a minute are drawn per-minute
+	 * and the last known status is carried forward into empty minutes.
+	 */
+	static public function listDisplayRepeatSeconds(int $repeatSeconds): int {
+		if ($repeatSeconds < 1) {
+			return 60;
+		}
+		return $repeatSeconds > 60 ? 60 : $repeatSeconds;
+	}
+
+	/** Carry last known status across empty list slots (repeat slower than 1/min). */
+	static public function listShouldCarryStatus(int $repeatSeconds): bool {
+		return $repeatSeconds > 60;
+	}
+
+	/**
 	 * Count worker states for one timeline slot.
 	 * Unknown/missing workers stay unknown (no optimistic green).
 	 * For the open minute, call fillUnknownFromPrevious() first.
@@ -370,8 +386,11 @@ class MonitoringLogs extends \DB\MySQLObject {
 				}
 
 				$monitor['states'] = [];
+				$displayRepeat = 0;
 				foreach($monitor['children'] as $child) {
-					$monitor['repeat_seconds'] = max($monitor['repeat_seconds']??0, $child['repeat_seconds']??0);
+					$childRepeat = intval($child['repeat_seconds'] ?? 60);
+					$displayRepeat = max($displayRepeat, static::listDisplayRepeatSeconds($childRepeat));
+					$monitor['repeat_seconds'] = max($monitor['repeat_seconds']??0, $childRepeat);
 					$monitor['max_time'] = max($monitor['max_time']??0, $child['max_time']??0);
 
 					if (!isset($monitor['min_time']) || !$monitor['min_time']) $monitor['min_time'] = $child['min_time']??0;
@@ -381,7 +400,8 @@ class MonitoringLogs extends \DB\MySQLObject {
 				}
 				$last_class = '';
 				$now = time();
-				$repeat = intval($monitor['repeat_seconds']);
+				$repeat = max(1, $displayRepeat ?: 60);
+				$carryFolder = static::listShouldCarryStatus(intval($monitor['repeat_seconds'] ?? 0));
 				// Пробегаемся по историческому диапазону и выбираем «худшее»
 				// состояние среди дочерних мониторов (включая открытый слот).
 				for($i=$monitor['min_time']; $i<=$monitor['max_time']; $i+=$repeat) {
@@ -416,9 +436,11 @@ class MonitoringLogs extends \DB\MySQLObject {
 							$has_solid_child = true;
 						}
 						$solidClass = static::toSolidStatusClass($class);
-						// Open minute without child data: inherit previous child class.
+						$childCarry = static::listShouldCarryStatus(intval($child['repeat_seconds'] ?? 0));
+						// Empty slot: inherit previous child class for open minute, or always
+						// when the child checks less often than once a minute.
 						if ($solidClass === '' || $solidClass === 'bg-secondary') {
-							if ($isOpen && isset($child['states'][$prevSlot]['class'])) {
+							if (($isOpen || $childCarry || $carryFolder) && isset($child['states'][$prevSlot]['class'])) {
 								$prevClass = static::toSolidStatusClass(strval($child['states'][$prevSlot]['class']));
 								if ($prevClass !== '' && $prevClass !== 'bg-secondary') {
 									$class = $prevClass;
@@ -439,7 +461,8 @@ class MonitoringLogs extends \DB\MySQLObject {
 						$slotClass = 'bg-secondary';
 					}
 					// Open minute still waiting for child reports: softer provisional colors.
-					if ($isOpen && !$has_solid_child && $slotClass !== 'bg-primary') {
+					// Slow monitors keep solid carried status (same as previous bubble).
+					if ($isOpen && !$has_solid_child && !$carryFolder && $slotClass !== 'bg-primary') {
 						$slotClass = static::toSubtleStatusClass($slotClass);
 					}
 					$monitor['states'][$i]['class'] = $slotClass;
@@ -457,7 +480,9 @@ class MonitoringLogs extends \DB\MySQLObject {
 
 				$last_class = '';
 				$now = time();
-				$repeat = intval($monitor['repeat_seconds']);
+				$nativeRepeat = intval($monitor['repeat_seconds']);
+				$repeat = static::listDisplayRepeatSeconds($nativeRepeat);
+				$carry = static::listShouldCarryStatus($nativeRepeat);
 				$previousWorkers = [];
 				for($i=$monitor['min_time']; $i<=$monitor['max_time']; $i+=$repeat) {
 					if ($i > $now) continue;
@@ -479,8 +504,8 @@ class MonitoringLogs extends \DB\MySQLObject {
 							break;
 						}
 					}
-					// Current minute with no data yet: reuse previous worker states.
-					if ($isOpen && $previousWorkers) {
+					// Open minute, or slow check between runs: reuse previous worker states.
+					if (($isOpen || $carry) && $previousWorkers) {
 						$workerStates = static::fillUnknownFromPrevious($workerStates, $previousWorkers);
 					}
 					$counts = static::countWorkerStatesForSlot(
@@ -494,11 +519,13 @@ class MonitoringLogs extends \DB\MySQLObject {
 						isset($monitor['maintenances']) && $monitor['maintenances']
 					);
 					// Open minute still waiting for reports: softer provisional colors.
-					if ($isOpen && !$hasRealData && $slotClass !== 'bg-primary') {
+					// Carried status for slow monitors stays solid (same as previous bubble).
+					if ($isOpen && !$hasRealData && !$carry && $slotClass !== 'bg-primary') {
 						$slotClass = static::toSubtleStatusClass($slotClass);
 					}
+					$monitor['states'][$i]['workers'] = $workerStates;
 					$monitor['states'][$i]['class'] = $slotClass;
-					$previousWorkers = $monitor['states'][$i]['workers'];
+					$previousWorkers = $workerStates;
 					$last_class = static::toSolidStatusClass($slotClass);
 				}
 				$monitor['badge_class'] = $last_class;
@@ -598,7 +625,9 @@ class MonitoringLogs extends \DB\MySQLObject {
 			$monitor_ids[$monitor_id] = $monitor_id;
 			if (!$monitor['repeat_seconds']) $monitor['repeat_seconds'] = 30;
 
-			$repeat_seconds[$monitor['repeat_seconds']] = $monitor['repeat_seconds'];
+			$nativeRepeat = intval($monitor['repeat_seconds']);
+			$displayRepeat = static::listDisplayRepeatSeconds($nativeRepeat);
+			$repeat_seconds[$displayRepeat] = $displayRepeat;
 
 			$maintenances = \MonitoringMaintenances::getMaintenancesForMonitor($monitor_id);
 			if ($maintenances) {
@@ -607,8 +636,8 @@ class MonitoringLogs extends \DB\MySQLObject {
 				unset($monitor['maintenances']);
 			}
 
-			$monitor_max_time = intval($max_time / intval($monitor['repeat_seconds'])) * intval($monitor['repeat_seconds']);
-			$monitor_min_time = $monitor_max_time - ( $count * intval($monitor['repeat_seconds']) );
+			$monitor_max_time = intval($max_time / $displayRepeat) * $displayRepeat;
+			$monitor_min_time = $monitor_max_time - ( $count * $displayRepeat );
 			$monitor['min_time'] = $monitor_min_time;
 			$monitor['max_time'] = $monitor_max_time;
 
@@ -620,7 +649,7 @@ class MonitoringLogs extends \DB\MySQLObject {
 			if (!isset($monitor['states'])) $monitor['states'] = [];
 
 			$now = time();
-			$repeat = intval($monitor['repeat_seconds']);
+			$repeat = $displayRepeat;
 			for($i=$monitor['min_time']; $i<=$monitor['max_time']; $i+=$repeat) {
 				if ($i > $now) continue;
 				// Include the still-open current interval; UNKNOWN inherits previous later.
@@ -677,13 +706,15 @@ class MonitoringLogs extends \DB\MySQLObject {
 			if (!isset($monitors[$monitor_id]['workers']) || !$monitors[$monitor_id]['workers']) continue;
 			if (!isset($monitors[$monitor_id]['workers'][$worker_id]) || !$monitors[$monitor_id]['workers'][$worker_id]) continue;
 			if (!isset($monitors[$monitor_id]['states']) || !$monitors[$monitor_id]['states']) continue;
-			$repeat_seconds = intval($monitors[$monitor_id]['repeat_seconds']??0);
-			if (!$repeat_seconds) continue;
-			$key = 'interval_time_'.intval($repeat_seconds);
+			$nativeRepeat = intval($monitors[$monitor_id]['repeat_seconds']??0);
+			if (!$nativeRepeat) continue;
+			$displayRepeat = static::listDisplayRepeatSeconds($nativeRepeat);
+			$key = 'interval_time_'.intval($displayRepeat);
 			if (!isset($item[$key]) || !$item[$key]) continue;
-			if (!isset($monitors[$monitor_id]['states'][$item[$key]]) || !$monitors[$monitor_id]['states'][$item[$key]]) continue;
-			if (!isset($monitors[$monitor_id]['states'][$item[$key]]['workers'][$worker_id])) {
-				$monitors[$monitor_id]['states'][$item[$key]]['workers'][$worker_id] = static::STATE_UNKNOWN;
+			$slotTime = intval($item[$key]);
+			if (!isset($monitors[$monitor_id]['states'][$slotTime]) || !$monitors[$monitor_id]['states'][$slotTime]) continue;
+			if (!isset($monitors[$monitor_id]['states'][$slotTime]['workers'][$worker_id])) {
+				$monitors[$monitor_id]['states'][$slotTime]['workers'][$worker_id] = static::STATE_UNKNOWN;
 			}
 			$state = static::STATE_UNKNOWN;
 			if ($status == static::STATUS_FAIL) {
@@ -691,7 +722,7 @@ class MonitoringLogs extends \DB\MySQLObject {
 			} else if ($status == static::STATUS_GOOD) {
 				$state = static::STATE_SUCCESS;
 			}
-			$monitors[$monitor_id]['states'][$item[$key]]['workers'][$worker_id] = max($monitors[$monitor_id]['states'][$item[$key]]['workers'][$worker_id], $state??static::STATE_UNKNOWN);
+			$monitors[$monitor_id]['states'][$slotTime]['workers'][$worker_id] = max($monitors[$monitor_id]['states'][$slotTime]['workers'][$worker_id], $state??static::STATE_UNKNOWN);
 		}
 		if (!isset($monitors[0])) return [];
 		$parent = [];
