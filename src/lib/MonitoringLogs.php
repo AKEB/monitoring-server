@@ -837,12 +837,17 @@ class MonitoringLogs extends \DB\MySQLObject {
 			}
 			$return['workers'] = $workers_hash;
 
+			// Worker status strip: ~40 ovals at the monitor's native interval
+			// (1 min checks → last hour; hourly domain → last ~40 hours).
+			$workerOvalCount = 40;
+			$logsLookback = max(60 * 60, $repeat * $workerOvalCount);
+
 			$sql = '';
 			$sql .= sql_pholder(' AND `monitor_id` = ?', $monitor_id);
 			if ($workers_hash) {
 				$sql .= sql_pholder(' AND `worker_id` IN (?@)', array_keys($workers_hash));
 			}
-			$sql .= sql_pholder(' AND `update_time` >= ? AND `update_time` <= ? ', $max_time - 60*60 - intval($monitor['repeat_seconds']), $max_time);
+			$sql .= sql_pholder(' AND `update_time` >= ? AND `update_time` <= ? ', $max_time - $logsLookback - $repeat, $max_time);
 			$sql .= ' ORDER BY `interval_time` ASC';
 			$fields = '`worker_id`, `status`, ';
 			$fields .= 'FLOOR(`update_time` / '.intval($monitor['repeat_seconds']).') * '.intval($monitor['repeat_seconds']).' as `interval_time`,';
@@ -865,7 +870,7 @@ class MonitoringLogs extends \DB\MySQLObject {
 				unset($return['monitor']['maintenances']);
 			}
 
-			for($i=$max_time - 60*60; $i <= $max_time; $i+=$repeat) {
+			for($i=$max_time - $logsLookback; $i <= $max_time; $i+=$repeat) {
 				$time = intval($i / $repeat) * $repeat;
 				if ($time > $now) continue;
 				// Seed the open current interval too; UI inherits previous worker status if empty.
