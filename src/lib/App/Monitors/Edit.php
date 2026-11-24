@@ -1080,7 +1080,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 
 	private function print_header() {
 		?>
-		<div class="float-start"><h2><i class="bi bi-question-octagon"></i> <?=\T::Monitor_PageTitle();?></h2></div>
+		<?php \Ui::print_section_title('bi bi-question-octagon', \T::Monitor_PageTitle()); ?>
 		<div class="clearfix"></div>
 		<?php
 	}

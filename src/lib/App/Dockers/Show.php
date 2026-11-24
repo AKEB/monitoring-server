@@ -122,7 +122,7 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 
 	private function print_header() {
 		?>
-		<div class="float-start"><h2><i class="bi bi-box"></i> <?=\T::Docker_PageTitle();?></h2></div>
+		<?php \Ui::print_section_title('bi bi-box', \T::Docker_PageTitle()); ?>
 		<?php if ($this->can_create) {
 			?>
 			<div class="float-end">

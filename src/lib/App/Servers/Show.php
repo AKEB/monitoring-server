@@ -129,7 +129,7 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 		$current = \AppOptions::getDesiredAgentVersion();
 		$currentLabel = $current !== '' ? $current : '—';
 		?>
-		<div class="float-start"><h2><i class="bi bi-hdd-rack"></i> <?=\T::Server_PageTitle();?></h2></div>
+		<?php \Ui::print_section_title('bi bi-hdd-rack', \T::Server_PageTitle()); ?>
 		<div class="float-end d-flex align-items-center gap-3">
 			<button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#desiredAgentVersionModal" title="<?=\T::Server_Update_GlobalTitle();?>">
 				<i class="bi bi-tags"></i> <?=\T::Server_Update_OpenButton();?>

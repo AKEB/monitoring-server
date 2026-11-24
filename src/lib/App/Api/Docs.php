@@ -16,9 +16,7 @@ class Docs extends \Routing_Parent implements \Routing_Interface {
 
 	private function print_header() {
 		?>
-		<div class="float-start">
-			<h2><i class="bi bi-book"></i> <?=\T::Api_Docs_PageTitle();?></h2>
-		</div>
+		<?php \Ui::print_section_title('bi bi-book', \T::Api_Docs_PageTitle()); ?>
 		<div class="float-end">
 			<a class="btn btn-outline-secondary" href="/settings/api/"><?=\T::Api_Docs_BackToTokens();?></a>
 		</div>

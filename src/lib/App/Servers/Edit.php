@@ -243,7 +243,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 
 	private function print_header() {
 		?>
-		<div class="float-start"><h2><i class="bi bi-hdd-rack"></i> <?=\T::Server_PageTitle();?></h2></div>
+		<?php \Ui::print_section_title('bi bi-hdd-rack', \T::Server_PageTitle()); ?>
 		<div class="clearfix"></div>
 		<?php
 	}

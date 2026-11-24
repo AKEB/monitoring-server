@@ -110,6 +110,10 @@ div.text-success>input {
 	cursor:pointer;
 }
 
+a.section-title-link:hover {
+	opacity: 0.75;
+}
+
 .monitor-folder>div.collapsed>i.bi::before {
 	content: "\f234";
 }

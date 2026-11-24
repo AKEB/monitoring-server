@@ -173,7 +173,7 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 		$current = \AppOptions::getDesiredWorkerVersion();
 		$currentLabel = $current !== '' ? $current : '—';
 		?>
-		<div class="float-start"><h2><i class="bi bi-hdd-network"></i> <?=\T::Worker_PageTitle();?></h2></div>
+		<?php \Ui::print_section_title('bi bi-hdd-network', \T::Worker_PageTitle()); ?>
 		<div class="float-end d-flex align-items-center gap-3">
 			<button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#desiredWorkerVersionModal" title="<?=\T::Worker_Update_GlobalTitle();?>">
 				<i class="bi bi-tags"></i> <?=\T::Worker_Update_OpenButton();?>
