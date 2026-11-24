@@ -51,7 +51,11 @@ class MonitoringJobs extends \DB\MySQLObject {
 		$excludeTypes = [
 			\Monitors::TYPE_FOLDER => true,
 			\Monitors::TYPE_DOCKER => true,
+			\Monitors::TYPE_EXTERNAL => true,
 		];
+		foreach (\Monitors::server_types() as $serverType) {
+			$excludeTypes[intval($serverType)] = true;
+		}
 		foreach ($directByWorker as $wid => $monitorIds) {
 			$leaves = [];
 			foreach ($monitorIds as $mid => $_) {
@@ -59,14 +63,14 @@ class MonitoringJobs extends \DB\MySQLObject {
 				if ($type === \Monitors::TYPE_FOLDER) {
 					foreach (\Monitors::get_leaf_monitor_ids_under($mid, $monitorsHash) as $leafId) {
 						$leafType = intval($monitorsHash[$leafId]['type'] ?? -1);
-						if (isset($excludeTypes[$leafType])) {
+						if (isset($excludeTypes[$leafType]) || !static::monitorInheritsFolderWorkers($leafType)) {
 							continue;
 						}
 						$leaves[intval($leafId)] = true;
 					}
 					continue;
 				}
-				if (isset($excludeTypes[$type])) {
+				if (isset($excludeTypes[$type]) || !static::monitorInheritsFolderWorkers($type)) {
 					continue;
 				}
 				$leaves[intval($mid)] = true;
@@ -74,6 +78,21 @@ class MonitoringJobs extends \DB\MySQLObject {
 			$return[intval($wid)] = count($leaves);
 		}
 		return $return;
+	}
+
+	/**
+	 * Whether a monitor of this type receives workers from ancestor folders.
+	 * Server-agent monitors (and docker/external) use their own assignment paths —
+	 * never inherit regular workers from folders.
+	 */
+	static public function monitorInheritsFolderWorkers(int $type): bool {
+		if (\Monitors::is_server_type($type)) {
+			return false;
+		}
+		if ($type === \Monitors::TYPE_DOCKER || $type === \Monitors::TYPE_EXTERNAL) {
+			return false;
+		}
+		return true;
 	}
 
 	/**
@@ -139,6 +158,10 @@ class MonitoringJobs extends \DB\MySQLObject {
 				}
 			}
 		}
+		$type = intval($monitors_hash[$monitor_id]['type'] ?? 0);
+		if (!static::monitorInheritsFolderWorkers($type)) {
+			return $result;
+		}
 		$parent_id = intval($monitors_hash[$monitor_id]['parent_id'] ?? 0);
 		foreach (static::getInheritedWorkerIds($parent_id) as $wid => $_) {
 			$result[intval($wid)] = true;
@@ -201,6 +224,10 @@ class MonitoringJobs extends \DB\MySQLObject {
 			}
 			foreach ($leaves as $leafId) {
 				$leafId = intval($leafId);
+				$leafType = intval($monitors_hash[$leafId]['type'] ?? -1);
+				if (!static::monitorInheritsFolderWorkers($leafType)) {
+					continue;
+				}
 				foreach ($workers as $workerId => $value) {
 					$wid = intval($workerId);
 					if ($wid < 1) {

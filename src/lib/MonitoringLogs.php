@@ -796,20 +796,22 @@ class MonitoringLogs extends \DB\MySQLObject {
 			} else {
 				$start_time = microtime(true);
 				$jobs = \MonitoringJobs::data(['monitor_id' => $monitor['id']],'','`worker_id`, `create_time`');
-				$haveWorkers = [];
-				foreach ($jobs as $item) {
-					$haveWorkers[intval($item['worker_id'] ?? 0)] = true;
-				}
-				$inheritedWorkers = \MonitoringJobs::getInheritedWorkerIds(intval($monitor['parent_id'] ?? 0));
-				foreach ($inheritedWorkers as $wid => $_) {
-					$wid = intval($wid);
-					if ($wid < 1 || isset($haveWorkers[$wid])) {
-						continue;
+				if (\MonitoringJobs::monitorInheritsFolderWorkers(intval($monitor['type'] ?? 0))) {
+					$haveWorkers = [];
+					foreach ($jobs as $item) {
+						$haveWorkers[intval($item['worker_id'] ?? 0)] = true;
 					}
-					$jobs[] = [
-						'worker_id' => $wid,
-						'create_time' => 1,
-					];
+					$inheritedWorkers = \MonitoringJobs::getInheritedWorkerIds(intval($monitor['parent_id'] ?? 0));
+					foreach ($inheritedWorkers as $wid => $_) {
+						$wid = intval($wid);
+						if ($wid < 1 || isset($haveWorkers[$wid])) {
+							continue;
+						}
+						$jobs[] = [
+							'worker_id' => $wid,
+							'create_time' => 1,
+						];
+					}
 				}
 				$return['mysql_time']['MonitoringJobs::data'] = round(microtime(true) - $start_time,3);
 			}

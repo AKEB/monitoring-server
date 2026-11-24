@@ -574,7 +574,11 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				));
 			}
 
-			$inherited_workers = \MonitoringJobs::getInheritedWorkerIds($parentForInherit);
+			$saveType = intval($params['type'] ?? ($this->monitor['type'] ?? 0));
+			$inherited_workers = [];
+			if (\MonitoringJobs::monitorInheritsFolderWorkers($saveType)) {
+				$inherited_workers = \MonitoringJobs::getInheritedWorkerIds($parentForInherit);
+			}
 			if (!isset($data['workers']) || !is_array($data['workers'])) {
 				$data['workers'] = [];
 			}
@@ -925,9 +929,12 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 			}
 			$parentForInherit = intval($this->monitor['parent_id'] ?? $this->parent_id);
 			// Show workers/notifies enabled on ancestor folders as checked (locked later).
-			$inherited_workers = \MonitoringJobs::getInheritedWorkerIds($parentForInherit);
-			foreach ($inherited_workers as $worker_id => $_) {
-				$this->monitor['workers'][$worker_id] = true;
+			// Server-agent monitors never inherit workers from folders.
+			if (\MonitoringJobs::monitorInheritsFolderWorkers(intval($this->monitor['type'] ?? 0))) {
+				$inherited_workers = \MonitoringJobs::getInheritedWorkerIds($parentForInherit);
+				foreach ($inherited_workers as $worker_id => $_) {
+					$this->monitor['workers'][$worker_id] = true;
+				}
 			}
 			$inherited_notify = \MonitoringNotify::getInheritedNotifyIds($parentForInherit);
 			foreach ($inherited_notify as $notify_id => $_) {
@@ -977,10 +984,13 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 			$this->monitor['response_code'] ??= [2];
 			$this->monitor['parent_id'] ??= $this->parent_id;
 			// Create form: show inherited workers/notifies from the target parent folder.
+			// Server-agent types never inherit workers (field is hidden for those types).
 			$parentForInherit = intval($this->monitor['parent_id']);
-			$inherited_workers = \MonitoringJobs::getInheritedWorkerIds($parentForInherit);
-			foreach ($inherited_workers as $worker_id => $_) {
-				$this->monitor['workers'][$worker_id] = true;
+			if (\MonitoringJobs::monitorInheritsFolderWorkers(intval($this->monitor['type'] ?? 0))) {
+				$inherited_workers = \MonitoringJobs::getInheritedWorkerIds($parentForInherit);
+				foreach ($inherited_workers as $worker_id => $_) {
+					$this->monitor['workers'][$worker_id] = true;
+				}
 			}
 			$inherited_notify = \MonitoringNotify::getInheritedNotifyIds($parentForInherit);
 			foreach ($inherited_notify as $notify_id => $_) {
@@ -1004,7 +1014,10 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 		}
 
 		$parentForInherit = intval($this->monitor['parent_id'] ?? $this->parent_id);
-		$inherited_workers = \MonitoringJobs::getInheritedWorkerIds($parentForInherit);
+		$inherited_workers = [];
+		if (\MonitoringJobs::monitorInheritsFolderWorkers(intval($this->monitor['type'] ?? 0))) {
+			$inherited_workers = \MonitoringJobs::getInheritedWorkerIds($parentForInherit);
+		}
 		$inherited_workers_label = htmlspecialchars(\T::Monitor_Edit_WorkersInherited());
 		$this->workers_hash = [];
 		$data = \Workers::data(false, ' ORDER BY `title` ASC', '`id`, `title`');

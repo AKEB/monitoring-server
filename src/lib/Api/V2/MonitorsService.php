@@ -520,7 +520,8 @@ class MonitorsService {
 		}
 
 		// Folder-inherited workers are runtime-only; never persist on the child.
-		if ($workers && !Runtime::store()) {
+		// Server-agent / docker / external never inherit folder workers.
+		if ($workers && !Runtime::store() && \MonitoringJobs::monitorInheritsFolderWorkers($type)) {
 			$parentId = intval($row['parent_id'] ?? ($existing['parent_id'] ?? 0));
 			$inheritedWorkers = \MonitoringJobs::getInheritedWorkerIds($parentId);
 			if ($inheritedWorkers) {
