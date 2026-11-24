@@ -110,6 +110,9 @@ class MonitoringLogsMetricTest extends PHPUnit\Framework\TestCase {
 		$this->assertTrue(\MonitoringLogs::listShouldCarryStatus(3600));
 		$this->assertFalse(\MonitoringLogs::listShouldCarryStatus(60));
 		$this->assertFalse(\MonitoringLogs::listShouldCarryStatus(30));
+		$this->assertSame(3600, \MonitoringLogs::listCarryLookbackSeconds(3600));
+		$this->assertSame(0, \MonitoringLogs::listCarryLookbackSeconds(60));
+		$this->assertSame(0, \MonitoringLogs::listCarryLookbackSeconds(30));
 	}
 
 	function test_open_unknown_inherits_previous_worker_states() {

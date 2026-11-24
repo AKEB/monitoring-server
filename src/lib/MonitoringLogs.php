@@ -88,6 +88,17 @@ class MonitoringLogs extends \DB\MySQLObject {
 	}
 
 	/**
+	 * Extra log lookback before the visible list window so slow monitors
+	 * (domain/hourly) can seed carry after the last check ages out of the strip.
+	 */
+	static public function listCarryLookbackSeconds(int $repeatSeconds): int {
+		if (!static::listShouldCarryStatus($repeatSeconds)) {
+			return 0;
+		}
+		return max(0, $repeatSeconds);
+	}
+
+	/**
 	 * Count worker states for one timeline slot.
 	 * Unknown/missing workers stay unknown (no optimistic green).
 	 * For the open minute, call fillUnknownFromPrevious() first.
@@ -484,6 +495,10 @@ class MonitoringLogs extends \DB\MySQLObject {
 				$repeat = static::listDisplayRepeatSeconds($nativeRepeat);
 				$carry = static::listShouldCarryStatus($nativeRepeat);
 				$previousWorkers = [];
+				if (!empty($monitor['_carry_seed']) && is_array($monitor['_carry_seed'])) {
+					$previousWorkers = $monitor['_carry_seed'];
+				}
+				unset($monitor['_carry_seed'], $monitor['_carry_seed_time']);
 				for($i=$monitor['min_time']; $i<=$monitor['max_time']; $i+=$repeat) {
 					if ($i > $now) continue;
 					$isOpen = static::isOpenInterval($i, $repeat, $now);
@@ -608,6 +623,7 @@ class MonitoringLogs extends \DB\MySQLObject {
 		$repeat_seconds = [];
 		$global_min_time = 0;
 		$global_max_time = 0;
+		$carry_lookback = 0;
 		$monitor_ids = [];
 		// Собираем дерево: фильтруем выключенные и без прав.
 		foreach($monitors as $monitor_id=>&$monitor) {
@@ -634,6 +650,7 @@ class MonitoringLogs extends \DB\MySQLObject {
 			$nativeRepeat = intval($monitor['repeat_seconds']);
 			$displayRepeat = static::listDisplayRepeatSeconds($nativeRepeat);
 			$repeat_seconds[$displayRepeat] = $displayRepeat;
+			$carry_lookback = max($carry_lookback, static::listCarryLookbackSeconds($nativeRepeat));
 
 			$maintenances = \MonitoringMaintenances::getMaintenancesForMonitor($monitor_id);
 			if ($maintenances) {
@@ -684,10 +701,11 @@ class MonitoringLogs extends \DB\MySQLObject {
 		unset($parent);
 		unset($monitor);
 
-		// Get Data From MonitoringLogs
+		// Get Data From MonitoringLogs (extra lookback seeds carry for slow monitors).
 		$sql = '';
 		$fields = '';
-		$sql .= sql_pholder(' AND update_time >= ? AND update_time <= ?', $global_min_time, $global_max_time);
+		$logs_min_time = $global_min_time - intval($carry_lookback);
+		$sql .= sql_pholder(' AND update_time >= ? AND update_time <= ?', $logs_min_time, $global_max_time);
 		if ($monitor_ids) {
 			$sql .= sql_pholder(' AND monitor_id IN (?@)', array_keys($monitor_ids));
 		} else {
@@ -718,17 +736,30 @@ class MonitoringLogs extends \DB\MySQLObject {
 			$key = 'interval_time_'.intval($displayRepeat);
 			if (!isset($item[$key]) || !$item[$key]) continue;
 			$slotTime = intval($item[$key]);
-			if (!isset($monitors[$monitor_id]['states'][$slotTime]) || !$monitors[$monitor_id]['states'][$slotTime]) continue;
-			if (!isset($monitors[$monitor_id]['states'][$slotTime]['workers'][$worker_id])) {
-				$monitors[$monitor_id]['states'][$slotTime]['workers'][$worker_id] = static::STATE_UNKNOWN;
-			}
 			$state = static::STATE_UNKNOWN;
 			if ($status == static::STATUS_FAIL) {
 				$state = static::STATE_ERROR;
 			} else if ($status == static::STATUS_GOOD) {
 				$state = static::STATE_SUCCESS;
 			}
-			$monitors[$monitor_id]['states'][$slotTime]['workers'][$worker_id] = max($monitors[$monitor_id]['states'][$slotTime]['workers'][$worker_id], $state??static::STATE_UNKNOWN);
+			if ($state === static::STATE_UNKNOWN) {
+				continue;
+			}
+			$visibleMin = intval($monitors[$monitor_id]['min_time'] ?? 0);
+			// Last status before the visible strip seeds fillUnknownFromPrevious().
+			if ($slotTime < $visibleMin) {
+				$prevTime = intval($monitors[$monitor_id]['_carry_seed_time'][$worker_id] ?? 0);
+				if ($time >= $prevTime) {
+					$monitors[$monitor_id]['_carry_seed'][$worker_id] = $state;
+					$monitors[$monitor_id]['_carry_seed_time'][$worker_id] = $time;
+				}
+				continue;
+			}
+			if (!isset($monitors[$monitor_id]['states'][$slotTime]) || !$monitors[$monitor_id]['states'][$slotTime]) continue;
+			if (!isset($monitors[$monitor_id]['states'][$slotTime]['workers'][$worker_id])) {
+				$monitors[$monitor_id]['states'][$slotTime]['workers'][$worker_id] = static::STATE_UNKNOWN;
+			}
+			$monitors[$monitor_id]['states'][$slotTime]['workers'][$worker_id] = max($monitors[$monitor_id]['states'][$slotTime]['workers'][$worker_id], $state);
 		}
 		if (!isset($monitors[0])) return [];
 		$parent = [];
