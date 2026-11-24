@@ -561,7 +561,8 @@ class MonitoringLogs extends \DB\MySQLObject {
 			foreach($monitor_workers_data as $item) {
 				$mid = intval($item['monitor_id'] ?? 0);
 				$wid = intval($item['worker_id'] ?? 0);
-				if ($mid < 1 || $wid < 1) {
+				// Keep virtual server/external worker ids (-1, -2); only skip empty ids.
+				if ($mid < 1 || $wid === 0) {
 					continue;
 				}
 				$direct_workers[$mid][$wid] = $item['create_time'] ? $item['create_time'] : 1;
