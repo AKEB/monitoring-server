@@ -14,7 +14,7 @@ class Migration_0050 {
 				ADD `dns_transport` VARCHAR(16) NOT NULL DEFAULT 'auto' AFTER `dns_resolver`,
 				ADD `dns_doh_url` VARCHAR(512) NOT NULL DEFAULT '' AFTER `dns_transport`,
 				ADD `dns_match_mode` VARCHAR(32) NOT NULL DEFAULT 'exact_set' AFTER `dns_doh_url`,
-				ADD `dns_expected` TEXT NOT NULL AFTER `dns_match_mode`
+				ADD `dns_expected` TEXT NOT NULL DEFAULT ('') AFTER `dns_match_mode`
 		;");
 	}
 

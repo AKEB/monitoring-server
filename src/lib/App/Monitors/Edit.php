@@ -288,6 +288,16 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					$params[$notifyTextField] = '';
 				}
 			}
+			// Ensure DNS TEXT columns are present on INSERT for any type (strict SQL).
+			if (!isset($params['id'])) {
+				$params['dns_expected'] = \Monitors::normalize_dns_expected($data['dns_expected'] ?? '');
+				$params['dns_record_type'] = \Monitors::normalize_dns_record_type($data['dns_record_type'] ?? 'A');
+				$params['dns_resolver'] = trim(strval($data['dns_resolver'] ?? ''));
+				$params['dns_transport'] = \Monitors::normalize_dns_transport($data['dns_transport'] ?? 'auto');
+				$params['dns_doh_url'] = trim(strval($data['dns_doh_url'] ?? ''));
+				$params['dns_match_mode'] = \Monitors::normalize_dns_match_mode($data['dns_match_mode'] ?? 'exact_set');
+				$params['domain_expire_alert_days'] = \Monitors::domain_expire_alert_days_default();
+			}
 
 			if ($data['type'] == \Monitors::TYPE_HTTPS || $data['type'] == \Monitors::TYPE_HTTP_JSON) {
 				if (isset($data['url'])) {
