@@ -292,12 +292,32 @@ class MonitorsEvents extends \DB\MySQLObject {
 			}
 		}
 		if (!$monitors_hash) return;
-		$jobs = \MonitoringJobs::data(false, sql_pholder(' AND `monitor_id` IN (?@)', array_keys($monitors_hash)), '`monitor_id`, `worker_id`');
-		$jobs_hash = [];
-		foreach($jobs as $job) {
+
+		// Direct jobs on monitors + ancestor folders (for inheritance).
+		$ancestorIds = [];
+		$monitorsTree = \Monitors::get_hash();
+		foreach (array_keys($monitors_hash) as $mid) {
+			$pid = intval($monitorsTree[$mid]['parent_id'] ?? 0);
+			$guard = 0;
+			while ($pid > 0 && $guard < 100) {
+				$guard++;
+				$ancestorIds[$pid] = $pid;
+				$pid = intval($monitorsTree[$pid]['parent_id'] ?? 0);
+			}
+		}
+		$queryIds = array_values(array_unique(array_merge(array_keys($monitors_hash), $ancestorIds)));
+		$jobs = \MonitoringJobs::data(false, sql_pholder(' AND `monitor_id` IN (?@)', $queryIds), '`monitor_id`, `worker_id`');
+		$directJobs = [];
+		foreach ($jobs as $job) {
 			if (!$job['worker_id']) continue;
-			$job['worker_id'] = intval($job['worker_id']);
-			$jobs_hash[$job['monitor_id']][$job['worker_id']] = $job['worker_id'];
+			$directJobs[intval($job['monitor_id'])][intval($job['worker_id'])] = intval($job['worker_id']);
+		}
+		$expandedJobs = \MonitoringJobs::expandAssignmentsToLeaves($directJobs);
+		$jobs_hash = [];
+		foreach (array_keys($monitors_hash) as $mid) {
+			if (!empty($expandedJobs[$mid])) {
+				$jobs_hash[$mid] = $expandedJobs[$mid];
+			}
 		}
 		if ($dockers_monitor_hash) {
 			$dockers = \MonitoringDockers::data(false, sql_pholder(' AND `docker_id` IN (?@)', array_keys($dockers_monitor_hash)), '`docker_id`, `worker_id`');

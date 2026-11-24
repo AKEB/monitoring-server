@@ -157,6 +157,7 @@ Monitor:
     JSONExpectedValue: "Expected JSON value"
     JSONExpectedType: "Expected JSON value type"
     Workers: "Workers"
+    WorkersInherited: "inherited"
     Value: "Greater than (%%)"
     ValueMbps: "Greater than (Mbps)"
     ChangeButton: "Update"

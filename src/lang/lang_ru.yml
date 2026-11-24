@@ -156,6 +156,7 @@ Monitor:
     JSONExpectedValue: "Ожидаемое значение JSON"
     JSONExpectedType: "Тип ожидаемого значения JSON"
     Workers: "Обработчики"
+    WorkersInherited: "наследуется"
     ChangeButton: "Изменить"
     CreateButton: "Создать"
     ParentFolder: "Родительская папка"

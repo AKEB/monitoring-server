@@ -1097,6 +1097,14 @@ class T {
 	public static function Monitor_Edit_Workers(...$argv): string { return ''; }
 
 	/**
+	 * Monitor_Edit_WorkersInherited
+	 * 
+	 * @return string "inherited"
+	 * @return string "наследуется"
+	 */
+	public static function Monitor_Edit_WorkersInherited(...$argv): string { return ''; }
+
+	/**
 	 * Monitor_Edit_Value
 	 * 
 	 * @return string "Greater than (%%)"

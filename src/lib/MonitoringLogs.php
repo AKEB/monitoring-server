@@ -554,15 +554,20 @@ class MonitoringLogs extends \DB\MySQLObject {
 		}
 		$monitor_workers_hash = [];
 
-		// Работники, которые привязаны к каждому монитору (по самим джобам).
+		// Workers linked to monitors/folders; folder assignments expand onto leaves.
 		$monitor_workers_data = \MonitoringJobs::data(false, ' ORDER BY NULL', '`monitor_id`, `worker_id`, `create_time`');
-
+		$direct_workers = [];
 		if ($monitor_workers_data) {
 			foreach($monitor_workers_data as $item) {
-				if (!isset($monitor_workers_hash[$item['monitor_id']])) $monitor_workers_hash[$item['monitor_id']] = [];
-				$monitor_workers_hash[$item['monitor_id']][$item['worker_id']] = $item['create_time'] ? $item['create_time'] : 1;
+				$mid = intval($item['monitor_id'] ?? 0);
+				$wid = intval($item['worker_id'] ?? 0);
+				if ($mid < 1 || $wid < 1) {
+					continue;
+				}
+				$direct_workers[$mid][$wid] = $item['create_time'] ? $item['create_time'] : 1;
 			}
 		}
+		$monitor_workers_hash = \MonitoringJobs::expandAssignmentsToLeaves($direct_workers);
 
 		$dockers_hash = [];
 		$dockers = \MonitoringDockers::data(false, ' ORDER BY NULL', '`docker_id`, `worker_id`, `create_time`');
@@ -783,7 +788,7 @@ class MonitoringLogs extends \DB\MySQLObject {
 			// ovals ~2 minutes behind wall clock.
 			$now = time();
 
-			// Get MonitoringJobs
+			// Get MonitoringJobs (include workers inherited from parent folders).
 			if ($monitor['type'] == \Monitors::TYPE_DOCKER) {
 				$start_time = microtime(true);
 				$jobs = $monitor['docker'] ? \MonitoringDockers::data(['docker_id' => $monitor['docker']], '','`worker_id`, `create_time`') : [];
@@ -791,6 +796,21 @@ class MonitoringLogs extends \DB\MySQLObject {
 			} else {
 				$start_time = microtime(true);
 				$jobs = \MonitoringJobs::data(['monitor_id' => $monitor['id']],'','`worker_id`, `create_time`');
+				$haveWorkers = [];
+				foreach ($jobs as $item) {
+					$haveWorkers[intval($item['worker_id'] ?? 0)] = true;
+				}
+				$inheritedWorkers = \MonitoringJobs::getInheritedWorkerIds(intval($monitor['parent_id'] ?? 0));
+				foreach ($inheritedWorkers as $wid => $_) {
+					$wid = intval($wid);
+					if ($wid < 1 || isset($haveWorkers[$wid])) {
+						continue;
+					}
+					$jobs[] = [
+						'worker_id' => $wid,
+						'create_time' => 1,
+					];
+				}
 				$return['mysql_time']['MonitoringJobs::data'] = round(microtime(true) - $start_time,3);
 			}
 

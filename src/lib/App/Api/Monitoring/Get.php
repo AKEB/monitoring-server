@@ -132,42 +132,127 @@ class Get extends \Routing_Parent implements \Routing_Interface {
 	}
 
 	private function getJobsData(): array {
-		$jobs = [];
 		$enabled_jobs = [];
-		if ($this->worker && $this->worker['id']) {
-			$sql = sql_pholder(' AND M.`status` = ? ',\Monitors::STATUS_ENABLED);
-			$sql .= sql_pholder(' AND M.`type` NOT IN (?@)', array_merge(
-				[\Monitors::TYPE_FOLDER, \Monitors::TYPE_DOCKER, \Monitors::TYPE_EXTERNAL],
-				\Monitors::server_types()
-			));
-			$fields = 't.`id` AS `job_id`, t.`update_time`, M.`id`, M.`type`, M.`url`, M.`method`, M.`host`, M.`port`, '
-				. 'M.`timeout`, M.`repeat_seconds`, M.`request_headers`, M.`proxy_host`, M.`proxy_type`, M.`ssl_verify`, M.`ssl_verify_host`, '
-				. 'M.`max_redirects`, M.`json_path`, M.`json_expected_value`, M.`json_expected_type`, '
-				. 'M.`domain_expire_alert_days`, M.`dns_record_type`, M.`dns_resolver`, M.`dns_transport`, '
-				. 'M.`dns_doh_url`, M.`dns_match_mode`, M.`dns_expected`';
-			$jobs = \MonitoringJobs::data(
-				[
-					'worker_id' => $this->worker['id']
-				],
-				$sql,
-				$fields,
-				false,
-				false,
-				[
-					'_join' => ' JOIN `'.\Monitors::getTable().'` M ON t.`monitor_id` = M.`id`'
-				]
-			);
-			$enabled_jobs = [];
-			foreach($jobs as $job) {
-				if (!\Monitors::is_enable($job['id'])) {
+		if (!$this->worker || !$this->worker['id']) {
+			return $enabled_jobs;
+		}
+
+		$excludedTypes = array_merge(
+			[\Monitors::TYPE_FOLDER, \Monitors::TYPE_DOCKER, \Monitors::TYPE_EXTERNAL],
+			\Monitors::server_types()
+		);
+		$fields = 't.`id` AS `job_id`, t.`update_time`, M.`id`, M.`type`, M.`url`, M.`method`, M.`host`, M.`port`, '
+			. 'M.`timeout`, M.`repeat_seconds`, M.`request_headers`, M.`proxy_host`, M.`proxy_type`, M.`ssl_verify`, M.`ssl_verify_host`, '
+			. 'M.`max_redirects`, M.`json_path`, M.`json_expected_value`, M.`json_expected_type`, '
+			. 'M.`domain_expire_alert_days`, M.`dns_record_type`, M.`dns_resolver`, M.`dns_transport`, '
+			. 'M.`dns_doh_url`, M.`dns_match_mode`, M.`dns_expected`';
+
+		// Direct assignments to leaf monitors.
+		$sql = sql_pholder(' AND M.`status` = ? ', \Monitors::STATUS_ENABLED);
+		$sql .= sql_pholder(' AND M.`type` NOT IN (?@)', $excludedTypes);
+		$jobs = \MonitoringJobs::data(
+			[
+				'worker_id' => $this->worker['id']
+			],
+			$sql,
+			$fields,
+			false,
+			false,
+			[
+				'_join' => ' JOIN `'.\Monitors::getTable().'` M ON t.`monitor_id` = M.`id`'
+			]
+		);
+		$seenMonitorIds = [];
+		foreach ($jobs as $job) {
+			$monitorId = intval($job['id'] ?? 0);
+			if ($monitorId < 1) {
+				continue;
+			}
+			if (!\Monitors::is_enable($monitorId)) {
+				continue;
+			}
+			if (\MonitoringMaintenances::getMaintenancesForMonitor($monitorId)) {
+				continue;
+			}
+			$seenMonitorIds[$monitorId] = true;
+			$enabled_jobs[] = $job;
+		}
+
+		// Folder assignments: expand onto leaf monitors (job_id stays on the folder row).
+		$folderSql = sql_pholder(' AND M.`status` = ? ', \Monitors::STATUS_ENABLED);
+		$folderSql .= sql_pholder(' AND M.`type` = ? ', \Monitors::TYPE_FOLDER);
+		$folderJobs = \MonitoringJobs::data(
+			[
+				'worker_id' => $this->worker['id']
+			],
+			$folderSql,
+			't.`id` AS `job_id`, t.`update_time`, M.`id` AS `folder_id`',
+			false,
+			false,
+			[
+				'_join' => ' JOIN `'.\Monitors::getTable().'` M ON t.`monitor_id` = M.`id`'
+			]
+		);
+		if (!$folderJobs) {
+			return $enabled_jobs;
+		}
+
+		$leafFields = '`id`, `type`, `url`, `method`, `host`, `port`, '
+			. '`timeout`, `repeat_seconds`, `request_headers`, `proxy_host`, `proxy_type`, `ssl_verify`, `ssl_verify_host`, '
+			. '`max_redirects`, `json_path`, `json_expected_value`, `json_expected_type`, '
+			. '`domain_expire_alert_days`, `dns_record_type`, `dns_resolver`, `dns_transport`, '
+			. '`dns_doh_url`, `dns_match_mode`, `dns_expected`';
+		$monitorsHash = \Monitors::get_hash();
+
+		foreach ($folderJobs as $folderJob) {
+			$folderId = intval($folderJob['folder_id'] ?? 0);
+			$jobId = intval($folderJob['job_id'] ?? 0);
+			if ($folderId < 1 || $jobId < 1) {
+				continue;
+			}
+			if (!\Monitors::is_enable($folderId)) {
+				continue;
+			}
+			$leafIds = \Monitors::get_leaf_monitor_ids_under($folderId, $monitorsHash);
+			if (!$leafIds) {
+				continue;
+			}
+			$needIds = [];
+			foreach ($leafIds as $leafId) {
+				$leafId = intval($leafId);
+				if ($leafId < 1 || isset($seenMonitorIds[$leafId])) {
 					continue;
 				}
-				if (\MonitoringMaintenances::getMaintenancesForMonitor(intval($job['id']))) {
+				$needIds[$leafId] = $leafId;
+			}
+			if (!$needIds) {
+				continue;
+			}
+			$leafSql = sql_pholder(' AND `id` IN (?@)', array_values($needIds));
+			$leafSql .= sql_pholder(' AND `status` = ? ', \Monitors::STATUS_ENABLED);
+			$leafSql .= sql_pholder(' AND `type` NOT IN (?@)', $excludedTypes);
+			$leaves = \Monitors::data(false, $leafSql, $leafFields);
+			if (!$leaves) {
+				continue;
+			}
+			foreach ($leaves as $leaf) {
+				$leafId = intval($leaf['id'] ?? 0);
+				if ($leafId < 1 || isset($seenMonitorIds[$leafId])) {
 					continue;
 				}
-				$enabled_jobs[] = $job;
+				if (!\Monitors::is_enable($leafId)) {
+					continue;
+				}
+				if (\MonitoringMaintenances::getMaintenancesForMonitor($leafId)) {
+					continue;
+				}
+				$seenMonitorIds[$leafId] = true;
+				$leaf['job_id'] = $jobId;
+				$leaf['update_time'] = $folderJob['update_time'] ?? 0;
+				$enabled_jobs[] = $leaf;
 			}
 		}
+
 		return $enabled_jobs;
 	}
 

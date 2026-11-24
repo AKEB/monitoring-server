@@ -560,8 +560,10 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				}
 			}
 
+			$parentForInherit = intval($params['parent_id'] ?? $this->parent_id);
+
 			// Inherited from parent folders — never persist on this monitor.
-			$inherited_notify = \MonitoringNotify::getInheritedNotifyIds(intval($params['parent_id'] ?? $this->parent_id));
+			$inherited_notify = \MonitoringNotify::getInheritedNotifyIds($parentForInherit);
 			if (!isset($data['notify']) || !is_array($data['notify'])) {
 				$data['notify'] = [];
 			}
@@ -572,10 +574,20 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				));
 			}
 
+			$inherited_workers = \MonitoringJobs::getInheritedWorkerIds($parentForInherit);
+			if (!isset($data['workers']) || !is_array($data['workers'])) {
+				$data['workers'] = [];
+			}
+			if ($inherited_workers) {
+				$data['workers'] = array_values(array_filter(
+					array_map('intval', $data['workers']),
+					static fn(int $wid): bool => $wid > 0 && !isset($inherited_workers[$wid])
+				));
+			}
+
 			$old_monitor = [];
 			$update_jobs = [];
 			$update_notify = [];
-			if (!isset($data['workers'])) $data['workers'] = [];
 			if (isset($params['id']) && $params['id']) {
 				if (!$this->can_write) {
 					$this->error = \T::Monitor_Edit_PermissionDenied();
@@ -911,8 +923,13 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					$this->monitor['notify'][$v['notify_id']] = true;
 				}
 			}
-			// Show notifies enabled on ancestor folders as checked (locked later).
-			$inherited_notify = \MonitoringNotify::getInheritedNotifyIds(intval($this->monitor['parent_id'] ?? $this->parent_id));
+			$parentForInherit = intval($this->monitor['parent_id'] ?? $this->parent_id);
+			// Show workers/notifies enabled on ancestor folders as checked (locked later).
+			$inherited_workers = \MonitoringJobs::getInheritedWorkerIds($parentForInherit);
+			foreach ($inherited_workers as $worker_id => $_) {
+				$this->monitor['workers'][$worker_id] = true;
+			}
+			$inherited_notify = \MonitoringNotify::getInheritedNotifyIds($parentForInherit);
 			foreach ($inherited_notify as $notify_id => $_) {
 				$this->monitor['notify'][$notify_id] = true;
 			}
@@ -959,8 +976,13 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 			$this->monitor['server'] ??= 0;
 			$this->monitor['response_code'] ??= [2];
 			$this->monitor['parent_id'] ??= $this->parent_id;
-			// Create form: show inherited notifies from the target parent folder.
-			$inherited_notify = \MonitoringNotify::getInheritedNotifyIds(intval($this->monitor['parent_id']));
+			// Create form: show inherited workers/notifies from the target parent folder.
+			$parentForInherit = intval($this->monitor['parent_id']);
+			$inherited_workers = \MonitoringJobs::getInheritedWorkerIds($parentForInherit);
+			foreach ($inherited_workers as $worker_id => $_) {
+				$this->monitor['workers'][$worker_id] = true;
+			}
+			$inherited_notify = \MonitoringNotify::getInheritedNotifyIds($parentForInherit);
 			foreach ($inherited_notify as $notify_id => $_) {
 				$this->monitor['notify'][$notify_id] = true;
 			}
@@ -981,19 +1003,29 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 			$this->monitor['dns_expected'] ??= '';
 		}
 
+		$parentForInherit = intval($this->monitor['parent_id'] ?? $this->parent_id);
+		$inherited_workers = \MonitoringJobs::getInheritedWorkerIds($parentForInherit);
+		$inherited_workers_label = htmlspecialchars(\T::Monitor_Edit_WorkersInherited());
 		$this->workers_hash = [];
 		$data = \Workers::data(false, ' ORDER BY `title` ASC', '`id`, `title`');
 		if ($data) {
 			foreach($data as $v) {
+				$can_access = \Sessions::checkPermission(\Workers::PERMISSION_ACCESS, $v['id'], READ);
+				$is_inherited = isset($inherited_workers[$v['id']]);
+				$title = htmlspecialchars($v['title']);
+				if ($is_inherited) {
+					$title .= ' <span class="text-muted small">('.$inherited_workers_label.')</span>';
+				}
 				$this->workers_hash[$v['id']] = [
-					'title' => htmlspecialchars($v['title']),
-					'enable' => \Sessions::checkPermission(\Workers::PERMISSION_ACCESS, $v['id'], READ),
+					'title' => $title,
+					// Inherited: show checked but locked (disabled input is not submitted).
+					'enable' => $can_access && !$is_inherited,
 				];
 			}
 		}
 
 		$this->notify_hash = [];
-		$inherited_notify = \MonitoringNotify::getInheritedNotifyIds(intval($this->monitor['parent_id'] ?? $this->parent_id));
+		$inherited_notify = \MonitoringNotify::getInheritedNotifyIds($parentForInherit);
 		$inherited_label = htmlspecialchars(\T::Monitor_Edit_NotifyInherited());
 		$data = \Notify::data(false, ' ORDER BY `title` ASC', '`id`, `title`');
 		if ($data) {
@@ -1302,7 +1334,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 
 					echo $this->template->html_params("workers[]", $this->workers_hash, $this->monitor['workers']??[], \T::Monitor_Edit_Workers(),false,[
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
-						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_HTTP_JSON.' type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_UDP.' type-'.\Monitors::TYPE_PING.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU.' type-'.\Monitors::TYPE_DOMAIN.' type-'.\Monitors::TYPE_DNS,
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_FOLDER.' type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_HTTP_JSON.' type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_UDP.' type-'.\Monitors::TYPE_PING.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU.' type-'.\Monitors::TYPE_DOMAIN.' type-'.\Monitors::TYPE_DNS,
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 

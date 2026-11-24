@@ -414,11 +414,25 @@ class MonitoringApiStatus {
 		}
 
 		if ($monitor_ids) {
+			// Include ancestor folders so folder-level workers expand onto leaves.
+			$ancestorIds = [];
+			$monitorsTree = \Monitors::get_hash();
+			foreach ($monitor_ids as $mid) {
+				$pid = intval($monitorsTree[$mid]['parent_id'] ?? 0);
+				$guard = 0;
+				while ($pid > 0 && $guard < 100) {
+					$guard++;
+					$ancestorIds[$pid] = $pid;
+					$pid = intval($monitorsTree[$pid]['parent_id'] ?? 0);
+				}
+			}
+			$queryIds = array_values(array_unique(array_merge(array_values($monitor_ids), $ancestorIds)));
 			$jobs = \MonitoringJobs::data(
 				false,
-				sql_pholder(' AND `monitor_id` IN (?@) ORDER BY NULL', array_values($monitor_ids)),
+				sql_pholder(' AND `monitor_id` IN (?@) ORDER BY NULL', $queryIds),
 				'`monitor_id`, `worker_id`'
 			);
+			$direct = [];
 			if ($jobs) {
 				foreach ($jobs as $job) {
 					$monitor_id = intval($job['monitor_id']);
@@ -426,10 +440,16 @@ class MonitoringApiStatus {
 					if ($monitor_id < 1 || $worker_id === 0) {
 						continue;
 					}
-					if (isset($docker_monitor_ids[$monitor_id])) {
-						continue;
-					}
-					$assigned[$monitor_id][$worker_id] = $worker_id;
+					$direct[$monitor_id][$worker_id] = $worker_id;
+				}
+			}
+			$expanded = \MonitoringJobs::expandAssignmentsToLeaves($direct);
+			foreach ($monitor_ids as $monitor_id) {
+				if (isset($docker_monitor_ids[$monitor_id])) {
+					continue;
+				}
+				foreach ($expanded[$monitor_id] ?? [] as $worker_id => $_) {
+					$assigned[$monitor_id][intval($worker_id)] = intval($worker_id);
 				}
 			}
 		}

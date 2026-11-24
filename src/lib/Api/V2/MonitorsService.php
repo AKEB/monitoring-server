@@ -519,6 +519,18 @@ class MonitorsService {
 			$workers = Relations::intIdList($existing['workers'] ?? []);
 		}
 
+		// Folder-inherited workers are runtime-only; never persist on the child.
+		if ($workers && !Runtime::store()) {
+			$parentId = intval($row['parent_id'] ?? ($existing['parent_id'] ?? 0));
+			$inheritedWorkers = \MonitoringJobs::getInheritedWorkerIds($parentId);
+			if ($inheritedWorkers) {
+				$workers = array_values(array_filter(
+					$workers,
+					static fn(int $wid): bool => $wid > 0 && !isset($inheritedWorkers[$wid])
+				));
+			}
+		}
+
 		$notify = [];
 		if ($creating || array_key_exists('notify', $payload)) {
 			$notify = Relations::intIdList($payload['notify'] ?? []);
@@ -527,6 +539,17 @@ class MonitorsService {
 			}
 		} elseif ($existing) {
 			$notify = Relations::intIdList($existing['notify'] ?? []);
+		}
+
+		if ($notify && !Runtime::store()) {
+			$parentId = intval($row['parent_id'] ?? ($existing['parent_id'] ?? 0));
+			$inheritedNotify = \MonitoringNotify::getInheritedNotifyIds($parentId);
+			if ($inheritedNotify) {
+				$notify = array_values(array_filter(
+					$notify,
+					static fn(int $nid): bool => $nid > 0 && !isset($inheritedNotify[$nid])
+				));
+			}
 		}
 
 		return ['row' => $row, 'workers' => $workers, 'notify' => $notify];
@@ -584,8 +607,8 @@ class MonitorsService {
 		}
 		if ($id > 0 && !Runtime::store()) {
 			$workers = [];
-			foreach (\MonitoringJobs::data(['monitor_id' => $id]) ?: [] as $job) {
-				$wid = intval($job['worker_id'] ?? 0);
+			foreach (\MonitoringJobs::getEffectiveWorkerIdsForMonitor($id) as $wid => $_) {
+				$wid = intval($wid);
 				if ($wid > 0 && $wid !== \Monitors::EXTERNAL_WORKER_ID) {
 					$workers[] = $wid;
 				}
@@ -594,11 +617,18 @@ class MonitorsService {
 			foreach (\MonitoringNotify::data(['monitor_id' => $id]) ?: [] as $link) {
 				$nid = intval($link['notify_id'] ?? 0);
 				if ($nid > 0) {
-					$notify[] = $nid;
+					$notify[$nid] = $nid;
+				}
+			}
+			$parentId = intval($row['parent_id'] ?? 0);
+			foreach (\MonitoringNotify::getInheritedNotifyIds($parentId) as $nid => $_) {
+				$nid = intval($nid);
+				if ($nid > 0) {
+					$notify[$nid] = $nid;
 				}
 			}
 			$row['workers'] = array_values(array_unique($workers));
-			$row['notify'] = array_values(array_unique($notify));
+			$row['notify'] = array_values($notify);
 		}
 		return $row;
 	}

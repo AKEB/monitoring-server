@@ -300,19 +300,43 @@ class State extends \Routing_Parent implements \Routing_Interface {
 	}
 
 	private function updateJobState(int $worker_id, array $job_response): bool|array {
+		$jobId = intval($job_response['job_id'] ?? 0);
+		$responseMonitorId = intval($job_response['monitor_id'] ?? 0);
+		if ($jobId < 1 || $responseMonitorId < 1) {
+			return false;
+		}
 		$job = \MonitoringJobs::get([
-			'id' => intval($job_response['job_id']),
+			'id' => $jobId,
 			'worker_id' => intval($worker_id),
-			'monitor_id' => intval($job_response['monitor_id']),
 		]);
 		if (!$job) return false;
-		$monitor = \Monitors::get($job['monitor_id']);
+
+		$jobMonitorId = intval($job['monitor_id'] ?? 0);
+		if ($jobMonitorId < 1) {
+			return false;
+		}
+		if ($jobMonitorId !== $responseMonitorId) {
+			// Inherited: job row lives on a folder; response is for a leaf under that folder.
+			$jobMonitor = \Monitors::get(['id' => $jobMonitorId]);
+			if (!$jobMonitor || intval($jobMonitor['type'] ?? 0) !== \Monitors::TYPE_FOLDER) {
+				return false;
+			}
+			$leaves = \Monitors::get_leaf_monitor_ids_under($jobMonitorId);
+			if (!in_array($responseMonitorId, $leaves, true)) {
+				return false;
+			}
+			if (!\MonitoringJobs::isWorkerAssignedToMonitor(intval($worker_id), $responseMonitorId)) {
+				return false;
+			}
+		}
+
+		$monitor = \Monitors::get(['id' => $responseMonitorId]);
 		if (!$monitor) return false;
 		if ($monitor['status'] != \Monitors::STATUS_ENABLED) return false;
 
-		if (!\Monitors::is_enable($job['monitor_id'])) return false;
+		if (!\Monitors::is_enable($responseMonitorId)) return false;
 
-		$maintenances = \MonitoringMaintenances::getMaintenancesForMonitor($job['monitor_id']);
+		$maintenances = \MonitoringMaintenances::getMaintenancesForMonitor($responseMonitorId);
 		if ($maintenances) {
 			return false;
 		}
@@ -435,7 +459,7 @@ class State extends \Routing_Parent implements \Routing_Interface {
 			$logUpdateTime = time();
 		}
 		$params = [
-			'monitor_id' => $job['monitor_id'],
+			'monitor_id' => $responseMonitorId,
 			'worker_id' => $job['worker_id'],
 			'job_id' => $job['id'],
 			'status' => $status,
