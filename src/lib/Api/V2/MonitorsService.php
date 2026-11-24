@@ -301,18 +301,30 @@ class MonitorsService {
 			}
 		}
 
-		if ($type === \Monitors::TYPE_HTTPS || $type === \Monitors::TYPE_HTTP_JSON) {
-			foreach (['url', 'method', 'proxy_host', 'request_headers', 'json_path', 'json_expected_value', 'json_expected_type'] as $field) {
+		if (\Monitors::is_http_request_type($type) || $type === \Monitors::TYPE_HTTP_JSON) {
+			foreach (['url', 'method', 'proxy_host', 'request_headers', 'request_body', 'json_path', 'json_expected_value', 'json_expected_type', 'keyword', 'basic_auth_user', 'basic_auth_pass', 'bearer_token', 'oauth_client_id', 'oauth_client_secret', 'oauth_token_url', 'oauth_scopes', 'oauth_audience', 'http_tls_ca', 'http_tls_cert', 'http_tls_key'] as $field) {
 				if ($creating || array_key_exists($field, $payload)) {
-					$row[$field] = trim(strval($payload[$field] ?? ''));
+					$row[$field] = strval($payload[$field] ?? '');
+					if ($field !== 'request_body' && $field !== 'http_tls_ca' && $field !== 'http_tls_cert' && $field !== 'http_tls_key' && $field !== 'bearer_token' && $field !== 'oauth_client_secret') {
+						$row[$field] = trim($row[$field]);
+					}
 				}
+			}
+			if ($creating || array_key_exists('http_body_encoding', $payload)) {
+				$row['http_body_encoding'] = \Monitors::normalize_http_body_encoding($payload['http_body_encoding'] ?? 'json');
+			}
+			if ($creating || array_key_exists('auth_method', $payload)) {
+				$row['auth_method'] = \Monitors::normalize_auth_method($payload['auth_method'] ?? 'none');
+			}
+			if ($creating || array_key_exists('oauth_auth_method', $payload)) {
+				$row['oauth_auth_method'] = \Monitors::normalize_oauth_auth_method($payload['oauth_auth_method'] ?? 'client_secret_basic');
 			}
 			foreach (['max_redirects', 'proxy_type'] as $field) {
 				if ($creating || array_key_exists($field, $payload)) {
 					$row[$field] = intval($payload[$field] ?? 0);
 				}
 			}
-			foreach (['ssl_verify', 'ssl_verify_host', 'ssl_cert_expire_alert'] as $field) {
+			foreach (['ssl_verify', 'ssl_verify_host', 'ssl_cert_expire_alert', 'cache_bust', 'keyword_invert'] as $field) {
 				if ($creating || array_key_exists($field, $payload)) {
 					$row[$field] = \EntityValidation::normalizeSwitchStatus($payload[$field] ?? 0);
 				}
@@ -322,6 +334,26 @@ class MonitorsService {
 			}
 			if ($creating || array_key_exists('response_code', $payload)) {
 				$row['response_code'] = static::normalizeResponseCodes($payload['response_code'] ?? null);
+			}
+			if ($type === \Monitors::TYPE_HTTP_KEYWORD && ($creating || array_key_exists('keyword', $payload))) {
+				if (trim(strval($row['keyword'] ?? '')) === '') {
+					return ['error' => 'keyword is required for HTTP Keyword monitors', 'http' => 422];
+				}
+			}
+			$auth = $row['auth_method'] ?? ($existing['auth_method'] ?? 'none');
+			if ($auth === 'oauth2_cc') {
+				$tokenUrl = trim(strval($row['oauth_token_url'] ?? ($existing['oauth_token_url'] ?? '')));
+				$clientId = trim(strval($row['oauth_client_id'] ?? ($existing['oauth_client_id'] ?? '')));
+				if ($tokenUrl === '' || $clientId === '') {
+					return ['error' => 'oauth2_cc requires oauth_token_url and oauth_client_id', 'http' => 422];
+				}
+			}
+			if ($auth === 'mtls') {
+				$cert = trim(strval($row['http_tls_cert'] ?? ($existing['http_tls_cert'] ?? '')));
+				$key = trim(strval($row['http_tls_key'] ?? ($existing['http_tls_key'] ?? '')));
+				if ($cert === '' || $key === '') {
+					return ['error' => 'mtls requires http_tls_cert and http_tls_key', 'http' => 422];
+				}
 			}
 		} elseif (in_array($type, [\Monitors::TYPE_EXPORTER_DISK, \Monitors::TYPE_EXPORTER_MEMORY, \Monitors::TYPE_EXPORTER_CPU], true)) {
 			if ($creating || array_key_exists('host', $payload)) {
@@ -339,12 +371,76 @@ class MonitorsService {
 			if ($creating || array_key_exists('proxy_type', $payload)) {
 				$row['proxy_type'] = intval($payload['proxy_type'] ?? 0);
 			}
-		} elseif ($type === \Monitors::TYPE_TCP || $type === \Monitors::TYPE_UDP) {
+		} elseif (in_array($type, [
+			\Monitors::TYPE_TCP,
+			\Monitors::TYPE_UDP,
+			\Monitors::TYPE_SMTP,
+			\Monitors::TYPE_NTP,
+			\Monitors::TYPE_MYSQL,
+			\Monitors::TYPE_POSTGRES,
+			\Monitors::TYPE_REDIS,
+			\Monitors::TYPE_MONGODB,
+			\Monitors::TYPE_SFTP,
+			\Monitors::TYPE_SNMP,
+			\Monitors::TYPE_RADIUS,
+			\Monitors::TYPE_MQTT,
+			\Monitors::TYPE_RABBITMQ,
+		], true)) {
 			if ($creating || array_key_exists('host', $payload)) {
 				$row['host'] = trim(strval($payload['host'] ?? ''));
 			}
 			if ($creating || array_key_exists('port', $payload)) {
 				$row['port'] = intval($payload['port'] ?? 0);
+			}
+			if ($type === \Monitors::TYPE_SMTP && ($creating || array_key_exists('smtp_security', $payload))) {
+				$row['smtp_security'] = \Monitors::normalize_smtp_security($payload['smtp_security'] ?? 'none');
+			}
+			if ($type === \Monitors::TYPE_NTP && ($creating || array_key_exists('ntp_max_offset_ms', $payload))) {
+				$row['ntp_max_offset_ms'] = intval($payload['ntp_max_offset_ms'] ?? 5000);
+			}
+			if (in_array($type, [\Monitors::TYPE_MYSQL, \Monitors::TYPE_POSTGRES, \Monitors::TYPE_REDIS, \Monitors::TYPE_MONGODB], true)) {
+				foreach (['db_name', 'db_query', 'db_expected', 'basic_auth_user', 'basic_auth_pass'] as $field) {
+					if ($creating || array_key_exists($field, $payload)) {
+						$row[$field] = strval($payload[$field] ?? '');
+						if ($field !== 'basic_auth_pass' && $field !== 'db_query' && $field !== 'db_expected') {
+							$row[$field] = trim($row[$field]);
+						}
+					}
+				}
+			}
+			if ($type === \Monitors::TYPE_SFTP) {
+				foreach (['basic_auth_user', 'basic_auth_pass', 'sftp_private_key', 'sftp_path'] as $field) {
+					if ($creating || array_key_exists($field, $payload)) {
+						$row[$field] = strval($payload[$field] ?? '');
+					}
+				}
+			}
+			if ($type === \Monitors::TYPE_SNMP) {
+				foreach (['snmp_community', 'snmp_oid', 'snmp_expected'] as $field) {
+					if ($creating || array_key_exists($field, $payload)) {
+						$row[$field] = trim(strval($payload[$field] ?? ''));
+					}
+				}
+			}
+			if ($type === \Monitors::TYPE_RADIUS) {
+				foreach (['basic_auth_user', 'basic_auth_pass', 'radius_secret'] as $field) {
+					if ($creating || array_key_exists($field, $payload)) {
+						$row[$field] = strval($payload[$field] ?? '');
+					}
+				}
+			}
+		} elseif ($type === \Monitors::TYPE_KAFKA_PRODUCER) {
+			foreach (['kafka_brokers', 'kafka_topic', 'kafka_message'] as $field) {
+				if ($creating || array_key_exists($field, $payload)) {
+					$row[$field] = strval($payload[$field] ?? '');
+				}
+			}
+		} elseif ($type === \Monitors::TYPE_GRPC_KEYWORD) {
+			if ($creating || array_key_exists('url', $payload)) {
+				$row['url'] = trim(strval($payload['url'] ?? ''));
+			}
+			if ($creating || array_key_exists('keyword', $payload)) {
+				$row['keyword'] = strval($payload['keyword'] ?? '');
 			}
 		} elseif ($type === \Monitors::TYPE_PING) {
 			if ($creating || array_key_exists('host', $payload)) {

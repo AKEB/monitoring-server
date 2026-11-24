@@ -33,6 +33,21 @@ class MonitorsTest extends PHPUnit\Framework\TestCase {
 		$this->assertSame(25, \Monitors::TYPE_SERVER_SYSTEMD_MEMORY);
 		$this->assertSame(26, \Monitors::TYPE_DOMAIN);
 		$this->assertSame(27, \Monitors::TYPE_DNS);
+		$this->assertSame(28, \Monitors::TYPE_HTTP_KEYWORD);
+		$this->assertSame(29, \Monitors::TYPE_SMTP);
+		$this->assertSame(30, \Monitors::TYPE_NTP);
+		$this->assertSame(31, \Monitors::TYPE_WEBSOCKET);
+		$this->assertSame(32, \Monitors::TYPE_MYSQL);
+		$this->assertSame(33, \Monitors::TYPE_POSTGRES);
+		$this->assertSame(34, \Monitors::TYPE_REDIS);
+		$this->assertSame(35, \Monitors::TYPE_MONGODB);
+		$this->assertSame(36, \Monitors::TYPE_SFTP);
+		$this->assertSame(37, \Monitors::TYPE_SNMP);
+		$this->assertSame(38, \Monitors::TYPE_RADIUS);
+		$this->assertSame(39, \Monitors::TYPE_GRPC_KEYWORD);
+		$this->assertSame(40, \Monitors::TYPE_MQTT);
+		$this->assertSame(41, \Monitors::TYPE_RABBITMQ);
+		$this->assertSame(42, \Monitors::TYPE_KAFKA_PRODUCER);
 		$this->assertSame(-1, \Monitors::EXTERNAL_WORKER_ID);
 		$this->assertSame(-2, \Servers::SERVER_WORKER_ID);
 	}
@@ -40,8 +55,22 @@ class MonitorsTest extends PHPUnit\Framework\TestCase {
 	function test_type_hash_excludes_exporter_cpu() {
 		$keys = array_keys(\Monitors::type_hash());
 		sort($keys);
-		$this->assertSame([0, 1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27], $keys);
+		$this->assertSame([0, 1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42], $keys);
 		$this->assertArrayNotHasKey(\Monitors::TYPE_EXPORTER_CPU, \Monitors::type_hash());
+	}
+
+	function test_http_parity_helpers() {
+		$this->assertTrue(\Monitors::is_http_request_type(\Monitors::TYPE_HTTPS));
+		$this->assertTrue(\Monitors::is_http_request_type(\Monitors::TYPE_HTTP_JSON));
+		$this->assertTrue(\Monitors::is_http_request_type(\Monitors::TYPE_HTTP_KEYWORD));
+		$this->assertTrue(\Monitors::is_http_request_type(\Monitors::TYPE_WEBSOCKET));
+		$this->assertFalse(\Monitors::is_http_request_type(\Monitors::TYPE_TCP));
+		$this->assertSame('form', \Monitors::normalize_http_body_encoding('FORM'));
+		$this->assertSame('json', \Monitors::normalize_http_body_encoding('nope'));
+		$this->assertSame('bearer', \Monitors::normalize_auth_method('Bearer'));
+		$this->assertSame('none', \Monitors::normalize_auth_method('x'));
+		$this->assertSame('client_secret_post', \Monitors::normalize_oauth_auth_method('client_secret_post'));
+		$this->assertSame('starttls', \Monitors::normalize_smtp_security('STARTTLS'));
 	}
 
 	function test_udp_is_not_server_type() {

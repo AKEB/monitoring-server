@@ -905,6 +905,206 @@ class T {
 	public static function Monitor_Edit_RequestHeaders(...$argv): string { return ''; }
 
 	/**
+	 * Monitor_Edit_RequestBody
+	 * 
+	 * @return string "Request body"
+	 * @return string "Тело запроса"
+	 */
+	public static function Monitor_Edit_RequestBody(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_HttpBodyEncoding
+	 * 
+	 * @return string "Body encoding"
+	 * @return string "Кодировка тела"
+	 */
+	public static function Monitor_Edit_HttpBodyEncoding(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_AuthMethod
+	 * 
+	 * @return string "Authentication"
+	 * @return string "Авторизация"
+	 */
+	public static function Monitor_Edit_AuthMethod(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_BasicAuthUser
+	 * 
+	 * @return string "Basic auth username"
+	 * @return string "Basic: логин"
+	 */
+	public static function Monitor_Edit_BasicAuthUser(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_BasicAuthPass
+	 * 
+	 * @return string "Basic auth password"
+	 * @return string "Basic: пароль"
+	 */
+	public static function Monitor_Edit_BasicAuthPass(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_BearerToken
+	 * 
+	 * @return string "Bearer token"
+	 * @return string "Bearer-токен"
+	 */
+	public static function Monitor_Edit_BearerToken(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_OAuthClientId
+	 * 
+	 * @return string "OAuth client ID"
+	 * @return string "OAuth client ID"
+	 */
+	public static function Monitor_Edit_OAuthClientId(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_OAuthClientSecret
+	 * 
+	 * @return string "OAuth client secret"
+	 * @return string "OAuth client secret"
+	 */
+	public static function Monitor_Edit_OAuthClientSecret(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_OAuthTokenUrl
+	 * 
+	 * @return string "OAuth token URL"
+	 * @return string "OAuth token URL"
+	 */
+	public static function Monitor_Edit_OAuthTokenUrl(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_OAuthScopes
+	 * 
+	 * @return string "OAuth scopes"
+	 * @return string "OAuth scopes"
+	 */
+	public static function Monitor_Edit_OAuthScopes(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_OAuthAudience
+	 * 
+	 * @return string "OAuth audience"
+	 * @return string "OAuth audience"
+	 */
+	public static function Monitor_Edit_OAuthAudience(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_OAuthAuthMethod
+	 * 
+	 * @return string "OAuth client auth method"
+	 * @return string "Метод OAuth client auth"
+	 */
+	public static function Monitor_Edit_OAuthAuthMethod(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_HttpTlsCa
+	 * 
+	 * @return string "TLS CA (PEM)"
+	 * @return string "TLS CA (PEM)"
+	 */
+	public static function Monitor_Edit_HttpTlsCa(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_HttpTlsCert
+	 * 
+	 * @return string "Client certificate (PEM)"
+	 * @return string "Клиентский сертификат (PEM)"
+	 */
+	public static function Monitor_Edit_HttpTlsCert(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_HttpTlsKey
+	 * 
+	 * @return string "Client private key (PEM)"
+	 * @return string "Клиентский ключ (PEM)"
+	 */
+	public static function Monitor_Edit_HttpTlsKey(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_CacheBust
+	 * 
+	 * @return string "Cache bust (append _=timestamp)"
+	 * @return string "Cache bust (добавить _=timestamp)"
+	 */
+	public static function Monitor_Edit_CacheBust(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_Keyword
+	 * 
+	 * @return string "Keyword"
+	 * @return string "Ключевое слово"
+	 */
+	public static function Monitor_Edit_Keyword(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_KeywordInvert
+	 * 
+	 * @return string "Invert keyword (fail if found)"
+	 * @return string "Инвертировать (FAIL если найдено)"
+	 */
+	public static function Monitor_Edit_KeywordInvert(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_SmtpSecurity
+	 * 
+	 * @return string "SMTP security"
+	 * @return string "SMTP security"
+	 */
+	public static function Monitor_Edit_SmtpSecurity(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_NtpMaxOffsetMs
+	 * 
+	 * @return string "Max NTP offset (ms, 0 = ignore)"
+	 * @return string "Макс. NTP offset (мс, 0 = не проверять)"
+	 */
+	public static function Monitor_Edit_NtpMaxOffsetMs(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_DbName
+	 * 
+	 * @return string "Database name"
+	 * @return string "Имя БД"
+	 */
+	public static function Monitor_Edit_DbName(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_DbQuery
+	 * 
+	 * @return string "SQL query (optional)"
+	 * @return string "SQL-запрос (опционально)"
+	 */
+	public static function Monitor_Edit_DbQuery(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_DbExpected
+	 * 
+	 * @return string "Expected query result (optional)"
+	 * @return string "Ожидаемый результат (опционально)"
+	 */
+	public static function Monitor_Edit_DbExpected(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_DbUsername
+	 * 
+	 * @return string "Database username"
+	 * @return string "Пользователь БД"
+	 */
+	public static function Monitor_Edit_DbUsername(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_DbPassword
+	 * 
+	 * @return string "Database password"
+	 * @return string "Пароль БД"
+	 */
+	public static function Monitor_Edit_DbPassword(...$argv): string { return ''; }
+
+	/**
 	 * Monitor_Edit_Timeout
 	 * 
 	 * @return string "Request timeout"
@@ -1687,6 +1887,126 @@ class T {
 	 * @return string "DNS"
 	 */
 	public static function Monitor_Type_DNS(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Type_HTTPKeyword
+	 * 
+	 * @return string "HTTP(s) Keyword"
+	 * @return string "HTTP(s) Keyword"
+	 */
+	public static function Monitor_Type_HTTPKeyword(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Type_SMTP
+	 * 
+	 * @return string "SMTP"
+	 * @return string "SMTP"
+	 */
+	public static function Monitor_Type_SMTP(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Type_NTP
+	 * 
+	 * @return string "NTP"
+	 * @return string "NTP"
+	 */
+	public static function Monitor_Type_NTP(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Type_Websocket
+	 * 
+	 * @return string "Websocket Upgrade"
+	 * @return string "Websocket Upgrade"
+	 */
+	public static function Monitor_Type_Websocket(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Type_MySQL
+	 * 
+	 * @return string "MySQL/MariaDB"
+	 * @return string "MySQL/MariaDB"
+	 */
+	public static function Monitor_Type_MySQL(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Type_PostgreSQL
+	 * 
+	 * @return string "PostgreSQL"
+	 * @return string "PostgreSQL"
+	 */
+	public static function Monitor_Type_PostgreSQL(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Type_Redis
+	 * 
+	 * @return string "Redis"
+	 * @return string "Redis"
+	 */
+	public static function Monitor_Type_Redis(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Type_MongoDB
+	 * 
+	 * @return string "MongoDB"
+	 * @return string "MongoDB"
+	 */
+	public static function Monitor_Type_MongoDB(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Type_SFTP
+	 * 
+	 * @return string "SFTP"
+	 * @return string "SFTP"
+	 */
+	public static function Monitor_Type_SFTP(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Type_SNMP
+	 * 
+	 * @return string "SNMP"
+	 * @return string "SNMP"
+	 */
+	public static function Monitor_Type_SNMP(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Type_RADIUS
+	 * 
+	 * @return string "RADIUS"
+	 * @return string "RADIUS"
+	 */
+	public static function Monitor_Type_RADIUS(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Type_GRPCKeyword
+	 * 
+	 * @return string "gRPC Keyword"
+	 * @return string "gRPC Keyword"
+	 */
+	public static function Monitor_Type_GRPCKeyword(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Type_MQTT
+	 * 
+	 * @return string "MQTT"
+	 * @return string "MQTT"
+	 */
+	public static function Monitor_Type_MQTT(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Type_RabbitMQ
+	 * 
+	 * @return string "RabbitMQ"
+	 * @return string "RabbitMQ"
+	 */
+	public static function Monitor_Type_RabbitMQ(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Type_KafkaProducer
+	 * 
+	 * @return string "Kafka Producer"
+	 * @return string "Kafka Producer"
+	 */
+	public static function Monitor_Type_KafkaProducer(...$argv): string { return ''; }
 
 	/**
 	 * Dashboard_Response

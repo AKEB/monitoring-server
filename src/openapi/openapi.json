@@ -12,32 +12,79 @@
     }
   ],
   "tags": [
-    {"name": "status", "description": "Opt-in status feed"},
-    {"name": "monitors", "description": "Monitors CRUD"},
-    {"name": "notify", "description": "Notification channels"},
-    {"name": "signatures", "description": "Alert signature text blocks"},
-    {"name": "workers", "description": "Check workers / handlers"},
-    {"name": "maintenances", "description": "Planned maintenance windows"},
-    {"name": "dockers", "description": "Docker hosts"},
-    {"name": "servers", "description": "Host agents (push metrics)"},
-    {"name": "users", "description": "Users (read-only)"},
-    {"name": "groups", "description": "Groups (read-only)"},
-    {"name": "logs", "description": "Audit logs"},
-    {"name": "permissions", "description": "Object ACL"}
+    {
+      "name": "status",
+      "description": "Opt-in status feed"
+    },
+    {
+      "name": "monitors",
+      "description": "Monitors CRUD"
+    },
+    {
+      "name": "notify",
+      "description": "Notification channels"
+    },
+    {
+      "name": "signatures",
+      "description": "Alert signature text blocks"
+    },
+    {
+      "name": "workers",
+      "description": "Check workers / handlers"
+    },
+    {
+      "name": "maintenances",
+      "description": "Planned maintenance windows"
+    },
+    {
+      "name": "dockers",
+      "description": "Docker hosts"
+    },
+    {
+      "name": "servers",
+      "description": "Host agents (push metrics)"
+    },
+    {
+      "name": "users",
+      "description": "Users (read-only)"
+    },
+    {
+      "name": "groups",
+      "description": "Groups (read-only)"
+    },
+    {
+      "name": "logs",
+      "description": "Audit logs"
+    },
+    {
+      "name": "permissions",
+      "description": "Object ACL"
+    }
   ],
   "paths": {
     "/api/v1/status/": {
       "get": {
-        "tags": ["status"],
+        "tags": [
+          "status"
+        ],
         "summary": "List exposed monitor statuses",
         "description": "Returns only monitors the token user can read that have api_enabled (Expose in /api/v1/status/). Folders and disabled monitors are omitted. Cached ~20s; >1 req / 5s per token → 429.",
-        "security": [{"BearerAuth": []}, {"ApiTokenHeader": []}],
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ApiTokenHeader": []
+          }
+        ],
         "responses": {
           "200": {
             "description": "Status payload",
             "content": {
               "application/json": {
-                "schema": {"$ref": "#/components/schemas/StatusResponse"},
+                "schema": {
+                  "$ref": "#/components/schemas/StatusResponse"
+                },
                 "example": {
                   "status": 0,
                   "generated_at": 1756890000,
@@ -52,8 +99,29 @@
                       "avg_response_time_ms": 142,
                       "ssl_expire_time": 1798761600,
                       "ssl_expire_at": "2026-12-31",
-                      "availability": {"1m": null, "5m": 100, "10m": 99.5, "1h": 99.8, "4h": 99.91, "8h": 99.93},
-                      "workers": [{"id": 3, "title": "msk-1", "status": "up", "availability": {"1m": null, "5m": 100, "10m": 100, "1h": 99.7, "4h": 99.9, "8h": 99.92}}],
+                      "availability": {
+                        "1m": null,
+                        "5m": 100,
+                        "10m": 99.5,
+                        "1h": 99.8,
+                        "4h": 99.91,
+                        "8h": 99.93
+                      },
+                      "workers": [
+                        {
+                          "id": 3,
+                          "title": "msk-1",
+                          "status": "up",
+                          "availability": {
+                            "1m": null,
+                            "5m": 100,
+                            "10m": 100,
+                            "1h": 99.7,
+                            "4h": 99.9,
+                            "8h": 99.92
+                          }
+                        }
+                      ],
                       "maintenances": []
                     }
                   ],
@@ -62,38 +130,66 @@
               }
             }
           },
-          "401": {"$ref": "#/components/responses/Unauthorized"},
-          "429": {"$ref": "#/components/responses/RateLimited"}
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
         }
       }
     },
     "/api/v2/monitors/": {
       "get": {
-        "tags": ["monitors"],
+        "tags": [
+          "monitors"
+        ],
         "summary": "List monitors",
-        "security": [{"BearerAuth": []}, {"ApiTokenHeader": []}],
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ApiTokenHeader": []
+          }
+        ],
         "responses": {
           "200": {
             "description": "Envelope with monitor list",
             "content": {
               "application/json": {
-                "schema": {"$ref": "#/components/schemas/EnvelopeMonitorList"}
+                "schema": {
+                  "$ref": "#/components/schemas/EnvelopeMonitorList"
+                }
               }
             }
           },
-          "401": {"$ref": "#/components/responses/Unauthorized"}
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
         }
       },
       "post": {
-        "tags": ["monitors"],
+        "tags": [
+          "monitors"
+        ],
         "summary": "Create monitor",
-        "description": "Types: 0 HTTPS, 1 folder, 2 TCP, 3 ping, 4 docker, 5–7 exporters, 8 HTTP JSON, 9 external, 10–17 server agent, 18 UDP, 26 domain expiry, 27 DNS. Type-specific fields: url/method/response_code/ssl_* (HTTPS/JSON); host/port (TCP/UDP/exporters); host (ping/domain/DNS); domain_expire_alert_days (domain); dns_* (DNS); docker/container (docker); external_hash auto (external). Link workers[] and notify[] by id. api_enabled only for /api/v1/status/ opt-in.",
-        "security": [{"BearerAuth": []}, {"ApiTokenHeader": []}],
+        "description": "Types: 0 HTTPS, 1 folder, 2 TCP, 3 ping, 4 docker, 5–7 exporters, 8 HTTP JSON, 9 external, 10–17 server agent, 18 UDP, 26 domain, 27 DNS, 28 HTTP Keyword, 29 SMTP, 30 NTP, 31 Websocket, 32 MySQL, 33 Postgres, 34 Redis, 35 MongoDB, 36 SFTP, 37 SNMP, 38 RADIUS, 39 gRPC Keyword, 40 MQTT, 41 RabbitMQ, 42 Kafka Producer. HTTPS/JSON/Keyword/Websocket: url/method/request_body/http_body_encoding/auth_method (none|basic|bearer|oauth2_cc|mtls)/basic_auth_*/bearer_token/oauth_*/http_tls_*/cache_bust/keyword; host/port for TCP/UDP and similar probes. Link workers[] and notify[] by id. api_enabled only for /api/v1/status/ opt-in.",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ApiTokenHeader": []
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": {"$ref": "#/components/schemas/MonitorWrite"},
+              "schema": {
+                "$ref": "#/components/schemas/MonitorWrite"
+              },
               "example": {
                 "title": "example.com",
                 "type": 0,
@@ -105,8 +201,13 @@
                 "timeout": 10,
                 "ssl_verify": 1,
                 "ssl_verify_host": 1,
-                "workers": [1, 2],
-                "notify": [1],
+                "workers": [
+                  1,
+                  2
+                ],
+                "notify": [
+                  1
+                ],
                 "api_enabled": false
               }
             }
@@ -117,44 +218,84 @@
             "description": "Created monitor",
             "content": {
               "application/json": {
-                "schema": {"$ref": "#/components/schemas/EnvelopeMonitor"}
+                "schema": {
+                  "$ref": "#/components/schemas/EnvelopeMonitor"
+                }
               }
             }
           },
-          "401": {"$ref": "#/components/responses/Unauthorized"},
-          "403": {"$ref": "#/components/responses/Forbidden"},
-          "422": {"$ref": "#/components/responses/ValidationError"}
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          }
         }
       }
     },
     "/api/v2/monitors/{id}/": {
-      "parameters": [{"$ref": "#/components/parameters/IdPath"}],
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/IdPath"
+        }
+      ],
       "get": {
-        "tags": ["monitors"],
+        "tags": [
+          "monitors"
+        ],
         "summary": "Get monitor",
-        "security": [{"BearerAuth": []}, {"ApiTokenHeader": []}],
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ApiTokenHeader": []
+          }
+        ],
         "responses": {
           "200": {
             "description": "Monitor",
             "content": {
               "application/json": {
-                "schema": {"$ref": "#/components/schemas/EnvelopeMonitor"}
+                "schema": {
+                  "$ref": "#/components/schemas/EnvelopeMonitor"
+                }
               }
             }
           },
-          "401": {"$ref": "#/components/responses/Unauthorized"},
-          "403": {"$ref": "#/components/responses/Forbidden"},
-          "404": {"$ref": "#/components/responses/NotFound"}
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
         }
       },
       "patch": {
-        "tags": ["monitors"],
+        "tags": [
+          "monitors"
+        ],
         "summary": "Update monitor",
-        "security": [{"BearerAuth": []}, {"ApiTokenHeader": []}],
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ApiTokenHeader": []
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
-              "schema": {"$ref": "#/components/schemas/MonitorWrite"}
+              "schema": {
+                "$ref": "#/components/schemas/MonitorWrite"
+              }
             }
           }
         },
@@ -163,24 +304,45 @@
             "description": "Updated monitor",
             "content": {
               "application/json": {
-                "schema": {"$ref": "#/components/schemas/EnvelopeMonitor"}
+                "schema": {
+                  "$ref": "#/components/schemas/EnvelopeMonitor"
+                }
               }
             }
           },
-          "401": {"$ref": "#/components/responses/Unauthorized"},
-          "403": {"$ref": "#/components/responses/Forbidden"},
-          "404": {"$ref": "#/components/responses/NotFound"},
-          "422": {"$ref": "#/components/responses/ValidationError"}
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          }
         }
       },
       "put": {
-        "tags": ["monitors"],
+        "tags": [
+          "monitors"
+        ],
         "summary": "Update monitor (same as PATCH)",
-        "security": [{"BearerAuth": []}, {"ApiTokenHeader": []}],
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ApiTokenHeader": []
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
-              "schema": {"$ref": "#/components/schemas/MonitorWrite"}
+              "schema": {
+                "$ref": "#/components/schemas/MonitorWrite"
+              }
             }
           }
         },
@@ -189,66 +351,115 @@
             "description": "Updated monitor",
             "content": {
               "application/json": {
-                "schema": {"$ref": "#/components/schemas/EnvelopeMonitor"}
+                "schema": {
+                  "$ref": "#/components/schemas/EnvelopeMonitor"
+                }
               }
             }
           },
-          "401": {"$ref": "#/components/responses/Unauthorized"},
-          "404": {"$ref": "#/components/responses/NotFound"}
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
         }
       },
       "delete": {
-        "tags": ["monitors"],
+        "tags": [
+          "monitors"
+        ],
         "summary": "Delete monitor",
-        "security": [{"BearerAuth": []}, {"ApiTokenHeader": []}],
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ApiTokenHeader": []
+          }
+        ],
         "responses": {
           "200": {
             "description": "Deleted",
             "content": {
               "application/json": {
-                "schema": {"$ref": "#/components/schemas/EnvelopeDeleted"}
+                "schema": {
+                  "$ref": "#/components/schemas/EnvelopeDeleted"
+                }
               }
             }
           },
-          "401": {"$ref": "#/components/responses/Unauthorized"},
-          "403": {"$ref": "#/components/responses/Forbidden"},
-          "404": {"$ref": "#/components/responses/NotFound"}
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
         }
       }
     },
     "/api/v2/notify/": {
       "get": {
-        "tags": ["notify"],
+        "tags": [
+          "notify"
+        ],
         "summary": "List notification channels",
-        "security": [{"BearerAuth": []}, {"ApiTokenHeader": []}],
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ApiTokenHeader": []
+          }
+        ],
         "responses": {
           "200": {
             "description": "List",
             "content": {
               "application/json": {
-                "schema": {"$ref": "#/components/schemas/EnvelopeList"}
+                "schema": {
+                  "$ref": "#/components/schemas/EnvelopeList"
+                }
               }
             }
           },
-          "401": {"$ref": "#/components/responses/Unauthorized"}
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
         }
       },
       "post": {
-        "tags": ["notify"],
+        "tags": [
+          "notify"
+        ],
         "summary": "Create notification channel",
         "description": "type: 0 Telegram, 1 Mattermost, 2 Gotify, 3 MAX. Secrets go in json_data; responses redact secrets without notify_secrets permission.",
-        "security": [{"BearerAuth": []}, {"ApiTokenHeader": []}],
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ApiTokenHeader": []
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": {"$ref": "#/components/schemas/NotifyWrite"},
+              "schema": {
+                "$ref": "#/components/schemas/NotifyWrite"
+              },
               "example": {
                 "title": "Ops Telegram",
                 "type": 0,
                 "status": 1,
                 "receiver": "-1001234567890",
-                "json_data": {"telegram_bot_token": "123:ABC"}
+                "json_data": {
+                  "telegram_bot_token": "123:ABC"
+                }
               }
             }
           }
@@ -258,42 +469,76 @@
             "description": "Created",
             "content": {
               "application/json": {
-                "schema": {"$ref": "#/components/schemas/EnvelopeObject"}
+                "schema": {
+                  "$ref": "#/components/schemas/EnvelopeObject"
+                }
               }
             }
           },
-          "401": {"$ref": "#/components/responses/Unauthorized"},
-          "422": {"$ref": "#/components/responses/ValidationError"}
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          }
         }
       }
     },
     "/api/v2/notify/{id}/": {
-      "parameters": [{"$ref": "#/components/parameters/IdPath"}],
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/IdPath"
+        }
+      ],
       "get": {
-        "tags": ["notify"],
+        "tags": [
+          "notify"
+        ],
         "summary": "Get notification channel",
-        "security": [{"BearerAuth": []}, {"ApiTokenHeader": []}],
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ApiTokenHeader": []
+          }
+        ],
         "responses": {
           "200": {
             "description": "Channel",
             "content": {
               "application/json": {
-                "schema": {"$ref": "#/components/schemas/EnvelopeObject"}
+                "schema": {
+                  "$ref": "#/components/schemas/EnvelopeObject"
+                }
               }
             }
           },
-          "404": {"$ref": "#/components/responses/NotFound"}
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
         }
       },
       "patch": {
-        "tags": ["notify"],
+        "tags": [
+          "notify"
+        ],
         "summary": "Update notification channel",
         "description": "Omitted secrets in json_data are preserved.",
-        "security": [{"BearerAuth": []}, {"ApiTokenHeader": []}],
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ApiTokenHeader": []
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
-              "schema": {"$ref": "#/components/schemas/NotifyWrite"}
+              "schema": {
+                "$ref": "#/components/schemas/NotifyWrite"
+              }
             }
           }
         },
@@ -302,21 +547,36 @@
             "description": "Updated",
             "content": {
               "application/json": {
-                "schema": {"$ref": "#/components/schemas/EnvelopeObject"}
+                "schema": {
+                  "$ref": "#/components/schemas/EnvelopeObject"
+                }
               }
             }
           },
-          "404": {"$ref": "#/components/responses/NotFound"}
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
         }
       },
       "put": {
-        "tags": ["notify"],
+        "tags": [
+          "notify"
+        ],
         "summary": "Update notification channel (same as PATCH)",
-        "security": [{"BearerAuth": []}, {"ApiTokenHeader": []}],
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ApiTokenHeader": []
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
-              "schema": {"$ref": "#/components/schemas/NotifyWrite"}
+              "schema": {
+                "$ref": "#/components/schemas/NotifyWrite"
+              }
             }
           }
         },
@@ -325,55 +585,92 @@
             "description": "Updated",
             "content": {
               "application/json": {
-                "schema": {"$ref": "#/components/schemas/EnvelopeObject"}
+                "schema": {
+                  "$ref": "#/components/schemas/EnvelopeObject"
+                }
               }
             }
           }
         }
       },
       "delete": {
-        "tags": ["notify"],
+        "tags": [
+          "notify"
+        ],
         "summary": "Delete notification channel",
-        "security": [{"BearerAuth": []}, {"ApiTokenHeader": []}],
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ApiTokenHeader": []
+          }
+        ],
         "responses": {
           "200": {
             "description": "Deleted",
             "content": {
               "application/json": {
-                "schema": {"$ref": "#/components/schemas/EnvelopeDeleted"}
+                "schema": {
+                  "$ref": "#/components/schemas/EnvelopeDeleted"
+                }
               }
             }
           },
-          "404": {"$ref": "#/components/responses/NotFound"}
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
         }
       }
     },
     "/api/v2/signatures/": {
       "get": {
-        "tags": ["signatures"],
+        "tags": [
+          "signatures"
+        ],
         "summary": "List signatures",
-        "security": [{"BearerAuth": []}, {"ApiTokenHeader": []}],
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ApiTokenHeader": []
+          }
+        ],
         "responses": {
           "200": {
             "description": "List",
             "content": {
               "application/json": {
-                "schema": {"$ref": "#/components/schemas/EnvelopeList"}
+                "schema": {
+                  "$ref": "#/components/schemas/EnvelopeList"
+                }
               }
             }
           }
         }
       },
       "post": {
-        "tags": ["signatures"],
+        "tags": [
+          "signatures"
+        ],
         "summary": "Create signature",
         "description": "project+title must be unique.",
-        "security": [{"BearerAuth": []}, {"ApiTokenHeader": []}],
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ApiTokenHeader": []
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": {"$ref": "#/components/schemas/SignatureWrite"}
+              "schema": {
+                "$ref": "#/components/schemas/SignatureWrite"
+              }
             }
           }
         },
@@ -382,40 +679,72 @@
             "description": "Created",
             "content": {
               "application/json": {
-                "schema": {"$ref": "#/components/schemas/EnvelopeObject"}
+                "schema": {
+                  "$ref": "#/components/schemas/EnvelopeObject"
+                }
               }
             }
           },
-          "422": {"$ref": "#/components/responses/ValidationError"}
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          }
         }
       }
     },
     "/api/v2/signatures/{id}/": {
-      "parameters": [{"$ref": "#/components/parameters/IdPath"}],
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/IdPath"
+        }
+      ],
       "get": {
-        "tags": ["signatures"],
+        "tags": [
+          "signatures"
+        ],
         "summary": "Get signature",
-        "security": [{"BearerAuth": []}, {"ApiTokenHeader": []}],
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ApiTokenHeader": []
+          }
+        ],
         "responses": {
           "200": {
             "description": "Signature",
             "content": {
               "application/json": {
-                "schema": {"$ref": "#/components/schemas/EnvelopeObject"}
+                "schema": {
+                  "$ref": "#/components/schemas/EnvelopeObject"
+                }
               }
             }
           },
-          "404": {"$ref": "#/components/responses/NotFound"}
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
         }
       },
       "patch": {
-        "tags": ["signatures"],
+        "tags": [
+          "signatures"
+        ],
         "summary": "Update signature",
-        "security": [{"BearerAuth": []}, {"ApiTokenHeader": []}],
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ApiTokenHeader": []
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
-              "schema": {"$ref": "#/components/schemas/SignatureWrite"}
+              "schema": {
+                "$ref": "#/components/schemas/SignatureWrite"
+              }
             }
           }
         },
@@ -424,20 +753,33 @@
             "description": "Updated",
             "content": {
               "application/json": {
-                "schema": {"$ref": "#/components/schemas/EnvelopeObject"}
+                "schema": {
+                  "$ref": "#/components/schemas/EnvelopeObject"
+                }
               }
             }
           }
         }
       },
       "put": {
-        "tags": ["signatures"],
+        "tags": [
+          "signatures"
+        ],
         "summary": "Update signature (same as PATCH)",
-        "security": [{"BearerAuth": []}, {"ApiTokenHeader": []}],
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ApiTokenHeader": []
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
-              "schema": {"$ref": "#/components/schemas/SignatureWrite"}
+              "schema": {
+                "$ref": "#/components/schemas/SignatureWrite"
+              }
             }
           }
         },
@@ -446,22 +788,35 @@
             "description": "Updated",
             "content": {
               "application/json": {
-                "schema": {"$ref": "#/components/schemas/EnvelopeObject"}
+                "schema": {
+                  "$ref": "#/components/schemas/EnvelopeObject"
+                }
               }
             }
           }
         }
       },
       "delete": {
-        "tags": ["signatures"],
+        "tags": [
+          "signatures"
+        ],
         "summary": "Delete signature",
-        "security": [{"BearerAuth": []}, {"ApiTokenHeader": []}],
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ApiTokenHeader": []
+          }
+        ],
         "responses": {
           "200": {
             "description": "Deleted",
             "content": {
               "application/json": {
-                "schema": {"$ref": "#/components/schemas/EnvelopeDeleted"}
+                "schema": {
+                  "$ref": "#/components/schemas/EnvelopeDeleted"
+                }
               }
             }
           }
@@ -470,29 +825,51 @@
     },
     "/api/v2/workers/": {
       "get": {
-        "tags": ["workers"],
+        "tags": [
+          "workers"
+        ],
         "summary": "List workers",
-        "security": [{"BearerAuth": []}, {"ApiTokenHeader": []}],
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ApiTokenHeader": []
+          }
+        ],
         "responses": {
           "200": {
             "description": "List",
             "content": {
               "application/json": {
-                "schema": {"$ref": "#/components/schemas/EnvelopeList"}
+                "schema": {
+                  "$ref": "#/components/schemas/EnvelopeList"
+                }
               }
             }
           }
         }
       },
       "post": {
-        "tags": ["workers"],
+        "tags": [
+          "workers"
+        ],
         "summary": "Create worker",
-        "security": [{"BearerAuth": []}, {"ApiTokenHeader": []}],
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ApiTokenHeader": []
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": {"$ref": "#/components/schemas/WorkerWrite"}
+              "schema": {
+                "$ref": "#/components/schemas/WorkerWrite"
+              }
             }
           }
         },
@@ -501,41 +878,73 @@
             "description": "Created",
             "content": {
               "application/json": {
-                "schema": {"$ref": "#/components/schemas/EnvelopeObject"}
+                "schema": {
+                  "$ref": "#/components/schemas/EnvelopeObject"
+                }
               }
             }
           },
-          "422": {"$ref": "#/components/responses/ValidationError"}
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          }
         }
       }
     },
     "/api/v2/workers/{id}/": {
-      "parameters": [{"$ref": "#/components/parameters/IdPath"}],
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/IdPath"
+        }
+      ],
       "get": {
-        "tags": ["workers"],
+        "tags": [
+          "workers"
+        ],
         "summary": "Get worker",
-        "security": [{"BearerAuth": []}, {"ApiTokenHeader": []}],
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ApiTokenHeader": []
+          }
+        ],
         "responses": {
           "200": {
             "description": "Worker",
             "content": {
               "application/json": {
-                "schema": {"$ref": "#/components/schemas/EnvelopeObject"}
+                "schema": {
+                  "$ref": "#/components/schemas/EnvelopeObject"
+                }
               }
             }
           },
-          "404": {"$ref": "#/components/responses/NotFound"}
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
         }
       },
       "patch": {
-        "tags": ["workers"],
+        "tags": [
+          "workers"
+        ],
         "summary": "Update worker",
         "description": "Supports monitors[], dockers[], timeout tuning, restart_worker.",
-        "security": [{"BearerAuth": []}, {"ApiTokenHeader": []}],
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ApiTokenHeader": []
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
-              "schema": {"$ref": "#/components/schemas/WorkerWrite"}
+              "schema": {
+                "$ref": "#/components/schemas/WorkerWrite"
+              }
             }
           }
         },
@@ -544,20 +953,33 @@
             "description": "Updated",
             "content": {
               "application/json": {
-                "schema": {"$ref": "#/components/schemas/EnvelopeObject"}
+                "schema": {
+                  "$ref": "#/components/schemas/EnvelopeObject"
+                }
               }
             }
           }
         }
       },
       "put": {
-        "tags": ["workers"],
+        "tags": [
+          "workers"
+        ],
         "summary": "Update worker (same as PATCH)",
-        "security": [{"BearerAuth": []}, {"ApiTokenHeader": []}],
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ApiTokenHeader": []
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
-              "schema": {"$ref": "#/components/schemas/WorkerWrite"}
+              "schema": {
+                "$ref": "#/components/schemas/WorkerWrite"
+              }
             }
           }
         },
@@ -566,22 +988,35 @@
             "description": "Updated",
             "content": {
               "application/json": {
-                "schema": {"$ref": "#/components/schemas/EnvelopeObject"}
+                "schema": {
+                  "$ref": "#/components/schemas/EnvelopeObject"
+                }
               }
             }
           }
         }
       },
       "delete": {
-        "tags": ["workers"],
+        "tags": [
+          "workers"
+        ],
         "summary": "Delete worker",
-        "security": [{"BearerAuth": []}, {"ApiTokenHeader": []}],
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ApiTokenHeader": []
+          }
+        ],
         "responses": {
           "200": {
             "description": "Deleted",
             "content": {
               "application/json": {
-                "schema": {"$ref": "#/components/schemas/EnvelopeDeleted"}
+                "schema": {
+                  "$ref": "#/components/schemas/EnvelopeDeleted"
+                }
               }
             }
           }
@@ -590,35 +1025,60 @@
     },
     "/api/v2/maintenances/": {
       "get": {
-        "tags": ["maintenances"],
+        "tags": [
+          "maintenances"
+        ],
         "summary": "List maintenances",
-        "security": [{"BearerAuth": []}, {"ApiTokenHeader": []}],
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ApiTokenHeader": []
+          }
+        ],
         "responses": {
           "200": {
             "description": "List",
             "content": {
               "application/json": {
-                "schema": {"$ref": "#/components/schemas/EnvelopeList"}
+                "schema": {
+                  "$ref": "#/components/schemas/EnvelopeList"
+                }
               }
             }
           }
         }
       },
       "post": {
-        "tags": ["maintenances"],
+        "tags": [
+          "maintenances"
+        ],
         "summary": "Create maintenance",
         "description": "finish_time must be >= start_time (unix timestamps). Attach only monitors the user can read via monitor_ids[].",
-        "security": [{"BearerAuth": []}, {"ApiTokenHeader": []}],
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ApiTokenHeader": []
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": {"$ref": "#/components/schemas/MaintenanceWrite"},
+              "schema": {
+                "$ref": "#/components/schemas/MaintenanceWrite"
+              },
               "example": {
                 "title": "DC upgrade",
                 "start_time": 1756890000,
                 "finish_time": 1756893600,
-                "monitor_ids": [12, 15]
+                "monitor_ids": [
+                  12,
+                  15
+                ]
               }
             }
           }
@@ -628,40 +1088,72 @@
             "description": "Created",
             "content": {
               "application/json": {
-                "schema": {"$ref": "#/components/schemas/EnvelopeObject"}
+                "schema": {
+                  "$ref": "#/components/schemas/EnvelopeObject"
+                }
               }
             }
           },
-          "422": {"$ref": "#/components/responses/ValidationError"}
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          }
         }
       }
     },
     "/api/v2/maintenances/{id}/": {
-      "parameters": [{"$ref": "#/components/parameters/IdPath"}],
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/IdPath"
+        }
+      ],
       "get": {
-        "tags": ["maintenances"],
+        "tags": [
+          "maintenances"
+        ],
         "summary": "Get maintenance",
-        "security": [{"BearerAuth": []}, {"ApiTokenHeader": []}],
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ApiTokenHeader": []
+          }
+        ],
         "responses": {
           "200": {
             "description": "Maintenance",
             "content": {
               "application/json": {
-                "schema": {"$ref": "#/components/schemas/EnvelopeObject"}
+                "schema": {
+                  "$ref": "#/components/schemas/EnvelopeObject"
+                }
               }
             }
           },
-          "404": {"$ref": "#/components/responses/NotFound"}
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
         }
       },
       "patch": {
-        "tags": ["maintenances"],
+        "tags": [
+          "maintenances"
+        ],
         "summary": "Update maintenance",
-        "security": [{"BearerAuth": []}, {"ApiTokenHeader": []}],
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ApiTokenHeader": []
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
-              "schema": {"$ref": "#/components/schemas/MaintenanceWrite"}
+              "schema": {
+                "$ref": "#/components/schemas/MaintenanceWrite"
+              }
             }
           }
         },
@@ -670,20 +1162,33 @@
             "description": "Updated",
             "content": {
               "application/json": {
-                "schema": {"$ref": "#/components/schemas/EnvelopeObject"}
+                "schema": {
+                  "$ref": "#/components/schemas/EnvelopeObject"
+                }
               }
             }
           }
         }
       },
       "put": {
-        "tags": ["maintenances"],
+        "tags": [
+          "maintenances"
+        ],
         "summary": "Update maintenance (same as PATCH)",
-        "security": [{"BearerAuth": []}, {"ApiTokenHeader": []}],
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ApiTokenHeader": []
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
-              "schema": {"$ref": "#/components/schemas/MaintenanceWrite"}
+              "schema": {
+                "$ref": "#/components/schemas/MaintenanceWrite"
+              }
             }
           }
         },
@@ -692,22 +1197,35 @@
             "description": "Updated",
             "content": {
               "application/json": {
-                "schema": {"$ref": "#/components/schemas/EnvelopeObject"}
+                "schema": {
+                  "$ref": "#/components/schemas/EnvelopeObject"
+                }
               }
             }
           }
         }
       },
       "delete": {
-        "tags": ["maintenances"],
+        "tags": [
+          "maintenances"
+        ],
         "summary": "Delete maintenance",
-        "security": [{"BearerAuth": []}, {"ApiTokenHeader": []}],
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ApiTokenHeader": []
+          }
+        ],
         "responses": {
           "200": {
             "description": "Deleted",
             "content": {
               "application/json": {
-                "schema": {"$ref": "#/components/schemas/EnvelopeDeleted"}
+                "schema": {
+                  "$ref": "#/components/schemas/EnvelopeDeleted"
+                }
               }
             }
           }
@@ -716,30 +1234,52 @@
     },
     "/api/v2/dockers/": {
       "get": {
-        "tags": ["dockers"],
+        "tags": [
+          "dockers"
+        ],
         "summary": "List Docker hosts",
-        "security": [{"BearerAuth": []}, {"ApiTokenHeader": []}],
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ApiTokenHeader": []
+          }
+        ],
         "responses": {
           "200": {
             "description": "List",
             "content": {
               "application/json": {
-                "schema": {"$ref": "#/components/schemas/EnvelopeList"}
+                "schema": {
+                  "$ref": "#/components/schemas/EnvelopeList"
+                }
               }
             }
           }
         }
       },
       "post": {
-        "tags": ["dockers"],
+        "tags": [
+          "dockers"
+        ],
         "summary": "Create Docker host",
         "description": "TLS PEM or base64 in tls_ca_file / tls_certificate / tls_key; responses expose tls_present only.",
-        "security": [{"BearerAuth": []}, {"ApiTokenHeader": []}],
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ApiTokenHeader": []
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": {"$ref": "#/components/schemas/DockerWrite"}
+              "schema": {
+                "$ref": "#/components/schemas/DockerWrite"
+              }
             }
           }
         },
@@ -748,7 +1288,9 @@
             "description": "Created",
             "content": {
               "application/json": {
-                "schema": {"$ref": "#/components/schemas/EnvelopeObject"}
+                "schema": {
+                  "$ref": "#/components/schemas/EnvelopeObject"
+                }
               }
             }
           }
@@ -757,30 +1299,52 @@
     },
     "/api/v2/servers/": {
       "get": {
-        "tags": ["servers"],
+        "tags": [
+          "servers"
+        ],
         "summary": "List host servers",
-        "security": [{"BearerAuth": []}, {"ApiTokenHeader": []}],
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ApiTokenHeader": []
+          }
+        ],
         "responses": {
           "200": {
             "description": "List",
             "content": {
               "application/json": {
-                "schema": {"$ref": "#/components/schemas/EnvelopeList"}
+                "schema": {
+                  "$ref": "#/components/schemas/EnvelopeList"
+                }
               }
             }
           }
         }
       },
       "post": {
-        "tags": ["servers"],
+        "tags": [
+          "servers"
+        ],
         "summary": "Create host server",
         "description": "Creates agent_key_hash for monitoring-agent AUTH.",
-        "security": [{"BearerAuth": []}, {"ApiTokenHeader": []}],
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ApiTokenHeader": []
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": {"$ref": "#/components/schemas/ServerWrite"}
+              "schema": {
+                "$ref": "#/components/schemas/ServerWrite"
+              }
             }
           }
         },
@@ -789,7 +1353,9 @@
             "description": "Created",
             "content": {
               "application/json": {
-                "schema": {"$ref": "#/components/schemas/EnvelopeObject"}
+                "schema": {
+                  "$ref": "#/components/schemas/EnvelopeObject"
+                }
               }
             }
           }
@@ -797,31 +1363,59 @@
       }
     },
     "/api/v2/servers/{id}/": {
-      "parameters": [{"$ref": "#/components/parameters/IdPath"}],
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/IdPath"
+        }
+      ],
       "get": {
-        "tags": ["servers"],
+        "tags": [
+          "servers"
+        ],
         "summary": "Get host server",
-        "security": [{"BearerAuth": []}, {"ApiTokenHeader": []}],
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ApiTokenHeader": []
+          }
+        ],
         "responses": {
           "200": {
             "description": "Server",
             "content": {
               "application/json": {
-                "schema": {"$ref": "#/components/schemas/EnvelopeObject"}
+                "schema": {
+                  "$ref": "#/components/schemas/EnvelopeObject"
+                }
               }
             }
           },
-          "404": {"$ref": "#/components/responses/NotFound"}
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
         }
       },
       "patch": {
-        "tags": ["servers"],
+        "tags": [
+          "servers"
+        ],
         "summary": "Update host server",
-        "security": [{"BearerAuth": []}, {"ApiTokenHeader": []}],
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ApiTokenHeader": []
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
-              "schema": {"$ref": "#/components/schemas/ServerWrite"}
+              "schema": {
+                "$ref": "#/components/schemas/ServerWrite"
+              }
             }
           }
         },
@@ -830,20 +1424,33 @@
             "description": "Updated",
             "content": {
               "application/json": {
-                "schema": {"$ref": "#/components/schemas/EnvelopeObject"}
+                "schema": {
+                  "$ref": "#/components/schemas/EnvelopeObject"
+                }
               }
             }
           }
         }
       },
       "put": {
-        "tags": ["servers"],
+        "tags": [
+          "servers"
+        ],
         "summary": "Update host server (same as PATCH)",
-        "security": [{"BearerAuth": []}, {"ApiTokenHeader": []}],
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ApiTokenHeader": []
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
-              "schema": {"$ref": "#/components/schemas/ServerWrite"}
+              "schema": {
+                "$ref": "#/components/schemas/ServerWrite"
+              }
             }
           }
         },
@@ -852,22 +1459,35 @@
             "description": "Updated",
             "content": {
               "application/json": {
-                "schema": {"$ref": "#/components/schemas/EnvelopeObject"}
+                "schema": {
+                  "$ref": "#/components/schemas/EnvelopeObject"
+                }
               }
             }
           }
         }
       },
       "delete": {
-        "tags": ["servers"],
+        "tags": [
+          "servers"
+        ],
         "summary": "Delete host server",
-        "security": [{"BearerAuth": []}, {"ApiTokenHeader": []}],
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ApiTokenHeader": []
+          }
+        ],
         "responses": {
           "200": {
             "description": "Deleted",
             "content": {
               "application/json": {
-                "schema": {"$ref": "#/components/schemas/EnvelopeDeleted"}
+                "schema": {
+                  "$ref": "#/components/schemas/EnvelopeDeleted"
+                }
               }
             }
           }
@@ -875,31 +1495,59 @@
       }
     },
     "/api/v2/dockers/{id}/": {
-      "parameters": [{"$ref": "#/components/parameters/IdPath"}],
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/IdPath"
+        }
+      ],
       "get": {
-        "tags": ["dockers"],
+        "tags": [
+          "dockers"
+        ],
         "summary": "Get Docker host",
-        "security": [{"BearerAuth": []}, {"ApiTokenHeader": []}],
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ApiTokenHeader": []
+          }
+        ],
         "responses": {
           "200": {
             "description": "Docker host",
             "content": {
               "application/json": {
-                "schema": {"$ref": "#/components/schemas/EnvelopeObject"}
+                "schema": {
+                  "$ref": "#/components/schemas/EnvelopeObject"
+                }
               }
             }
           },
-          "404": {"$ref": "#/components/responses/NotFound"}
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
         }
       },
       "patch": {
-        "tags": ["dockers"],
+        "tags": [
+          "dockers"
+        ],
         "summary": "Update Docker host",
-        "security": [{"BearerAuth": []}, {"ApiTokenHeader": []}],
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ApiTokenHeader": []
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
-              "schema": {"$ref": "#/components/schemas/DockerWrite"}
+              "schema": {
+                "$ref": "#/components/schemas/DockerWrite"
+              }
             }
           }
         },
@@ -908,20 +1556,33 @@
             "description": "Updated",
             "content": {
               "application/json": {
-                "schema": {"$ref": "#/components/schemas/EnvelopeObject"}
+                "schema": {
+                  "$ref": "#/components/schemas/EnvelopeObject"
+                }
               }
             }
           }
         }
       },
       "put": {
-        "tags": ["dockers"],
+        "tags": [
+          "dockers"
+        ],
         "summary": "Update Docker host (same as PATCH)",
-        "security": [{"BearerAuth": []}, {"ApiTokenHeader": []}],
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ApiTokenHeader": []
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
-              "schema": {"$ref": "#/components/schemas/DockerWrite"}
+              "schema": {
+                "$ref": "#/components/schemas/DockerWrite"
+              }
             }
           }
         },
@@ -930,22 +1591,35 @@
             "description": "Updated",
             "content": {
               "application/json": {
-                "schema": {"$ref": "#/components/schemas/EnvelopeObject"}
+                "schema": {
+                  "$ref": "#/components/schemas/EnvelopeObject"
+                }
               }
             }
           }
         }
       },
       "delete": {
-        "tags": ["dockers"],
+        "tags": [
+          "dockers"
+        ],
         "summary": "Delete Docker host",
-        "security": [{"BearerAuth": []}, {"ApiTokenHeader": []}],
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ApiTokenHeader": []
+          }
+        ],
         "responses": {
           "200": {
             "description": "Deleted",
             "content": {
               "application/json": {
-                "schema": {"$ref": "#/components/schemas/EnvelopeDeleted"}
+                "schema": {
+                  "$ref": "#/components/schemas/EnvelopeDeleted"
+                }
               }
             }
           }
@@ -954,15 +1628,26 @@
     },
     "/api/v2/users/": {
       "get": {
-        "tags": ["users"],
+        "tags": [
+          "users"
+        ],
         "summary": "List users",
-        "security": [{"BearerAuth": []}, {"ApiTokenHeader": []}],
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ApiTokenHeader": []
+          }
+        ],
         "responses": {
           "200": {
             "description": "List",
             "content": {
               "application/json": {
-                "schema": {"$ref": "#/components/schemas/EnvelopeList"}
+                "schema": {
+                  "$ref": "#/components/schemas/EnvelopeList"
+                }
               }
             }
           }
@@ -970,35 +1655,63 @@
       }
     },
     "/api/v2/users/{id}/": {
-      "parameters": [{"$ref": "#/components/parameters/IdPath"}],
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/IdPath"
+        }
+      ],
       "get": {
-        "tags": ["users"],
+        "tags": [
+          "users"
+        ],
         "summary": "Get user",
-        "security": [{"BearerAuth": []}, {"ApiTokenHeader": []}],
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ApiTokenHeader": []
+          }
+        ],
         "responses": {
           "200": {
             "description": "User",
             "content": {
               "application/json": {
-                "schema": {"$ref": "#/components/schemas/EnvelopeObject"}
+                "schema": {
+                  "$ref": "#/components/schemas/EnvelopeObject"
+                }
               }
             }
           },
-          "404": {"$ref": "#/components/responses/NotFound"}
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
         }
       }
     },
     "/api/v2/groups/": {
       "get": {
-        "tags": ["groups"],
+        "tags": [
+          "groups"
+        ],
         "summary": "List groups",
-        "security": [{"BearerAuth": []}, {"ApiTokenHeader": []}],
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ApiTokenHeader": []
+          }
+        ],
         "responses": {
           "200": {
             "description": "List",
             "content": {
               "application/json": {
-                "schema": {"$ref": "#/components/schemas/EnvelopeList"}
+                "schema": {
+                  "$ref": "#/components/schemas/EnvelopeList"
+                }
               }
             }
           }
@@ -1006,54 +1719,92 @@
       }
     },
     "/api/v2/groups/{id}/": {
-      "parameters": [{"$ref": "#/components/parameters/IdPath"}],
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/IdPath"
+        }
+      ],
       "get": {
-        "tags": ["groups"],
+        "tags": [
+          "groups"
+        ],
         "summary": "Get group",
-        "security": [{"BearerAuth": []}, {"ApiTokenHeader": []}],
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ApiTokenHeader": []
+          }
+        ],
         "responses": {
           "200": {
             "description": "Group",
             "content": {
               "application/json": {
-                "schema": {"$ref": "#/components/schemas/EnvelopeObject"}
+                "schema": {
+                  "$ref": "#/components/schemas/EnvelopeObject"
+                }
               }
             }
           },
-          "404": {"$ref": "#/components/responses/NotFound"}
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
         }
       }
     },
     "/api/v2/logs/": {
       "get": {
-        "tags": ["logs"],
+        "tags": [
+          "logs"
+        ],
         "summary": "List audit logs",
-        "security": [{"BearerAuth": []}, {"ApiTokenHeader": []}],
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ApiTokenHeader": []
+          }
+        ],
         "parameters": [
           {
             "name": "from",
             "in": "query",
             "required": true,
-            "schema": {"type": "string", "format": "date", "example": "2026-01-01"},
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "example": "2026-01-01"
+            },
             "description": "YYYY-MM-DD"
           },
           {
             "name": "to",
             "in": "query",
             "required": true,
-            "schema": {"type": "string", "format": "date", "example": "2026-01-31"},
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "example": "2026-01-31"
+            },
             "description": "YYYY-MM-DD"
           },
           {
             "name": "object",
             "in": "query",
-            "schema": {"type": "string"},
+            "schema": {
+              "type": "string"
+            },
             "description": "Optional object filter (e.g. Monitors)"
           },
           {
             "name": "object_id",
             "in": "query",
-            "schema": {"type": "integer"},
+            "schema": {
+              "type": "integer"
+            },
             "description": "Optional object id filter"
           }
         ],
@@ -1062,12 +1813,18 @@
             "description": "Logs",
             "content": {
               "application/json": {
-                "schema": {"$ref": "#/components/schemas/EnvelopeList"}
+                "schema": {
+                  "$ref": "#/components/schemas/EnvelopeList"
+                }
               }
             }
           },
-          "403": {"$ref": "#/components/responses/Forbidden"},
-          "422": {"$ref": "#/components/responses/ValidationError"}
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          }
         }
       }
     },
@@ -1079,36 +1836,70 @@
           "required": true,
           "schema": {
             "type": "string",
-            "enum": ["monitors", "notify", "signatures", "workers", "maintenances", "dockers", "servers"]
+            "enum": [
+              "monitors",
+              "notify",
+              "signatures",
+              "workers",
+              "maintenances",
+              "dockers",
+              "servers"
+            ]
           }
         },
-        {"$ref": "#/components/parameters/IdPath"}
+        {
+          "$ref": "#/components/parameters/IdPath"
+        }
       ],
       "get": {
-        "tags": ["permissions"],
+        "tags": [
+          "permissions"
+        ],
         "summary": "Get object ACL rows",
-        "security": [{"BearerAuth": []}, {"ApiTokenHeader": []}],
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ApiTokenHeader": []
+          }
+        ],
         "responses": {
           "200": {
             "description": "ACL rows",
             "content": {
               "application/json": {
-                "schema": {"$ref": "#/components/schemas/EnvelopeList"}
+                "schema": {
+                  "$ref": "#/components/schemas/EnvelopeList"
+                }
               }
             }
           },
-          "403": {"$ref": "#/components/responses/Forbidden"}
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
         }
       },
       "put": {
-        "tags": ["permissions"],
+        "tags": [
+          "permissions"
+        ],
         "summary": "Replace object ACL rows",
-        "security": [{"BearerAuth": []}, {"ApiTokenHeader": []}],
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ApiTokenHeader": []
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": {"$ref": "#/components/schemas/PermissionsSet"},
+              "schema": {
+                "$ref": "#/components/schemas/PermissionsSet"
+              },
               "example": {
                 "rows": [
                   {
@@ -1131,21 +1922,36 @@
             "description": "Saved rows",
             "content": {
               "application/json": {
-                "schema": {"$ref": "#/components/schemas/EnvelopeList"}
+                "schema": {
+                  "$ref": "#/components/schemas/EnvelopeList"
+                }
               }
             }
           },
-          "403": {"$ref": "#/components/responses/Forbidden"}
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
         }
       },
       "patch": {
-        "tags": ["permissions"],
+        "tags": [
+          "permissions"
+        ],
         "summary": "Replace object ACL rows (same as PUT)",
-        "security": [{"BearerAuth": []}, {"ApiTokenHeader": []}],
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ApiTokenHeader": []
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
-              "schema": {"$ref": "#/components/schemas/PermissionsSet"}
+              "schema": {
+                "$ref": "#/components/schemas/PermissionsSet"
+              }
             }
           }
         },
@@ -1154,7 +1960,9 @@
             "description": "Saved rows",
             "content": {
               "application/json": {
-                "schema": {"$ref": "#/components/schemas/EnvelopeList"}
+                "schema": {
+                  "$ref": "#/components/schemas/EnvelopeList"
+                }
               }
             }
           }
@@ -1182,7 +1990,10 @@
         "name": "id",
         "in": "path",
         "required": true,
-        "schema": {"type": "integer", "minimum": 1}
+        "schema": {
+          "type": "integer",
+          "minimum": 1
+        }
       }
     },
     "responses": {
@@ -1190,8 +2001,13 @@
         "description": "Missing or invalid token",
         "content": {
           "application/json": {
-            "schema": {"$ref": "#/components/schemas/EnvelopeError"},
-            "example": {"status": 1, "error": "Unauthorized"}
+            "schema": {
+              "$ref": "#/components/schemas/EnvelopeError"
+            },
+            "example": {
+              "status": 1,
+              "error": "Unauthorized"
+            }
           }
         }
       },
@@ -1199,8 +2015,13 @@
         "description": "ACL denied",
         "content": {
           "application/json": {
-            "schema": {"$ref": "#/components/schemas/EnvelopeError"},
-            "example": {"status": 1, "error": "Forbidden"}
+            "schema": {
+              "$ref": "#/components/schemas/EnvelopeError"
+            },
+            "example": {
+              "status": 1,
+              "error": "Forbidden"
+            }
           }
         }
       },
@@ -1208,8 +2029,13 @@
         "description": "Not found",
         "content": {
           "application/json": {
-            "schema": {"$ref": "#/components/schemas/EnvelopeError"},
-            "example": {"status": 1, "error": "Not found"}
+            "schema": {
+              "$ref": "#/components/schemas/EnvelopeError"
+            },
+            "example": {
+              "status": 1,
+              "error": "Not found"
+            }
           }
         }
       },
@@ -1217,7 +2043,9 @@
         "description": "Validation failed",
         "content": {
           "application/json": {
-            "schema": {"$ref": "#/components/schemas/EnvelopeError"}
+            "schema": {
+              "$ref": "#/components/schemas/EnvelopeError"
+            }
           }
         }
       },
@@ -1225,8 +2053,13 @@
         "description": "Too many requests",
         "content": {
           "application/json": {
-            "schema": {"$ref": "#/components/schemas/EnvelopeError"},
-            "example": {"status": 1, "error": "Too many requests"}
+            "schema": {
+              "$ref": "#/components/schemas/EnvelopeError"
+            },
+            "example": {
+              "status": 1,
+              "error": "Too many requests"
+            }
           }
         }
       }
@@ -1234,46 +2067,94 @@
     "schemas": {
       "EnvelopeError": {
         "type": "object",
-        "required": ["status", "error"],
+        "required": [
+          "status",
+          "error"
+        ],
         "properties": {
-          "status": {"type": "integer", "enum": [1]},
-          "error": {"type": "string"}
+          "status": {
+            "type": "integer",
+            "enum": [
+              1
+            ]
+          },
+          "error": {
+            "type": "string"
+          }
         }
       },
       "EnvelopeMeta": {
         "type": "object",
         "properties": {
-          "total": {"type": "integer"}
+          "total": {
+            "type": "integer"
+          }
         },
         "additionalProperties": true
       },
       "EnvelopeList": {
         "type": "object",
-        "required": ["status", "data"],
+        "required": [
+          "status",
+          "data"
+        ],
         "properties": {
-          "status": {"type": "integer", "enum": [0]},
-          "data": {"type": "array", "items": {"type": "object"}},
-          "meta": {"$ref": "#/components/schemas/EnvelopeMeta"}
+          "status": {
+            "type": "integer",
+            "enum": [
+              0
+            ]
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/EnvelopeMeta"
+          }
         }
       },
       "EnvelopeObject": {
         "type": "object",
-        "required": ["status", "data"],
+        "required": [
+          "status",
+          "data"
+        ],
         "properties": {
-          "status": {"type": "integer", "enum": [0]},
-          "data": {"type": "object"},
-          "meta": {"$ref": "#/components/schemas/EnvelopeMeta"}
+          "status": {
+            "type": "integer",
+            "enum": [
+              0
+            ]
+          },
+          "data": {
+            "type": "object"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/EnvelopeMeta"
+          }
         }
       },
       "EnvelopeDeleted": {
         "type": "object",
         "properties": {
-          "status": {"type": "integer", "enum": [0]},
+          "status": {
+            "type": "integer",
+            "enum": [
+              0
+            ]
+          },
           "data": {
             "type": "object",
             "properties": {
-              "id": {"type": "integer"},
-              "deleted": {"type": "boolean"}
+              "id": {
+                "type": "integer"
+              },
+              "deleted": {
+                "type": "boolean"
+              }
             }
           }
         }
@@ -1281,164 +2162,670 @@
       "Monitor": {
         "type": "object",
         "properties": {
-          "id": {"type": "integer"},
-          "title": {"type": "string"},
-          "type": {"type": "integer", "description": "0 HTTPS, 1 folder, 2 TCP, 3 ping, 4 docker, 5–7 exporters, 8 HTTP JSON, 9 external, 10–17 server agent, 18 UDP Port, 19 temp, 20 uptime, 21–22 docker CPU/mem, 23–25 systemd, 26 domain expiry, 27 DNS"},
-          "status": {"type": "integer", "description": "0 disabled, 1 enabled"},
-          "api_enabled": {"type": "integer", "description": "Opt-in for GET /api/v1/status/ only"},
-          "url": {"type": "string"},
-          "host": {"type": "string"},
-          "port": {"type": "integer", "minimum": 0, "maximum": 65535},
-          "port_protocol": {"type": "string", "enum": ["tcp", "udp"], "description": "For type 17 (server listening port)"},
-          "server": {"type": "integer", "description": "Host agent server id (types 10–17)"},
-          "method": {"type": "string"},
-          "response_code": {"type": "string"},
-          "repeat_seconds": {"type": "integer"},
-          "timeout": {"type": "integer"},
-          "workers": {"type": "array", "items": {"type": "integer"}},
-          "notify": {"type": "array", "items": {"type": "integer"}},
-          "signature_id": {"type": "integer"},
-          "notify_success_text": {"type": "string", "description": "Custom success notification body; replaces default text when non-empty"},
-          "notify_fail_text": {"type": "string", "description": "Custom fail notification body; replaces default text, fail details and signature when non-empty"},
-          "parent_id": {"type": "integer"}
+          "id": {
+            "type": "integer"
+          },
+          "title": {
+            "type": "string"
+          },
+          "type": {
+            "type": "integer",
+            "description": "0 HTTPS, 1 folder, 2 TCP, 3 ping, 4 docker, 5–7 exporters, 8 HTTP JSON, 9 external, 10–17 server agent, 18 UDP Port, 19–25 server metrics, 26 domain, 27 DNS, 28 HTTP Keyword, 29 SMTP, 30 NTP, 31 Websocket, 32–35 DB, 36–39 protocols, 40–42 messaging"
+          },
+          "status": {
+            "type": "integer",
+            "description": "0 disabled, 1 enabled"
+          },
+          "api_enabled": {
+            "type": "integer",
+            "description": "Opt-in for GET /api/v1/status/ only"
+          },
+          "url": {
+            "type": "string"
+          },
+          "host": {
+            "type": "string"
+          },
+          "port": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 65535
+          },
+          "port_protocol": {
+            "type": "string",
+            "enum": [
+              "tcp",
+              "udp"
+            ],
+            "description": "For type 17 (server listening port)"
+          },
+          "server": {
+            "type": "integer",
+            "description": "Host agent server id (types 10–17)"
+          },
+          "method": {
+            "type": "string"
+          },
+          "response_code": {
+            "type": "string"
+          },
+          "repeat_seconds": {
+            "type": "integer"
+          },
+          "timeout": {
+            "type": "integer"
+          },
+          "workers": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            }
+          },
+          "notify": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            }
+          },
+          "signature_id": {
+            "type": "integer"
+          },
+          "notify_success_text": {
+            "type": "string",
+            "description": "Custom success notification body; replaces default text when non-empty"
+          },
+          "notify_fail_text": {
+            "type": "string",
+            "description": "Custom fail notification body; replaces default text, fail details and signature when non-empty"
+          },
+          "parent_id": {
+            "type": "integer"
+          },
+          "request_body": {
+            "type": "string",
+            "description": "HTTP request body for types 0/8/28/31"
+          },
+          "http_body_encoding": {
+            "type": "string",
+            "enum": [
+              "json",
+              "form",
+              "xml",
+              "raw"
+            ]
+          },
+          "auth_method": {
+            "type": "string",
+            "enum": [
+              "none",
+              "basic",
+              "bearer",
+              "oauth2_cc",
+              "mtls"
+            ]
+          },
+          "basic_auth_user": {
+            "type": "string"
+          },
+          "basic_auth_pass": {
+            "type": "string"
+          },
+          "bearer_token": {
+            "type": "string"
+          },
+          "oauth_client_id": {
+            "type": "string"
+          },
+          "oauth_client_secret": {
+            "type": "string"
+          },
+          "oauth_token_url": {
+            "type": "string"
+          },
+          "oauth_scopes": {
+            "type": "string"
+          },
+          "oauth_audience": {
+            "type": "string"
+          },
+          "oauth_auth_method": {
+            "type": "string",
+            "enum": [
+              "client_secret_basic",
+              "client_secret_post"
+            ]
+          },
+          "http_tls_ca": {
+            "type": "string"
+          },
+          "http_tls_cert": {
+            "type": "string"
+          },
+          "http_tls_key": {
+            "type": "string"
+          },
+          "cache_bust": {
+            "oneOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "integer"
+              }
+            ]
+          },
+          "keyword": {
+            "type": "string",
+            "description": "For type 28 HTTP Keyword"
+          },
+          "keyword_invert": {
+            "oneOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "integer"
+              }
+            ]
+          },
+          "smtp_security": {
+            "type": "string",
+            "enum": [
+              "none",
+              "starttls",
+              "tls"
+            ],
+            "description": "For type 29"
+          },
+          "ntp_max_offset_ms": {
+            "type": "integer",
+            "description": "For type 30; 0 disables drift check"
+          }
         },
         "additionalProperties": true
       },
       "MonitorWrite": {
         "type": "object",
         "properties": {
-          "title": {"type": "string"},
-          "type": {"type": "integer"},
-          "status": {"type": "integer"},
-          "api_enabled": {"oneOf": [{"type": "boolean"}, {"type": "integer"}]},
-          "api_description_ru": {"type": "string"},
-          "api_description_en": {"type": "string"},
-          "url": {"type": "string"},
-          "host": {"type": "string"},
-          "port": {"type": "integer", "minimum": 0, "maximum": 65535},
-          "port_protocol": {"type": "string", "enum": ["tcp", "udp"], "description": "For type 17 (server listening port)"},
-          "server": {"type": "integer", "description": "Host agent server id (types 10–17, 19–25)"},
-          "disk_mount": {"type": "string", "description": "For type 13 (server disk)"},
-          "agent_container": {"type": "string", "description": "For types 14, 21, 22 (server docker container)"},
-          "temp_sensor": {"type": "string", "description": "Optional sensor for type 19; empty = max"},
-          "systemd_unit": {"type": "string", "description": "Unit name for types 23–25"},
-          "method": {"type": "string"},
-          "request_headers": {"type": "string"},
-          "response_code": {"type": "string", "description": "Comma-separated codes, e.g. 200,201"},
-          "max_redirects": {"type": "integer"},
-          "ssl_verify": {"type": "integer"},
-          "ssl_verify_host": {"type": "integer"},
-          "ssl_cert_expire_alert": {"type": "integer"},
-          "ssl_cert_expire_alert_days": {"type": "string"},
-          "domain_expire_alert_days": {"type": "string", "description": "For type 26: comma-separated days, default 14,7,6,5,4,3,2,1,0"},
-          "dns_record_type": {"type": "string", "description": "For type 27: A, AAAA, CNAME, MX, TXT, NS"},
-          "dns_resolver": {"type": "string", "description": "For type 27: empty = system, else IPv4/IPv6"},
-          "dns_transport": {"type": "string", "description": "For type 27: auto, udp, tcp, dot, doh"},
-          "dns_doh_url": {"type": "string", "description": "For type 27 DoH endpoint URL"},
-          "dns_match_mode": {"type": "string", "description": "For type 27: exact, any, all, exact_set, contains, regex, mx_host, mx_priority_host, nxdomain"},
-          "dns_expected": {"type": "string", "description": "For type 27: expected values, one per line"},
-          "json_path": {"type": "string"},
-          "json_expected_value": {"type": "string"},
-          "json_expected_type": {"type": "string"},
-          "docker": {"type": "integer"},
-          "container": {"type": "string"},
-          "value": {"type": "integer"},
-          "proxy_host": {"type": "string"},
-          "proxy_type": {"type": "integer"},
-          "repeat_seconds": {"type": "integer"},
-          "timeout": {"type": "integer"},
-          "send_repeat_minute": {"type": "integer"},
-          "alert_fail_mode": {"type": "integer", "description": "0 all, 1 majority, 2 any"},
-          "parent_id": {"type": "integer"},
-          "signature_id": {"type": "integer"},
-          "notify_success_text": {"type": "string", "description": "Custom success notification body; replaces default text when non-empty"},
-          "notify_fail_text": {"type": "string", "description": "Custom fail notification body; replaces default text, fail details and signature when non-empty"},
-          "workers": {"type": "array", "items": {"type": "integer"}},
-          "notify": {"type": "array", "items": {"type": "integer"}}
+          "title": {
+            "type": "string"
+          },
+          "type": {
+            "type": "integer"
+          },
+          "status": {
+            "type": "integer"
+          },
+          "api_enabled": {
+            "oneOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "integer"
+              }
+            ]
+          },
+          "api_description_ru": {
+            "type": "string"
+          },
+          "api_description_en": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "host": {
+            "type": "string"
+          },
+          "port": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 65535
+          },
+          "port_protocol": {
+            "type": "string",
+            "enum": [
+              "tcp",
+              "udp"
+            ],
+            "description": "For type 17 (server listening port)"
+          },
+          "server": {
+            "type": "integer",
+            "description": "Host agent server id (types 10–17, 19–25)"
+          },
+          "disk_mount": {
+            "type": "string",
+            "description": "For type 13 (server disk)"
+          },
+          "agent_container": {
+            "type": "string",
+            "description": "For types 14, 21, 22 (server docker container)"
+          },
+          "temp_sensor": {
+            "type": "string",
+            "description": "Optional sensor for type 19; empty = max"
+          },
+          "systemd_unit": {
+            "type": "string",
+            "description": "Unit name for types 23–25"
+          },
+          "method": {
+            "type": "string"
+          },
+          "request_headers": {
+            "type": "string"
+          },
+          "response_code": {
+            "type": "string",
+            "description": "Comma-separated codes, e.g. 200,201"
+          },
+          "max_redirects": {
+            "type": "integer"
+          },
+          "ssl_verify": {
+            "type": "integer"
+          },
+          "ssl_verify_host": {
+            "type": "integer"
+          },
+          "ssl_cert_expire_alert": {
+            "type": "integer"
+          },
+          "ssl_cert_expire_alert_days": {
+            "type": "string"
+          },
+          "domain_expire_alert_days": {
+            "type": "string",
+            "description": "For type 26: comma-separated days, default 14,7,6,5,4,3,2,1,0"
+          },
+          "dns_record_type": {
+            "type": "string",
+            "description": "For type 27: A, AAAA, CNAME, MX, TXT, NS"
+          },
+          "dns_resolver": {
+            "type": "string",
+            "description": "For type 27: empty = system, else IPv4/IPv6"
+          },
+          "dns_transport": {
+            "type": "string",
+            "description": "For type 27: auto, udp, tcp, dot, doh"
+          },
+          "dns_doh_url": {
+            "type": "string",
+            "description": "For type 27 DoH endpoint URL"
+          },
+          "dns_match_mode": {
+            "type": "string",
+            "description": "For type 27: exact, any, all, exact_set, contains, regex, mx_host, mx_priority_host, nxdomain"
+          },
+          "dns_expected": {
+            "type": "string",
+            "description": "For type 27: expected values, one per line"
+          },
+          "json_path": {
+            "type": "string"
+          },
+          "json_expected_value": {
+            "type": "string"
+          },
+          "json_expected_type": {
+            "type": "string"
+          },
+          "docker": {
+            "type": "integer"
+          },
+          "container": {
+            "type": "string"
+          },
+          "value": {
+            "type": "integer"
+          },
+          "proxy_host": {
+            "type": "string"
+          },
+          "proxy_type": {
+            "type": "integer"
+          },
+          "repeat_seconds": {
+            "type": "integer"
+          },
+          "timeout": {
+            "type": "integer"
+          },
+          "send_repeat_minute": {
+            "type": "integer"
+          },
+          "alert_fail_mode": {
+            "type": "integer",
+            "description": "0 all, 1 majority, 2 any"
+          },
+          "parent_id": {
+            "type": "integer"
+          },
+          "signature_id": {
+            "type": "integer"
+          },
+          "notify_success_text": {
+            "type": "string",
+            "description": "Custom success notification body; replaces default text when non-empty"
+          },
+          "notify_fail_text": {
+            "type": "string",
+            "description": "Custom fail notification body; replaces default text, fail details and signature when non-empty"
+          },
+          "workers": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            }
+          },
+          "notify": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            }
+          },
+          "request_body": {
+            "type": "string",
+            "description": "HTTP request body for types 0/8/28/31"
+          },
+          "http_body_encoding": {
+            "type": "string",
+            "enum": [
+              "json",
+              "form",
+              "xml",
+              "raw"
+            ]
+          },
+          "auth_method": {
+            "type": "string",
+            "enum": [
+              "none",
+              "basic",
+              "bearer",
+              "oauth2_cc",
+              "mtls"
+            ]
+          },
+          "basic_auth_user": {
+            "type": "string"
+          },
+          "basic_auth_pass": {
+            "type": "string"
+          },
+          "bearer_token": {
+            "type": "string"
+          },
+          "oauth_client_id": {
+            "type": "string"
+          },
+          "oauth_client_secret": {
+            "type": "string"
+          },
+          "oauth_token_url": {
+            "type": "string"
+          },
+          "oauth_scopes": {
+            "type": "string"
+          },
+          "oauth_audience": {
+            "type": "string"
+          },
+          "oauth_auth_method": {
+            "type": "string",
+            "enum": [
+              "client_secret_basic",
+              "client_secret_post"
+            ]
+          },
+          "http_tls_ca": {
+            "type": "string"
+          },
+          "http_tls_cert": {
+            "type": "string"
+          },
+          "http_tls_key": {
+            "type": "string"
+          },
+          "cache_bust": {
+            "oneOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "integer"
+              }
+            ]
+          },
+          "keyword": {
+            "type": "string",
+            "description": "For type 28 HTTP Keyword"
+          },
+          "keyword_invert": {
+            "oneOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "integer"
+              }
+            ]
+          },
+          "smtp_security": {
+            "type": "string",
+            "enum": [
+              "none",
+              "starttls",
+              "tls"
+            ],
+            "description": "For type 29"
+          },
+          "ntp_max_offset_ms": {
+            "type": "integer",
+            "description": "For type 30; 0 disables drift check"
+          }
         },
         "additionalProperties": true
       },
       "EnvelopeMonitor": {
         "type": "object",
         "properties": {
-          "status": {"type": "integer", "enum": [0]},
-          "data": {"$ref": "#/components/schemas/Monitor"}
+          "status": {
+            "type": "integer",
+            "enum": [
+              0
+            ]
+          },
+          "data": {
+            "$ref": "#/components/schemas/Monitor"
+          }
         }
       },
       "EnvelopeMonitorList": {
         "type": "object",
         "properties": {
-          "status": {"type": "integer", "enum": [0]},
-          "data": {"type": "array", "items": {"$ref": "#/components/schemas/Monitor"}},
-          "meta": {"$ref": "#/components/schemas/EnvelopeMeta"}
+          "status": {
+            "type": "integer",
+            "enum": [
+              0
+            ]
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Monitor"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/EnvelopeMeta"
+          }
         }
       },
       "NotifyWrite": {
         "type": "object",
-        "required": ["title", "type"],
+        "required": [
+          "title",
+          "type"
+        ],
         "properties": {
-          "title": {"type": "string"},
-          "type": {"type": "integer", "description": "0 Telegram, 1 Mattermost, 2 Gotify, 3 MAX"},
-          "status": {"type": "integer"},
-          "receiver": {"type": "string"},
-          "json_data": {"type": "object", "additionalProperties": true}
+          "title": {
+            "type": "string"
+          },
+          "type": {
+            "type": "integer",
+            "description": "0 Telegram, 1 Mattermost, 2 Gotify, 3 MAX"
+          },
+          "status": {
+            "type": "integer"
+          },
+          "receiver": {
+            "type": "string"
+          },
+          "json_data": {
+            "type": "object",
+            "additionalProperties": true
+          }
         }
       },
       "SignatureWrite": {
         "type": "object",
-        "required": ["title"],
+        "required": [
+          "title"
+        ],
         "properties": {
-          "project": {"type": "string"},
-          "title": {"type": "string"},
-          "text": {"type": "string"}
+          "project": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          }
         }
       },
       "WorkerWrite": {
         "type": "object",
         "properties": {
-          "title": {"type": "string"},
-          "worker_threads": {"type": "integer"},
-          "jobs_get_timeout": {"type": "integer"},
-          "loop_timeout": {"type": "integer"},
-          "response_send_timeout": {"type": "integer"},
-          "logs_write_timeout": {"type": "integer"},
-          "monitors": {"type": "array", "items": {"type": "integer"}},
-          "dockers": {"type": "array", "items": {"type": "integer"}},
-          "restart_worker": {"type": "boolean"},
-          "restart_requested": {"type": "integer"}
+          "title": {
+            "type": "string"
+          },
+          "worker_threads": {
+            "type": "integer"
+          },
+          "jobs_get_timeout": {
+            "type": "integer"
+          },
+          "loop_timeout": {
+            "type": "integer"
+          },
+          "response_send_timeout": {
+            "type": "integer"
+          },
+          "logs_write_timeout": {
+            "type": "integer"
+          },
+          "monitors": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            }
+          },
+          "dockers": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            }
+          },
+          "restart_worker": {
+            "type": "boolean"
+          },
+          "restart_requested": {
+            "type": "integer"
+          }
         }
       },
       "MaintenanceWrite": {
         "type": "object",
         "properties": {
-          "title": {"type": "string"},
-          "start_time": {"type": "integer", "description": "Unix timestamp"},
-          "finish_time": {"type": "integer", "description": "Unix timestamp, >= start_time"},
-          "monitor_ids": {"type": "array", "items": {"type": "integer"}}
+          "title": {
+            "type": "string"
+          },
+          "start_time": {
+            "type": "integer",
+            "description": "Unix timestamp"
+          },
+          "finish_time": {
+            "type": "integer",
+            "description": "Unix timestamp, >= start_time"
+          },
+          "monitor_ids": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            }
+          }
         }
       },
       "DockerWrite": {
         "type": "object",
         "properties": {
-          "title": {"type": "string"},
-          "host": {"type": "string"},
-          "port": {"type": "integer"},
-          "timeout": {"type": "integer"},
-          "repeat_seconds": {"type": "integer"},
-          "workers": {"type": "array", "items": {"type": "integer"}},
-          "tls_ca_file": {"type": "string"},
-          "tls_certificate": {"type": "string"},
-          "tls_key": {"type": "string"}
+          "title": {
+            "type": "string"
+          },
+          "host": {
+            "type": "string"
+          },
+          "port": {
+            "type": "integer"
+          },
+          "timeout": {
+            "type": "integer"
+          },
+          "repeat_seconds": {
+            "type": "integer"
+          },
+          "workers": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            }
+          },
+          "tls_ca_file": {
+            "type": "string"
+          },
+          "tls_certificate": {
+            "type": "string"
+          },
+          "tls_key": {
+            "type": "string"
+          }
         }
       },
       "ServerWrite": {
         "type": "object",
         "properties": {
-          "title": {"type": "string"},
-          "status": {"type": "integer"},
-          "desired_agent_version": {"type": "string", "description": "Per-server GitHub release tag override; empty clears"},
-          "regenerate_key": {"type": "boolean", "description": "If true, rotate agent_key_hash"},
-          "request_agent_update": {"type": "boolean", "description": "If true, clear update_error / update_requested_at so agent can retry"}
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "integer"
+          },
+          "desired_agent_version": {
+            "type": "string",
+            "description": "Per-server GitHub release tag override; empty clears"
+          },
+          "regenerate_key": {
+            "type": "boolean",
+            "description": "If true, rotate agent_key_hash"
+          },
+          "request_agent_update": {
+            "type": "boolean",
+            "description": "If true, clear update_error / update_requested_at so agent can retry"
+          }
         }
       },
       "PermissionsSet": {
@@ -1449,14 +2836,34 @@
             "items": {
               "type": "object",
               "properties": {
-                "object": {"type": "string", "enum": ["user", "group"]},
-                "object_id": {"type": "integer"},
-                "read": {"type": "integer"},
-                "write": {"type": "integer"},
-                "delete": {"type": "integer"},
-                "access_read": {"type": "integer"},
-                "access_write": {"type": "integer"},
-                "access_change": {"type": "integer"}
+                "object": {
+                  "type": "string",
+                  "enum": [
+                    "user",
+                    "group"
+                  ]
+                },
+                "object_id": {
+                  "type": "integer"
+                },
+                "read": {
+                  "type": "integer"
+                },
+                "write": {
+                  "type": "integer"
+                },
+                "delete": {
+                  "type": "integer"
+                },
+                "access_read": {
+                  "type": "integer"
+                },
+                "access_write": {
+                  "type": "integer"
+                },
+                "access_change": {
+                  "type": "integer"
+                }
               }
             }
           }
@@ -1465,27 +2872,95 @@
       "StatusResource": {
         "type": "object",
         "properties": {
-          "id": {"type": "integer"},
-          "title": {"type": "string"},
-          "description_ru": {"type": "string"},
-          "description_en": {"type": "string"},
-          "check_url": {"type": "string"},
-          "status": {"type": "string", "enum": ["up", "down", "maintenance", "unknown"]},
-          "avg_response_time_ms": {"type": ["number", "null"]},
-          "ssl_expire_time": {"type": ["integer", "null"]},
-          "ssl_expire_at": {"type": ["string", "null"]},
-          "availability": {"type": "object", "additionalProperties": {"type": ["number", "null"]}},
-          "workers": {"type": "array", "items": {"type": "object"}},
-          "maintenances": {"type": "array", "items": {"type": "object"}}
+          "id": {
+            "type": "integer"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description_ru": {
+            "type": "string"
+          },
+          "description_en": {
+            "type": "string"
+          },
+          "check_url": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "up",
+              "down",
+              "maintenance",
+              "unknown"
+            ]
+          },
+          "avg_response_time_ms": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "ssl_expire_time": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "ssl_expire_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "availability": {
+            "type": "object",
+            "additionalProperties": {
+              "type": [
+                "number",
+                "null"
+              ]
+            }
+          },
+          "workers": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "maintenances": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          }
         }
       },
       "StatusResponse": {
         "type": "object",
         "properties": {
-          "status": {"type": "integer", "enum": [0]},
-          "generated_at": {"type": "integer"},
-          "resources": {"type": "array", "items": {"$ref": "#/components/schemas/StatusResource"}},
-          "maintenances": {"type": "array", "items": {"type": "object"}}
+          "status": {
+            "type": "integer",
+            "enum": [
+              0
+            ]
+          },
+          "generated_at": {
+            "type": "integer"
+          },
+          "resources": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StatusResource"
+            }
+          },
+          "maintenances": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          }
         }
       }
     }

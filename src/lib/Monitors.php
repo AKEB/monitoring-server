@@ -39,6 +39,21 @@ class Monitors extends \DB\MySQLObject implements \PermissionSubject_Interface {
 	const TYPE_SERVER_SYSTEMD_MEMORY  = 25;
 	const TYPE_DOMAIN                 = 26;
 	const TYPE_DNS                    = 27;
+	const TYPE_HTTP_KEYWORD           = 28;
+	const TYPE_SMTP                   = 29;
+	const TYPE_NTP                    = 30;
+	const TYPE_WEBSOCKET              = 31;
+	const TYPE_MYSQL                  = 32;
+	const TYPE_POSTGRES               = 33;
+	const TYPE_REDIS                  = 34;
+	const TYPE_MONGODB                = 35;
+	const TYPE_SFTP                   = 36;
+	const TYPE_SNMP                   = 37;
+	const TYPE_RADIUS                 = 38;
+	const TYPE_GRPC_KEYWORD           = 39;
+	const TYPE_MQTT                   = 40;
+	const TYPE_RABBITMQ               = 41;
+	const TYPE_KAFKA_PRODUCER         = 42;
 
 	/** Virtual worker_id for push-based External monitors (never a real Workers row). */
 	const EXTERNAL_WORKER_ID = -1;
@@ -77,6 +92,7 @@ class Monitors extends \DB\MySQLObject implements \PermissionSubject_Interface {
 			static::TYPE_EXPORTER_DISK => \T::Monitor_Type_ExporterDisk(),
 			static::TYPE_EXPORTER_MEMORY => \T::Monitor_Type_ExporterMemory(),
 			static::TYPE_HTTP_JSON => \T::Monitor_Type_HTTPJson(),
+			static::TYPE_HTTP_KEYWORD => \T::Monitor_Type_HTTPKeyword(),
 			static::TYPE_EXTERNAL => \T::Monitor_Type_External(),
 			static::TYPE_SERVER_OFFLINE => \T::Monitor_Type_ServerOffline(),
 			static::TYPE_SERVER_CPU => \T::Monitor_Type_ServerCPU(),
@@ -96,8 +112,90 @@ class Monitors extends \DB\MySQLObject implements \PermissionSubject_Interface {
 			static::TYPE_SERVER_SYSTEMD_MEMORY => \T::Monitor_Type_ServerSystemdMemory(),
 			static::TYPE_DOMAIN => \T::Monitor_Type_Domain(),
 			static::TYPE_DNS => \T::Monitor_Type_DNS(),
+			static::TYPE_SMTP => \T::Monitor_Type_SMTP(),
+			static::TYPE_NTP => \T::Monitor_Type_NTP(),
+			static::TYPE_WEBSOCKET => \T::Monitor_Type_Websocket(),
+			static::TYPE_MYSQL => \T::Monitor_Type_MySQL(),
+			static::TYPE_POSTGRES => \T::Monitor_Type_PostgreSQL(),
+			static::TYPE_REDIS => \T::Monitor_Type_Redis(),
+			static::TYPE_MONGODB => \T::Monitor_Type_MongoDB(),
+			static::TYPE_SFTP => \T::Monitor_Type_SFTP(),
+			static::TYPE_SNMP => \T::Monitor_Type_SNMP(),
+			static::TYPE_RADIUS => \T::Monitor_Type_RADIUS(),
+			static::TYPE_GRPC_KEYWORD => \T::Monitor_Type_GRPCKeyword(),
+			static::TYPE_MQTT => \T::Monitor_Type_MQTT(),
+			static::TYPE_RABBITMQ => \T::Monitor_Type_RabbitMQ(),
+			static::TYPE_KAFKA_PRODUCER => \T::Monitor_Type_KafkaProducer(),
 			// static::TYPE_EXPORTER_CPU => \T::Monitor_Type_ExporterCPU(),
 		];
+	}
+
+	/** HTTP / Keyword / Websocket share request body + auth fields. */
+	static public function is_http_request_type(int $type): bool {
+		return in_array($type, [
+			static::TYPE_HTTPS,
+			static::TYPE_HTTP_JSON,
+			static::TYPE_HTTP_KEYWORD,
+			static::TYPE_WEBSOCKET,
+		], true);
+	}
+
+	/** @return array<string,string> */
+	static public function http_body_encoding_hash(): array {
+		return [
+			'json' => 'JSON',
+			'form' => 'Form',
+			'xml' => 'XML',
+			'raw' => 'Raw',
+		];
+	}
+
+	static public function normalize_http_body_encoding(mixed $raw): string {
+		$v = strtolower(trim(strval($raw ?? '')));
+		return isset(static::http_body_encoding_hash()[$v]) ? $v : 'json';
+	}
+
+	/** @return array<string,string> */
+	static public function auth_method_hash(): array {
+		return [
+			'none' => 'None',
+			'basic' => 'Basic Auth',
+			'bearer' => 'Bearer Token',
+			'oauth2_cc' => 'OAuth2 Client Credentials',
+			'mtls' => 'mTLS',
+		];
+	}
+
+	static public function normalize_auth_method(mixed $raw): string {
+		$v = strtolower(trim(strval($raw ?? '')));
+		return isset(static::auth_method_hash()[$v]) ? $v : 'none';
+	}
+
+	/** @return array<string,string> */
+	static public function oauth_auth_method_hash(): array {
+		return [
+			'client_secret_basic' => 'Client Secret Basic',
+			'client_secret_post' => 'Client Secret Post',
+		];
+	}
+
+	static public function normalize_oauth_auth_method(mixed $raw): string {
+		$v = strtolower(trim(strval($raw ?? '')));
+		return isset(static::oauth_auth_method_hash()[$v]) ? $v : 'client_secret_basic';
+	}
+
+	/** @return array<string,string> */
+	static public function smtp_security_hash(): array {
+		return [
+			'none' => 'None',
+			'starttls' => 'STARTTLS',
+			'tls' => 'TLS',
+		];
+	}
+
+	static public function normalize_smtp_security(mixed $raw): string {
+		$v = strtolower(trim(strval($raw ?? '')));
+		return isset(static::smtp_security_hash()[$v]) ? $v : 'none';
 	}
 
 	/** @return array<string,string> */

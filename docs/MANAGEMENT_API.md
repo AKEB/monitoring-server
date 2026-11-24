@@ -4,6 +4,8 @@ Full management surface for monitors, notify channels, signatures, workers, main
 
 Interactive docs (Swagger UI): **`/api/docs/`** (OpenAPI JSON: `/api/docs/openapi.json`). MCP tool **`api_docs`** returns the same document (index or a `tag` / `path` / `operation` slice).
 
+Monitor types **0–42** (HTTPS through Kafka Producer). HTTPS family (`0`/`8`/`28`/`31`) accepts `request_body`, `http_body_encoding`, `auth_method` (`none|basic|bearer|oauth2_cc|mtls`), OAuth/mTLS PEM fields, `cache_bust`, and Keyword fields for type `28`. See OpenAPI `MonitorWrite`.
+
 `GET /api/v1/status/` is unchanged: it only returns monitors with **Expose in /api/v1/status/** (`api_enabled`) plus read ACL. Do not turn that flag on for every monitor.
 
 ## Auth

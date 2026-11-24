@@ -142,7 +142,15 @@ class Get extends \Routing_Parent implements \Routing_Interface {
 			\Monitors::server_types()
 		);
 		$fields = 't.`id` AS `job_id`, t.`update_time`, M.`id`, M.`type`, M.`url`, M.`method`, M.`host`, M.`port`, '
-			. 'M.`timeout`, M.`repeat_seconds`, M.`request_headers`, M.`proxy_host`, M.`proxy_type`, M.`ssl_verify`, M.`ssl_verify_host`, '
+			. 'M.`timeout`, M.`repeat_seconds`, M.`request_headers`, M.`request_body`, M.`http_body_encoding`, '
+			. 'M.`auth_method`, M.`basic_auth_user`, M.`basic_auth_pass`, M.`bearer_token`, '
+			. 'M.`oauth_client_id`, M.`oauth_client_secret`, M.`oauth_token_url`, M.`oauth_scopes`, M.`oauth_audience`, M.`oauth_auth_method`, '
+			. 'M.`http_tls_ca`, M.`http_tls_cert`, M.`http_tls_key`, M.`cache_bust`, '
+			. 'M.`keyword`, M.`keyword_invert`, M.`smtp_security`, M.`ntp_max_offset_ms`, '
+			. 'M.`db_name`, M.`db_query`, M.`db_expected`, M.`sftp_private_key`, M.`sftp_path`, '
+			. 'M.`snmp_community`, M.`snmp_oid`, M.`snmp_expected`, M.`radius_secret`, '
+			. 'M.`kafka_brokers`, M.`kafka_topic`, M.`kafka_message`, '
+			. 'M.`proxy_host`, M.`proxy_type`, M.`ssl_verify`, M.`ssl_verify_host`, '
 			. 'M.`max_redirects`, M.`json_path`, M.`json_expected_value`, M.`json_expected_type`, '
 			. 'M.`domain_expire_alert_days`, M.`dns_record_type`, M.`dns_resolver`, M.`dns_transport`, '
 			. 'M.`dns_doh_url`, M.`dns_match_mode`, M.`dns_expected`';
@@ -198,7 +206,15 @@ class Get extends \Routing_Parent implements \Routing_Interface {
 		}
 
 		$leafFields = '`id`, `type`, `url`, `method`, `host`, `port`, '
-			. '`timeout`, `repeat_seconds`, `request_headers`, `proxy_host`, `proxy_type`, `ssl_verify`, `ssl_verify_host`, '
+			. '`timeout`, `repeat_seconds`, `request_headers`, `request_body`, `http_body_encoding`, '
+			. '`auth_method`, `basic_auth_user`, `basic_auth_pass`, `bearer_token`, '
+			. '`oauth_client_id`, `oauth_client_secret`, `oauth_token_url`, `oauth_scopes`, `oauth_audience`, `oauth_auth_method`, '
+			. '`http_tls_ca`, `http_tls_cert`, `http_tls_key`, `cache_bust`, '
+			. '`keyword`, `keyword_invert`, `smtp_security`, `ntp_max_offset_ms`, '
+			. '`db_name`, `db_query`, `db_expected`, `sftp_private_key`, `sftp_path`, '
+			. '`snmp_community`, `snmp_oid`, `snmp_expected`, `radius_secret`, '
+			. '`kafka_brokers`, `kafka_topic`, `kafka_message`, '
+			. '`proxy_host`, `proxy_type`, `ssl_verify`, `ssl_verify_host`, '
 			. '`max_redirects`, `json_path`, `json_expected_value`, `json_expected_type`, '
 			. '`domain_expire_alert_days`, `dns_record_type`, `dns_resolver`, `dns_transport`, '
 			. '`dns_doh_url`, `dns_match_mode`, `dns_expected`';

@@ -297,9 +297,41 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				$params['dns_doh_url'] = trim(strval($data['dns_doh_url'] ?? ''));
 				$params['dns_match_mode'] = \Monitors::normalize_dns_match_mode($data['dns_match_mode'] ?? 'exact_set');
 				$params['domain_expire_alert_days'] = \Monitors::domain_expire_alert_days_default();
+				$params['request_body'] = strval($data['request_body'] ?? '');
+				$params['http_body_encoding'] = \Monitors::normalize_http_body_encoding($data['http_body_encoding'] ?? 'json');
+				$params['auth_method'] = \Monitors::normalize_auth_method($data['auth_method'] ?? 'none');
+				$params['basic_auth_user'] = trim(strval($data['basic_auth_user'] ?? ''));
+				$params['basic_auth_pass'] = strval($data['basic_auth_pass'] ?? '');
+				$params['bearer_token'] = strval($data['bearer_token'] ?? '');
+				$params['oauth_client_id'] = trim(strval($data['oauth_client_id'] ?? ''));
+				$params['oauth_client_secret'] = strval($data['oauth_client_secret'] ?? '');
+				$params['oauth_token_url'] = trim(strval($data['oauth_token_url'] ?? ''));
+				$params['oauth_scopes'] = trim(strval($data['oauth_scopes'] ?? ''));
+				$params['oauth_audience'] = trim(strval($data['oauth_audience'] ?? ''));
+				$params['oauth_auth_method'] = \Monitors::normalize_oauth_auth_method($data['oauth_auth_method'] ?? 'client_secret_basic');
+				$params['http_tls_ca'] = strval($data['http_tls_ca'] ?? '');
+				$params['http_tls_cert'] = strval($data['http_tls_cert'] ?? '');
+				$params['http_tls_key'] = strval($data['http_tls_key'] ?? '');
+				$params['cache_bust'] = (isset($data['cache_bust']) && $data['cache_bust'] == 'true') ? 1 : 0;
+				$params['keyword'] = strval($data['keyword'] ?? '');
+				$params['keyword_invert'] = (isset($data['keyword_invert']) && $data['keyword_invert'] == 'true') ? 1 : 0;
+				$params['smtp_security'] = \Monitors::normalize_smtp_security($data['smtp_security'] ?? 'none');
+				$params['ntp_max_offset_ms'] = intval($data['ntp_max_offset_ms'] ?? 5000);
+				$params['db_name'] = trim(strval($data['db_name'] ?? ''));
+				$params['db_query'] = strval($data['db_query'] ?? '');
+				$params['db_expected'] = strval($data['db_expected'] ?? '');
+				$params['sftp_private_key'] = strval($data['sftp_private_key'] ?? '');
+				$params['sftp_path'] = trim(strval($data['sftp_path'] ?? ''));
+				$params['snmp_community'] = trim(strval($data['snmp_community'] ?? 'public'));
+				$params['snmp_oid'] = trim(strval($data['snmp_oid'] ?? ''));
+				$params['snmp_expected'] = strval($data['snmp_expected'] ?? '');
+				$params['radius_secret'] = strval($data['radius_secret'] ?? '');
+				$params['kafka_brokers'] = strval($data['kafka_brokers'] ?? '');
+				$params['kafka_topic'] = trim(strval($data['kafka_topic'] ?? ''));
+				$params['kafka_message'] = strval($data['kafka_message'] ?? '');
 			}
 
-			if ($data['type'] == \Monitors::TYPE_HTTPS || $data['type'] == \Monitors::TYPE_HTTP_JSON) {
+			if (\Monitors::is_http_request_type(intval($data['type']))) {
 				if (isset($data['url'])) {
 					$data['url'] = trim($data['url']);
 					$params['url'] = $data['url'];
@@ -356,6 +388,24 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					$data['request_headers'] = trim($data['request_headers']);
 					$params['request_headers'] = $data['request_headers'];
 				}
+				$params['request_body'] = strval($data['request_body'] ?? '');
+				$params['http_body_encoding'] = \Monitors::normalize_http_body_encoding($data['http_body_encoding'] ?? 'json');
+				$params['auth_method'] = \Monitors::normalize_auth_method($data['auth_method'] ?? 'none');
+				$params['basic_auth_user'] = trim(strval($data['basic_auth_user'] ?? ''));
+				$params['basic_auth_pass'] = strval($data['basic_auth_pass'] ?? '');
+				$params['bearer_token'] = strval($data['bearer_token'] ?? '');
+				$params['oauth_client_id'] = trim(strval($data['oauth_client_id'] ?? ''));
+				$params['oauth_client_secret'] = strval($data['oauth_client_secret'] ?? '');
+				$params['oauth_token_url'] = trim(strval($data['oauth_token_url'] ?? ''));
+				$params['oauth_scopes'] = trim(strval($data['oauth_scopes'] ?? ''));
+				$params['oauth_audience'] = trim(strval($data['oauth_audience'] ?? ''));
+				$params['oauth_auth_method'] = \Monitors::normalize_oauth_auth_method($data['oauth_auth_method'] ?? 'client_secret_basic');
+				$params['http_tls_ca'] = strval($data['http_tls_ca'] ?? '');
+				$params['http_tls_cert'] = strval($data['http_tls_cert'] ?? '');
+				$params['http_tls_key'] = strval($data['http_tls_key'] ?? '');
+				$params['cache_bust'] = (isset($data['cache_bust']) && $data['cache_bust'] == 'true') ? 1 : 0;
+				$params['keyword'] = strval($data['keyword'] ?? '');
+				$params['keyword_invert'] = (isset($data['keyword_invert']) && $data['keyword_invert'] == 'true') ? 1 : 0;
 				if (isset($data['json_path'])) {
 					$data['json_path'] = trim($data['json_path']);
 					$params['json_path'] = $data['json_path'];
@@ -368,6 +418,18 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					$data['json_expected_type'] = trim($data['json_expected_type']);
 					$params['json_expected_type'] = $data['json_expected_type'];
 				}
+			} elseif ($data['type'] == \Monitors::TYPE_SMTP) {
+				if (isset($data['host'])) {
+					$params['host'] = trim($data['host']);
+				}
+				$params['port'] = intval($data['port'] ?? 25);
+				$params['smtp_security'] = \Monitors::normalize_smtp_security($data['smtp_security'] ?? 'none');
+			} elseif ($data['type'] == \Monitors::TYPE_NTP) {
+				if (isset($data['host'])) {
+					$params['host'] = trim($data['host']);
+				}
+				$params['port'] = intval($data['port'] ?? 123);
+				$params['ntp_max_offset_ms'] = intval($data['ntp_max_offset_ms'] ?? 5000);
 			} elseif ($data['type'] == \Monitors::TYPE_EXPORTER_DISK || $data['type'] == \Monitors::TYPE_EXPORTER_MEMORY || $data['type'] == \Monitors::TYPE_EXPORTER_CPU) {
 				if (isset($data['host'])) {
 					$data['host'] = trim($data['host']);
@@ -1153,7 +1215,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 
 					echo $this->template->html_input("url", $this->monitor['url']??'https://', \T::Monitor_Edit_Url(), false, [
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
-						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_HTTP_JSON,
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_HTTP_JSON.' type-'.\Monitors::TYPE_HTTP_KEYWORD.' type-'.\Monitors::TYPE_WEBSOCKET,
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 
@@ -1244,7 +1306,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 
 					echo $this->template->html_input("host", $this->monitor['host']??'', \T::Monitor_Edit_Host(), false, [
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
-						'global-class' => 'type-dependence type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_UDP.' type-'.\Monitors::TYPE_PING.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU.' type-'.\Monitors::TYPE_DNS,
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_UDP.' type-'.\Monitors::TYPE_PING.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU.' type-'.\Monitors::TYPE_DNS.' type-'.\Monitors::TYPE_SMTP.' type-'.\Monitors::TYPE_NTP.' type-'.\Monitors::TYPE_MYSQL.' type-'.\Monitors::TYPE_POSTGRES.' type-'.\Monitors::TYPE_REDIS.' type-'.\Monitors::TYPE_MONGODB.' type-'.\Monitors::TYPE_SFTP.' type-'.\Monitors::TYPE_SNMP.' type-'.\Monitors::TYPE_RADIUS.' type-'.\Monitors::TYPE_MQTT.' type-'.\Monitors::TYPE_RABBITMQ,
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 					echo $this->template->html_input("host", $this->monitor['host']??'', \T::Monitor_Edit_Domain(), false, [
@@ -1256,7 +1318,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 
 					echo $this->template->html_input("port", $this->monitor['port']??'', \T::Monitor_Edit_Port(), false, [
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
-						'global-class' => 'type-dependence type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_UDP.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU.' type-'.\Monitors::TYPE_SERVER_PORT.' type-'.\Monitors::TYPE_DNS,
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_UDP.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU.' type-'.\Monitors::TYPE_SERVER_PORT.' type-'.\Monitors::TYPE_DNS.' type-'.\Monitors::TYPE_SMTP.' type-'.\Monitors::TYPE_NTP.' type-'.\Monitors::TYPE_MYSQL.' type-'.\Monitors::TYPE_POSTGRES.' type-'.\Monitors::TYPE_REDIS.' type-'.\Monitors::TYPE_MONGODB.' type-'.\Monitors::TYPE_SFTP.' type-'.\Monitors::TYPE_SNMP.' type-'.\Monitors::TYPE_RADIUS.' type-'.\Monitors::TYPE_MQTT.' type-'.\Monitors::TYPE_RABBITMQ,
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 
@@ -1356,9 +1418,10 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 
+					$httpTypeClass = 'type-dependence type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_HTTP_JSON.' type-'.\Monitors::TYPE_HTTP_KEYWORD.' type-'.\Monitors::TYPE_WEBSOCKET;
 					echo $this->template?->html_select('method', \Monitors::HTTP_methods(), $this->monitor['method']??'', \T::Monitor_Edit_Method(), false,[
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
-						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_HTTP_JSON,
+						'global-class' => $httpTypeClass,
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 					echo $this->template->html_input("timeout", $this->monitor['timeout']??0, \T::Monitor_Edit_Timeout(), false, [
@@ -1376,7 +1439,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					echo $this->template->html_input("max_redirects", $this->monitor['max_redirects']??0, \T::Monitor_Edit_MaxRedirects(), false, [
 						'type' => 'number',
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
-						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_HTTP_JSON,
+						'global-class' => $httpTypeClass,
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 					$send_repeat_type_class = 'type-dependence type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_HTTP_JSON.' type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_UDP.' type-'.\Monitors::TYPE_PING.' type-'.\Monitors::TYPE_DOCKER.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU.' type-'.\Monitors::TYPE_EXTERNAL.' type-'.\Monitors::TYPE_DOMAIN.' type-'.\Monitors::TYPE_DNS;
@@ -1397,25 +1460,25 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					echo $this->template?->html_select('response_code[]', \Monitors::response_code_hash(), $this->monitor['response_code']??[], \T::Monitor_Edit_ResponseCode(), false,[
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
 						'multiple' => 'multiple',
-						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_HTTP_JSON,
+						'global-class' => $httpTypeClass,
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 					echo $this->template->html_switch("ssl_verify", intval($this->monitor['ssl_verify']??0), \T::Monitor_Edit_SSLVerify(), false,[
-						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_HTTP_JSON,
+						'global-class' => $httpTypeClass,
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 					echo $this->template->html_switch("ssl_verify_host", intval($this->monitor['ssl_verify_host']??0), \T::Monitor_Edit_SSLVerifyHost(), false,[
-						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_HTTP_JSON,
+						'global-class' => $httpTypeClass,
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 					echo $this->template->html_switch("ssl_cert_expire_alert", intval($this->monitor['ssl_cert_expire_alert']??0), \T::Monitor_Edit_SSLCertExpireAlert(), false,[
-						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_HTTP_JSON,
+						'global-class' => $httpTypeClass,
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 					echo $this->template?->html_select('ssl_cert_expire_alert_days[]', \Monitors::ssl_cert_expire_alert_days_hash(), $this->monitor['ssl_cert_expire_alert_days']??[], \T::Monitor_Edit_SSLCertExpireAlertDays(), false,[
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
 						'multiple' => 'multiple',
-						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_HTTP_JSON,
+						'global-class' => $httpTypeClass,
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 					echo $this->template?->html_select('domain_expire_alert_days[]', \Monitors::domain_expire_alert_days_hash(), $this->monitor['domain_expire_alert_days']??[], \T::Monitor_Edit_DomainExpireAlertDays(), false,[
@@ -1472,8 +1535,195 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 						'type' => 'textarea',
 						'rows' => '4',
 						'cols' => '60',
-						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTP_JSON.' type-'.\Monitors::TYPE_HTTPS,
+						'global-class' => $httpTypeClass,
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+						'readonly' => !($this->can_write || $this->can_create),
+					]);
+					echo $this->template->html_input("request_body", $this->monitor['request_body']??'', \T::Monitor_Edit_RequestBody(), false, [
+						'type' => 'textarea',
+						'rows' => '6',
+						'cols' => '60',
+						'global-class' => $httpTypeClass,
+						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+						'readonly' => !($this->can_write || $this->can_create),
+					]);
+					echo $this->template?->html_select('http_body_encoding', \Monitors::http_body_encoding_hash(), $this->monitor['http_body_encoding']??'json', \T::Monitor_Edit_HttpBodyEncoding(), false,[
+						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+						'global-class' => $httpTypeClass,
+						'readonly' => !($this->can_write || $this->can_create),
+					]);
+					echo $this->template?->html_select('auth_method', \Monitors::auth_method_hash(), $this->monitor['auth_method']??'none', \T::Monitor_Edit_AuthMethod(), false,[
+						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+						'global-class' => $httpTypeClass,
+						'readonly' => !($this->can_write || $this->can_create),
+					]);
+					$credTypeClass = $httpTypeClass.' type-'.\Monitors::TYPE_MYSQL.' type-'.\Monitors::TYPE_POSTGRES.' type-'.\Monitors::TYPE_REDIS.' type-'.\Monitors::TYPE_MONGODB.' type-'.\Monitors::TYPE_SFTP.' type-'.\Monitors::TYPE_RADIUS.' type-'.\Monitors::TYPE_MQTT.' type-'.\Monitors::TYPE_RABBITMQ;
+					echo $this->template->html_input("basic_auth_user", $this->monitor['basic_auth_user']??'', \T::Monitor_Edit_BasicAuthUser(), false, [
+						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+						'global-class' => $credTypeClass,
+						'readonly' => !($this->can_write || $this->can_create),
+					]);
+					echo $this->template->html_input("basic_auth_pass", $this->monitor['basic_auth_pass']??'', \T::Monitor_Edit_BasicAuthPass(), false, [
+						'type' => 'password',
+						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+						'global-class' => $credTypeClass,
+						'readonly' => !($this->can_write || $this->can_create),
+						'autocomplete' => 'new-password',
+					]);
+					echo $this->template->html_input("bearer_token", $this->monitor['bearer_token']??'', \T::Monitor_Edit_BearerToken(), false, [
+						'type' => 'password',
+						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+						'global-class' => $httpTypeClass,
+						'readonly' => !($this->can_write || $this->can_create),
+						'autocomplete' => 'new-password',
+					]);
+					echo $this->template->html_input("oauth_token_url", $this->monitor['oauth_token_url']??'', \T::Monitor_Edit_OAuthTokenUrl(), false, [
+						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+						'global-class' => $httpTypeClass,
+						'readonly' => !($this->can_write || $this->can_create),
+					]);
+					echo $this->template->html_input("oauth_client_id", $this->monitor['oauth_client_id']??'', \T::Monitor_Edit_OAuthClientId(), false, [
+						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+						'global-class' => $httpTypeClass,
+						'readonly' => !($this->can_write || $this->can_create),
+					]);
+					echo $this->template->html_input("oauth_client_secret", $this->monitor['oauth_client_secret']??'', \T::Monitor_Edit_OAuthClientSecret(), false, [
+						'type' => 'password',
+						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+						'global-class' => $httpTypeClass,
+						'readonly' => !($this->can_write || $this->can_create),
+						'autocomplete' => 'new-password',
+					]);
+					echo $this->template->html_input("oauth_scopes", $this->monitor['oauth_scopes']??'', \T::Monitor_Edit_OAuthScopes(), false, [
+						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+						'global-class' => $httpTypeClass,
+						'readonly' => !($this->can_write || $this->can_create),
+					]);
+					echo $this->template->html_input("oauth_audience", $this->monitor['oauth_audience']??'', \T::Monitor_Edit_OAuthAudience(), false, [
+						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+						'global-class' => $httpTypeClass,
+						'readonly' => !($this->can_write || $this->can_create),
+					]);
+					echo $this->template?->html_select('oauth_auth_method', \Monitors::oauth_auth_method_hash(), $this->monitor['oauth_auth_method']??'client_secret_basic', \T::Monitor_Edit_OAuthAuthMethod(), false,[
+						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+						'global-class' => $httpTypeClass,
+						'readonly' => !($this->can_write || $this->can_create),
+					]);
+					echo $this->template->html_input("http_tls_ca", $this->monitor['http_tls_ca']??'', \T::Monitor_Edit_HttpTlsCa(), false, [
+						'type' => 'textarea',
+						'rows' => '3',
+						'global-class' => $httpTypeClass,
+						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+						'readonly' => !($this->can_write || $this->can_create),
+					]);
+					echo $this->template->html_input("http_tls_cert", $this->monitor['http_tls_cert']??'', \T::Monitor_Edit_HttpTlsCert(), false, [
+						'type' => 'textarea',
+						'rows' => '3',
+						'global-class' => $httpTypeClass,
+						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+						'readonly' => !($this->can_write || $this->can_create),
+					]);
+					echo $this->template->html_input("http_tls_key", $this->monitor['http_tls_key']??'', \T::Monitor_Edit_HttpTlsKey(), false, [
+						'type' => 'textarea',
+						'rows' => '3',
+						'global-class' => $httpTypeClass,
+						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+						'readonly' => !($this->can_write || $this->can_create),
+					]);
+					echo $this->template->html_switch("cache_bust", intval($this->monitor['cache_bust']??0), \T::Monitor_Edit_CacheBust(), false,[
+						'global-class' => $httpTypeClass,
+						'readonly' => !($this->can_write || $this->can_create),
+					]);
+					echo $this->template->html_input("keyword", $this->monitor['keyword']??'', \T::Monitor_Edit_Keyword(), false, [
+						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTP_KEYWORD,
+						'readonly' => !($this->can_write || $this->can_create),
+					]);
+					echo $this->template->html_switch("keyword_invert", intval($this->monitor['keyword_invert']??0), \T::Monitor_Edit_KeywordInvert(), false,[
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTP_KEYWORD,
+						'readonly' => !($this->can_write || $this->can_create),
+					]);
+					echo $this->template?->html_select('smtp_security', \Monitors::smtp_security_hash(), $this->monitor['smtp_security']??'none', \T::Monitor_Edit_SmtpSecurity(), false,[
+						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_SMTP,
+						'readonly' => !($this->can_write || $this->can_create),
+					]);
+					echo $this->template->html_input("ntp_max_offset_ms", $this->monitor['ntp_max_offset_ms']??5000, \T::Monitor_Edit_NtpMaxOffsetMs(), false, [
+						'type' => 'number',
+						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_NTP,
+						'readonly' => !($this->can_write || $this->can_create),
+					]);
+					$dbTypeClass = 'type-dependence type-'.\Monitors::TYPE_MYSQL.' type-'.\Monitors::TYPE_POSTGRES.' type-'.\Monitors::TYPE_REDIS.' type-'.\Monitors::TYPE_MONGODB;
+					echo $this->template->html_input("db_name", $this->monitor['db_name']??'', \T::Monitor_Edit_DbName(), false, [
+						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+						'global-class' => $dbTypeClass,
+						'readonly' => !($this->can_write || $this->can_create),
+					]);
+					echo $this->template->html_input("db_query", $this->monitor['db_query']??'', \T::Monitor_Edit_DbQuery(), false, [
+						'type' => 'textarea',
+						'rows' => '3',
+						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_MYSQL.' type-'.\Monitors::TYPE_POSTGRES,
+						'readonly' => !($this->can_write || $this->can_create),
+					]);
+					echo $this->template->html_input("db_expected", $this->monitor['db_expected']??'', \T::Monitor_Edit_DbExpected(), false, [
+						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_MYSQL.' type-'.\Monitors::TYPE_POSTGRES,
+						'readonly' => !($this->can_write || $this->can_create),
+					]);
+					echo $this->template->html_input("sftp_private_key", $this->monitor['sftp_private_key']??'', \T::Monitor_Edit_HttpTlsKey(), false, [
+						'type' => 'textarea',
+						'rows' => '3',
+						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_SFTP,
+						'readonly' => !($this->can_write || $this->can_create),
+					]);
+					echo $this->template->html_input("sftp_path", $this->monitor['sftp_path']??'', \T::Monitor_Edit_Url(), false, [
+						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_SFTP,
+						'readonly' => !($this->can_write || $this->can_create),
+						'placeholder' => '/remote/path',
+					]);
+					echo $this->template->html_input("snmp_community", $this->monitor['snmp_community']??'public', 'SNMP community', false, [
+						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_SNMP,
+						'readonly' => !($this->can_write || $this->can_create),
+					]);
+					echo $this->template->html_input("snmp_oid", $this->monitor['snmp_oid']??'', 'SNMP OID', false, [
+						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_SNMP,
+						'readonly' => !($this->can_write || $this->can_create),
+					]);
+					echo $this->template->html_input("snmp_expected", $this->monitor['snmp_expected']??'', 'SNMP expected', false, [
+						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_SNMP,
+						'readonly' => !($this->can_write || $this->can_create),
+					]);
+					echo $this->template->html_input("radius_secret", $this->monitor['radius_secret']??'', 'RADIUS secret', false, [
+						'type' => 'password',
+						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_RADIUS,
+						'readonly' => !($this->can_write || $this->can_create),
+						'autocomplete' => 'new-password',
+					]);
+					echo $this->template->html_input("kafka_brokers", $this->monitor['kafka_brokers']??'', 'Kafka brokers', false, [
+						'type' => 'textarea',
+						'rows' => '3',
+						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_KAFKA_PRODUCER,
+						'readonly' => !($this->can_write || $this->can_create),
+					]);
+					echo $this->template->html_input("kafka_topic", $this->monitor['kafka_topic']??'', 'Kafka topic', false, [
+						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_KAFKA_PRODUCER,
+						'readonly' => !($this->can_write || $this->can_create),
+					]);
+					echo $this->template->html_input("kafka_message", $this->monitor['kafka_message']??'', 'Kafka message', false, [
+						'type' => 'textarea',
+						'rows' => '3',
+						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_KAFKA_PRODUCER,
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 					echo $this->template->html_input("json_path", $this->monitor['json_path']??'', \T::Monitor_Edit_JSONPath(), false, [

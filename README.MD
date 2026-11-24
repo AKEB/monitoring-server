@@ -64,11 +64,27 @@ After upgrade, run DB migrations.
 - [x] Investigate bugs with the Docker API (why requests are hanging)
 - [x] Double-check all pages on a mobile device
 - [x] Double-check the light theme
+- [x] HTTP request parity: body, encoding, Basic/Bearer/OAuth2-CC/mTLS, cache bust
+- [x] New monitor type: HTTP Keyword
+- [x] New monitor type: SMTP
+- [x] New monitor type: NTP
+- [x] New monitor type: Websocket Upgrade
+- [x] New monitor type: MySQL
+- [x] New monitor type: PostgreSQL
+- [x] New monitor type: Redis
+- [x] New monitor type: MongoDB
+- [x] New monitor type: SFTP
+- [x] New monitor type: SNMP
+- [x] New monitor type: RADIUS
+- [x] New monitor type: gRPC Keyword
+- [x] New monitor type: MQTT
+- [x] New monitor type: RabbitMQ
+- [x] New monitor type: Kafka Producer
 
 ## Issues
 
-- [ ] New monitor type: MySQL
-- [ ] New monitor type: PostgreSQL
+- [x] New monitor type: MySQL
+- [x] New monitor type: PostgreSQL
 
 ## PHP extensions
 
