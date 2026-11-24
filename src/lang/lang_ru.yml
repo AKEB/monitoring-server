@@ -160,6 +160,7 @@ Monitor:
     CreateButton: "Создать"
     ParentFolder: "Родительская папка"
     Notify: "Уведомления"
+    NotifyInherited: "наследуется"
     Docker: "Docker"
     Value: "Больше чем (%%)"
     ValueMbps: "Больше чем (Mbps)"

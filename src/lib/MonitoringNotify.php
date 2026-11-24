@@ -60,6 +60,45 @@ class MonitoringNotify extends \DB\MySQLObject {
 	}
 
 	/**
+	 * Notify IDs attached to ancestor folders starting from $parent_id (inclusive) upward.
+	 * Does not include notifies linked directly to a child monitor.
+	 *
+	 * @return array<int,true> notify_id => true
+	 */
+	static public function getInheritedNotifyIds(int $parent_id): array {
+		$parent_id = intval($parent_id);
+		if ($parent_id < 1) {
+			return [];
+		}
+		$monitors_hash = \Monitors::get_hash();
+		$folder_ids = [];
+		$current_id = $parent_id;
+		$guard = 0;
+		while ($current_id > 0 && $guard < 100) {
+			$guard++;
+			if (!isset($monitors_hash[$current_id])) {
+				break;
+			}
+			$folder_ids[] = $current_id;
+			$current_id = intval($monitors_hash[$current_id]['parent_id'] ?? 0);
+		}
+		if (!$folder_ids) {
+			return [];
+		}
+		$rows = static::data(false, sql_pholder(' AND `monitor_id` IN (?@)', $folder_ids), '`notify_id`');
+		$result = [];
+		if ($rows) {
+			foreach ($rows as $row) {
+				$nid = intval($row['notify_id'] ?? 0);
+				if ($nid > 0) {
+					$result[$nid] = true;
+				}
+			}
+		}
+		return $result;
+	}
+
+	/**
 	 * @param bool $omitAlertFooter When true (custom monitor texts), skip channel "Alert: …" footer.
 	 */
 	static public function sendNotification(int $monitor_id, string $text, ?string $title='', ?bool $status=false, bool $omitAlertFooter=false): bool {

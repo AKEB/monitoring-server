@@ -560,11 +560,22 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				}
 			}
 
+			// Inherited from parent folders — never persist on this monitor.
+			$inherited_notify = \MonitoringNotify::getInheritedNotifyIds(intval($params['parent_id'] ?? $this->parent_id));
+			if (!isset($data['notify']) || !is_array($data['notify'])) {
+				$data['notify'] = [];
+			}
+			if ($inherited_notify) {
+				$data['notify'] = array_values(array_filter(
+					array_map('intval', $data['notify']),
+					static fn(int $nid): bool => $nid > 0 && !isset($inherited_notify[$nid])
+				));
+			}
+
 			$old_monitor = [];
 			$update_jobs = [];
 			$update_notify = [];
 			if (!isset($data['workers'])) $data['workers'] = [];
-			if (!isset($data['notify'])) $data['notify'] = [];
 			if (isset($params['id']) && $params['id']) {
 				if (!$this->can_write) {
 					$this->error = \T::Monitor_Edit_PermissionDenied();
@@ -900,6 +911,11 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					$this->monitor['notify'][$v['notify_id']] = true;
 				}
 			}
+			// Show notifies enabled on ancestor folders as checked (locked later).
+			$inherited_notify = \MonitoringNotify::getInheritedNotifyIds(intval($this->monitor['parent_id'] ?? $this->parent_id));
+			foreach ($inherited_notify as $notify_id => $_) {
+				$this->monitor['notify'][$notify_id] = true;
+			}
 			if (isset($this->monitor['response_code']) && !is_array($this->monitor['response_code'])) {
 				$this->monitor['response_code'] = explode(',', $this->monitor['response_code']??'');
 			}
@@ -943,6 +959,11 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 			$this->monitor['server'] ??= 0;
 			$this->monitor['response_code'] ??= [2];
 			$this->monitor['parent_id'] ??= $this->parent_id;
+			// Create form: show inherited notifies from the target parent folder.
+			$inherited_notify = \MonitoringNotify::getInheritedNotifyIds(intval($this->monitor['parent_id']));
+			foreach ($inherited_notify as $notify_id => $_) {
+				$this->monitor['notify'][$notify_id] = true;
+			}
 			$this->monitor['signature_id'] ??= 0;
 			$this->monitor['notify_success_text'] ??= '';
 			$this->monitor['notify_fail_text'] ??= '';
@@ -972,12 +993,21 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 		}
 
 		$this->notify_hash = [];
+		$inherited_notify = \MonitoringNotify::getInheritedNotifyIds(intval($this->monitor['parent_id'] ?? $this->parent_id));
+		$inherited_label = htmlspecialchars(\T::Monitor_Edit_NotifyInherited());
 		$data = \Notify::data(false, ' ORDER BY `title` ASC', '`id`, `title`');
 		if ($data) {
 			foreach($data as $v) {
+				$can_access = \Sessions::checkPermission(\Notify::PERMISSION_ACCESS, $v['id'], READ);
+				$is_inherited = isset($inherited_notify[$v['id']]);
+				$title = htmlspecialchars($v['title']);
+				if ($is_inherited) {
+					$title .= ' <span class="text-muted small">('.$inherited_label.')</span>';
+				}
 				$this->notify_hash[$v['id']] = [
-					'title' => htmlspecialchars($v['title']),
-					'enable' => \Sessions::checkPermission(\Notify::PERMISSION_ACCESS, $v['id'], READ),
+					'title' => $title,
+					// Inherited: show checked but locked (disabled input is not submitted).
+					'enable' => $can_access && !$is_inherited,
 				];
 			}
 		}

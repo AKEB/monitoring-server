@@ -163,6 +163,7 @@ Monitor:
     CreateButton: "Create"
     ParentFolder: "Parent folder"
     Notify: "Notifications"
+    NotifyInherited: "inherited"
     Docker: "Docker"
     Container: "Container"
     Server: "Server"

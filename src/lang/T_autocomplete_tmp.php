@@ -1145,6 +1145,14 @@ class T {
 	public static function Monitor_Edit_Notify(...$argv): string { return ''; }
 
 	/**
+	 * Monitor_Edit_NotifyInherited
+	 * 
+	 * @return string "inherited"
+	 * @return string "наследуется"
+	 */
+	public static function Monitor_Edit_NotifyInherited(...$argv): string { return ''; }
+
+	/**
 	 * Monitor_Edit_Docker
 	 * 
 	 * @return string "Docker"
