@@ -153,7 +153,8 @@ class MonitoringJobs extends \DB\MySQLObject {
 		if ($rows) {
 			foreach ($rows as $row) {
 				$wid = intval($row['worker_id'] ?? 0);
-				if ($wid > 0) {
+				// Include virtual server/external worker ids (-1, -2).
+				if ($wid !== 0) {
 					$result[$wid] = true;
 				}
 			}
@@ -203,9 +204,11 @@ class MonitoringJobs extends \DB\MySQLObject {
 			}
 			foreach ($workers as $workerId => $value) {
 				$wid = intval($workerId);
-				if ($wid > 0) {
-					$result[$monitorId][$wid] = $value;
+				// Keep real workers and virtual agent/external ids (-1, -2).
+				if ($wid === 0) {
+					continue;
 				}
+				$result[$monitorId][$wid] = $value;
 			}
 		}
 
@@ -230,6 +233,7 @@ class MonitoringJobs extends \DB\MySQLObject {
 				}
 				foreach ($workers as $workerId => $value) {
 					$wid = intval($workerId);
+					// Folder inheritance is only for real workers.
 					if ($wid < 1) {
 						continue;
 					}
