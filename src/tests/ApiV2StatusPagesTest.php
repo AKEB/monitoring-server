@@ -80,5 +80,15 @@ class ApiV2StatusPagesTest extends ApiV2TestCase {
 		$list = \Api\V2\StatusPagesService::listIncidents($user, $pageId);
 		$this->assertSame(0, $list['status'] ?? 1);
 		$this->assertGreaterThanOrEqual(1, count($list['data'] ?? []));
+
+		$incId = intval($inc['data']['id'] ?? 0);
+		$this->assertGreaterThan(0, $incId);
+		$deleted = \Api\V2\StatusPagesService::deleteIncident($user, $pageId, $incId);
+		$this->assertSame(0, $deleted['status'] ?? 1, json_encode($deleted));
+		$listAfter = \Api\V2\StatusPagesService::listIncidents($user, $pageId);
+		$this->assertSame(0, $listAfter['status'] ?? 1);
+		foreach ($listAfter['data'] ?? [] as $row) {
+			$this->assertNotSame($incId, intval($row['id'] ?? 0));
+		}
 	}
 }

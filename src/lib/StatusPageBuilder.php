@@ -202,6 +202,19 @@ class StatusPageBuilder {
 		return $out;
 	}
 
+	static public function invalidateSlugCache(string $slug): void {
+		$slug = \StatusPageMembership::normalizeSlug($slug);
+		if ($slug === '') {
+			return;
+		}
+		try {
+			$cache = new \Cache('status_page_public_'.$slug);
+			$cache->update('', 1);
+		} catch (\Throwable $e) {
+			// ignore
+		}
+	}
+
 	/**
 	 * @return array<string,mixed>|null
 	 */

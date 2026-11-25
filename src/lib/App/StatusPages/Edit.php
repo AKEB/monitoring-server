@@ -25,8 +25,13 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 	}
 
 	protected function handlePostData(array $data) {
-		if (($data['form'] ?? '') === 'incident') {
+		$form = strval($data['form'] ?? '');
+		if ($form === 'incident') {
 			$this->save_incident($data);
+			return;
+		}
+		if ($form === 'incident_delete') {
+			$this->delete_incident($data);
 			return;
 		}
 		$this->save_page($data);
@@ -107,6 +112,24 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 		]);
 		if (($result['status'] ?? 1) !== 0) {
 			$this->error = strval($result['error'] ?? 'Save failed');
+			return;
+		}
+		common_redirect('/admin/status-pages/edit/'.$this->status_page_id.'/');
+	}
+
+	private function delete_incident(array $data) {
+		if ($this->status_page_id < 1 || !$this->can_write) {
+			$this->error = \T::StatusPages_Edit_PermissionDenied();
+			return;
+		}
+		$incidentId = intval($data['incident_id'] ?? 0);
+		$result = \Api\V2\StatusPagesService::deleteIncident(
+			\Sessions::currentUser(),
+			$this->status_page_id,
+			$incidentId
+		);
+		if (($result['status'] ?? 1) !== 0) {
+			$this->error = strval($result['error'] ?? \T::StatusPages_Edit_DeleteIncidentFailed());
 			return;
 		}
 		common_redirect('/admin/status-pages/edit/'.$this->status_page_id.'/');
@@ -224,10 +247,16 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 		echo '<th>'.\T::StatusPages_Edit_IncidentState().'</th>';
 		echo '<th>'.\T::StatusPages_Edit_IncidentActive().'</th>';
 		echo '<th>'.\T::StatusPages_Edit_IncidentCreated().'</th>';
+		echo '<th>'.\T::StatusPages_Table_Actions().'</th>';
 		echo '</tr></thead><tbody>';
 		if (!$this->incidents) {
-			echo '<tr><td colspan="5" class="text-muted">'.\T::StatusPages_Edit_NoIncidents().'</td></tr>';
+			echo '<tr><td colspan="6" class="text-muted">'.\T::StatusPages_Edit_NoIncidents().'</td></tr>';
 		}
+		$confirm = htmlspecialchars(
+			json_encode(\T::StatusPages_Edit_DeleteIncidentConfirmation(), JSON_UNESCAPED_UNICODE),
+			ENT_QUOTES,
+			'UTF-8'
+		);
 		foreach ($this->incidents as $inc) {
 			$state = strval($inc['state'] ?? '');
 			$stateLabel = match ($state) {
@@ -244,15 +273,25 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				default => 'text-bg-secondary',
 			};
 			$created = intval($inc['create_time'] ?? 0);
+			$incId = intval($inc['id'] ?? 0);
 			echo '<tr>';
-			echo '<td>'.intval($inc['id']).'</td>';
+			echo '<td>'.$incId.'</td>';
 			echo '<td>'.htmlspecialchars(strval($inc['title'] ?? ''), ENT_QUOTES, 'UTF-8').'</td>';
 			echo '<td><span class="badge '.$badge.'">'.htmlspecialchars($stateLabel, ENT_QUOTES, 'UTF-8').'</span></td>';
 			echo '<td>'.(intval($inc['active'] ?? 0) === 1
 				? '<i class="bi bi-check-lg text-success"></i>'
 				: '<i class="bi bi-x-lg text-danger"></i>').'</td>';
 			echo '<td class="text-muted">'.($created > 0 ? htmlspecialchars(gmdate('Y-m-d H:i', $created).' UTC', ENT_QUOTES, 'UTF-8') : '—').'</td>';
-			echo '</tr>';
+			echo '<td class="text-end">';
+			if ($this->can_write && !$readonly && $incId > 0) {
+				echo '<form method="post" class="d-inline" onsubmit="return confirm('.$confirm.');">';
+				echo \Csrf::field();
+				echo '<input type="hidden" name="form" value="incident_delete">';
+				echo '<input type="hidden" name="incident_id" value="'.$incId.'">';
+				echo '<button type="submit" class="btn btn-sm btn-outline-danger">'.\T::Framework_Common_Delete().'</button>';
+				echo '</form>';
+			}
+			echo '</td></tr>';
 		}
 		echo '</tbody></table></div>';
 		echo '</div></div></div>';

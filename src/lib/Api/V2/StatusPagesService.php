@@ -250,6 +250,10 @@ class StatusPagesService {
 		if (!$id) {
 			return Envelope::error('Save failed') + ['http' => 500];
 		}
+		$page = \StatusPages::get(['id' => $pageId]);
+		if ($page) {
+			\StatusPageBuilder::invalidateSlugCache(strval($page['slug'] ?? ''));
+		}
 		return Envelope::ok(\StatusPageIncidents::get(['id' => intval($id)]) ?: $row + ['id' => intval($id)]);
 	}
 
@@ -277,6 +281,37 @@ class StatusPagesService {
 			' ORDER BY `id` DESC'
 		) ?: [];
 		return Envelope::ok(array_values($rows), ['total' => count($rows)]);
+	}
+
+	/** @param array<string,mixed> $user */
+	static public function deleteIncident(array $user, int $pageId, int $incidentId): array {
+		$store = Runtime::store();
+		if ($store) {
+			$page = $store->get('status_pages', $pageId);
+			if (!$page) {
+				return Envelope::error('Not found') + ['http' => 404];
+			}
+			$inc = $store->get('status_page_incidents', $incidentId);
+			if (!$inc || intval($inc['status_page_id'] ?? 0) !== $pageId) {
+				return Envelope::error('Not found') + ['http' => 404];
+			}
+			$store->delete('status_page_incidents', $incidentId);
+			return Envelope::ok(['id' => $incidentId, 'deleted' => true]);
+		}
+		if ($pageId < 1 || $incidentId < 1 || !Acl::can($user, \StatusPages::PERMISSION_ACCESS, $pageId, WRITE)) {
+			return Envelope::error(($pageId < 1 || $incidentId < 1) ? 'Not found' : 'Forbidden')
+				+ ['http' => ($pageId < 1 || $incidentId < 1) ? 404 : 403];
+		}
+		$inc = \StatusPageIncidents::get(['id' => $incidentId, 'status_page_id' => $pageId]);
+		if (!$inc) {
+			return Envelope::error('Not found') + ['http' => 404];
+		}
+		\StatusPageIncidents::delete(['id' => $incidentId]);
+		$page = \StatusPages::get(['id' => $pageId]);
+		if ($page) {
+			\StatusPageBuilder::invalidateSlugCache(strval($page['slug'] ?? ''));
+		}
+		return Envelope::ok(['id' => $incidentId, 'deleted' => true]);
 	}
 
 	/**

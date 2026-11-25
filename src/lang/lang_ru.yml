@@ -634,6 +634,8 @@ StatusPages:
     IncidentCreated: "Создан"
     AddIncident: "Добавить инцидент"
     NoIncidents: "Инцидентов пока нет"
+    DeleteIncidentConfirmation: "Удалить этот инцидент?"
+    DeleteIncidentFailed: "Не удалось удалить инцидент"
     StateInvestigating: "Расследование"
     StateIdentified: "Причина найдена"
     StateMonitoring: "Наблюдение"

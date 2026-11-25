@@ -639,6 +639,8 @@ StatusPages:
     IncidentCreated: "Created"
     AddIncident: "Add incident"
     NoIncidents: "No incidents yet"
+    DeleteIncidentConfirmation: "Delete this incident?"
+    DeleteIncidentFailed: "Failed to delete incident"
     StateInvestigating: "Investigating"
     StateIdentified: "Identified"
     StateMonitoring: "Monitoring"
