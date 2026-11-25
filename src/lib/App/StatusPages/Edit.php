@@ -11,6 +11,8 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 	/** @var list<array<string,mixed>> */
 	private array $incidents = [];
 
+	private const FIELD_CLASS2 = 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6';
+
 	public function Run($status_page_id = 0) {
 		$this->status_page_id = intval($status_page_id ?? 0);
 		$this->check_auth();
@@ -112,13 +114,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 
 	private function print_header() {
 		\Ui::print_section_title('bi bi-broadcast', \T::StatusPages_Edit_Title());
-		if (!empty($this->error)) {
-			echo '<div class="alert alert-danger">'.htmlspecialchars($this->error, ENT_QUOTES, 'UTF-8').'</div>';
-		}
-		if ($this->status_page_id > 0 && !empty($this->page['slug'])) {
-			$url = '/status/'.rawurlencode(strval($this->page['slug'])).'/';
-			echo '<p><a href="'.htmlspecialchars($url, ENT_QUOTES, 'UTF-8').'" target="_blank" rel="noopener">'.\T::StatusPages_Table_PublicUrl().': '.$url.'</a></p>';
-		}
+		echo '<div class="clearfix"></div>';
 	}
 
 	private function print_forms() {
@@ -130,51 +126,135 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 			}
 		}
 		$readonly = !($this->can_write || ($this->status_page_id < 1 && $this->can_create));
+		$fieldClass = ['class2' => self::FIELD_CLASS2, 'readonly' => $readonly];
 
-		echo '<form method="post" class="mb-4">';
+		echo '<div class="row d-flex justify-content-center">';
+		echo '<div class="card bg-transparent col-xl-10 p-4 mt-2 mb-3">';
+		echo '<div class="card-header bg-transparent d-flex flex-wrap align-items-center justify-content-between gap-2">';
+		echo '<h3 class="mb-0">'.($this->status_page_id > 0
+			? htmlspecialchars(strval($this->page['title'] ?? ''), ENT_QUOTES, 'UTF-8').' <small class="text-muted">#'.$this->status_page_id.'</small>'
+			: \T::StatusPages_Edit_CreateTitle()).'</h3>';
+		if ($this->status_page_id > 0 && !empty($this->page['slug'])) {
+			$url = '/status/'.rawurlencode(strval($this->page['slug'])).'/';
+			echo '<a class="btn btn-sm btn-outline-info" href="'.htmlspecialchars($url, ENT_QUOTES, 'UTF-8').'" target="_blank" rel="noopener">';
+			echo '<i class="bi bi-box-arrow-up-right"></i> '.\T::StatusPages_Table_PublicUrl().'</a>';
+		}
+		echo '</div>';
+
+		if (!empty($this->error)) {
+			echo '<div class="alert alert-danger mt-3 mb-0">'.htmlspecialchars($this->error, ENT_QUOTES, 'UTF-8').'</div>';
+		}
+
+		echo '<form class="card-body needs-validation" method="post" novalidate>';
 		echo \Csrf::field();
-		echo $this->template->html_input('title', htmlspecialchars(strval($this->page['title'] ?? ''), ENT_QUOTES, 'UTF-8'), \T::StatusPages_Edit_Name(), false, ['readonly' => $readonly]);
-		echo $this->template->html_input('slug', htmlspecialchars(strval($this->page['slug'] ?? ''), ENT_QUOTES, 'UTF-8'), \T::StatusPages_Edit_Slug(), false, ['readonly' => $readonly]);
-		echo $this->template->html_switch('status', intval($this->page['status'] ?? 0), \T::StatusPages_Edit_Status(), false, ['readonly' => $readonly]);
+		echo $this->template->html_input('title', strval($this->page['title'] ?? ''), \T::StatusPages_Edit_Name(), true, $fieldClass);
+		echo $this->template->html_input('slug', strval($this->page['slug'] ?? ''), \T::StatusPages_Edit_Slug(), true, $fieldClass + [
+			'placeholder' => 'my-status',
+		]);
+		echo $this->template->html_switch('status', intval($this->page['status'] ?? 0), \T::StatusPages_Edit_Status(), false, [
+			'readonly' => $readonly,
+			'class2' => self::FIELD_CLASS2,
+		]);
 		echo $this->template->html_select('folder_ids[]', $folderOptions, $this->page['folder_ids'] ?? [], \T::StatusPages_Edit_Folders(), false, [
 			'multiple' => true,
 			'readonly' => $readonly,
-			'class2' => 'col-xs-12 col-md-8',
+			'id' => 'folder_ids',
+			'class2' => self::FIELD_CLASS2,
 		]);
 		echo $this->template->html_select('monitor_ids[]', $monitorOptions, $this->page['monitor_ids'] ?? [], \T::StatusPages_Edit_Monitors(), false, [
 			'multiple' => true,
 			'readonly' => $readonly,
-			'class2' => 'col-xs-12 col-md-8',
+			'id' => 'monitor_ids',
+			'class2' => self::FIELD_CLASS2,
 		]);
 		if (!$readonly) {
-			echo '<div class="mb-3"><button type="submit" class="btn btn-primary">'.\T::Framework_Common_Save().'</button> ';
-			echo '<a class="btn btn-secondary" href="/admin/status-pages/">'.\T::Framework_Common_Cancel().'</a></div>';
+			echo '<div class="d-flex flex-row-reverse gap-2">';
+			echo '<button type="submit" class="btn btn-primary">'.\T::Framework_Common_Save().'</button>';
+			echo '<a class="btn btn-secondary" href="/admin/status-pages/">'.\T::Framework_Common_Cancel().'</a>';
+			echo '</div>';
 		}
 		echo '</form>';
+		echo '</div></div>';
 
 		if ($this->status_page_id > 0) {
-			echo '<h3>'.\T::StatusPages_Edit_Incidents().'</h3>';
-			if ($this->can_write) {
-				echo '<form method="post" class="mb-3 border rounded p-3">';
-				echo \Csrf::field();
-				echo '<input type="hidden" name="form" value="incident">';
-				echo $this->template->html_input('incident_title', '', \T::StatusPages_Edit_IncidentTitle(), false, []);
-				echo $this->template->html_input('incident_message', '', \T::StatusPages_Edit_IncidentMessage(), false, ['type' => 'textarea', 'rows' => 3]);
-				$states = [];
-				foreach (\StatusPageMembership::INCIDENT_STATES as $st) {
-					$states[$st] = $st;
-				}
-				echo $this->template->html_select('incident_state', $states, 'investigating', \T::StatusPages_Edit_IncidentState(), false, []);
-				echo $this->template->html_switch('incident_active', 1, \T::StatusPages_Edit_IncidentActive(), false, []);
-				echo '<button type="submit" class="btn btn-warning">'.\T::StatusPages_Edit_AddIncident().'</button></form>';
-			}
-			echo '<table class="table table-sm"><thead><tr><th>ID</th><th>'.\T::StatusPages_Edit_IncidentTitle().'</th><th>'.\T::StatusPages_Edit_IncidentState().'</th><th>Active</th></tr></thead><tbody>';
-			foreach ($this->incidents as $inc) {
-				echo '<tr><td>'.intval($inc['id']).'</td><td>'.htmlspecialchars(strval($inc['title'] ?? ''), ENT_QUOTES, 'UTF-8').'</td>';
-				echo '<td>'.htmlspecialchars(strval($inc['state'] ?? ''), ENT_QUOTES, 'UTF-8').'</td>';
-				echo '<td>'.(intval($inc['active'] ?? 0) === 1 ? 'yes' : 'no').'</td></tr>';
-			}
-			echo '</tbody></table>';
+			$this->print_incidents($readonly);
 		}
+	}
+
+	private function print_incidents(bool $readonly): void {
+		echo '<div class="row d-flex justify-content-center">';
+		echo '<div class="card bg-transparent col-xl-10 p-4 mt-2 mb-4">';
+		echo '<div class="card-header bg-transparent"><h3 class="mb-0">'.\T::StatusPages_Edit_Incidents().'</h3></div>';
+		echo '<div class="card-body">';
+
+		if ($this->can_write && !$readonly) {
+			$states = [
+				'investigating' => \T::StatusPages_Edit_StateInvestigating(),
+				'identified' => \T::StatusPages_Edit_StateIdentified(),
+				'monitoring' => \T::StatusPages_Edit_StateMonitoring(),
+				'resolved' => \T::StatusPages_Edit_StateResolved(),
+			];
+			echo '<form method="post" class="mb-4">';
+			echo \Csrf::field();
+			echo '<input type="hidden" name="form" value="incident">';
+			echo $this->template->html_input('incident_title', '', \T::StatusPages_Edit_IncidentTitle(), true, [
+				'class2' => self::FIELD_CLASS2,
+			]);
+			echo $this->template->html_input('incident_message', '', \T::StatusPages_Edit_IncidentMessage(), false, [
+				'type' => 'textarea',
+				'rows' => 3,
+				'class2' => self::FIELD_CLASS2,
+			]);
+			echo $this->template->html_select('incident_state', $states, 'investigating', \T::StatusPages_Edit_IncidentState(), false, [
+				'id' => 'incident_state',
+				'class2' => self::FIELD_CLASS2,
+			]);
+			echo $this->template->html_switch('incident_active', 1, \T::StatusPages_Edit_IncidentActive(), false, [
+				'class2' => self::FIELD_CLASS2,
+			]);
+			echo '<div class="d-flex flex-row-reverse">';
+			echo '<button type="submit" class="btn btn-warning">'.\T::StatusPages_Edit_AddIncident().'</button>';
+			echo '</div></form>';
+		}
+
+		echo '<div class="table-responsive"><table class="table table-transparent table-sm align-middle mb-0">';
+		echo '<thead><tr>';
+		echo '<th>ID</th>';
+		echo '<th>'.\T::StatusPages_Edit_IncidentTitle().'</th>';
+		echo '<th>'.\T::StatusPages_Edit_IncidentState().'</th>';
+		echo '<th>'.\T::StatusPages_Edit_IncidentActive().'</th>';
+		echo '<th>'.\T::StatusPages_Edit_IncidentCreated().'</th>';
+		echo '</tr></thead><tbody>';
+		if (!$this->incidents) {
+			echo '<tr><td colspan="5" class="text-muted">'.\T::StatusPages_Edit_NoIncidents().'</td></tr>';
+		}
+		foreach ($this->incidents as $inc) {
+			$state = strval($inc['state'] ?? '');
+			$stateLabel = match ($state) {
+				'investigating' => \T::StatusPages_Edit_StateInvestigating(),
+				'identified' => \T::StatusPages_Edit_StateIdentified(),
+				'monitoring' => \T::StatusPages_Edit_StateMonitoring(),
+				'resolved' => \T::StatusPages_Edit_StateResolved(),
+				default => $state,
+			};
+			$badge = match ($state) {
+				'investigating', 'identified' => 'text-bg-danger',
+				'monitoring' => 'text-bg-warning',
+				'resolved' => 'text-bg-success',
+				default => 'text-bg-secondary',
+			};
+			$created = intval($inc['create_time'] ?? 0);
+			echo '<tr>';
+			echo '<td>'.intval($inc['id']).'</td>';
+			echo '<td>'.htmlspecialchars(strval($inc['title'] ?? ''), ENT_QUOTES, 'UTF-8').'</td>';
+			echo '<td><span class="badge '.$badge.'">'.htmlspecialchars($stateLabel, ENT_QUOTES, 'UTF-8').'</span></td>';
+			echo '<td>'.(intval($inc['active'] ?? 0) === 1
+				? '<i class="bi bi-check-lg text-success"></i>'
+				: '<i class="bi bi-x-lg text-danger"></i>').'</td>';
+			echo '<td class="text-muted">'.($created > 0 ? htmlspecialchars(gmdate('Y-m-d H:i', $created).' UTC', ENT_QUOTES, 'UTF-8') : '—').'</td>';
+			echo '</tr>';
+		}
+		echo '</tbody></table></div>';
+		echo '</div></div></div>';
 	}
 }

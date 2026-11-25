@@ -624,6 +624,7 @@ StatusPages:
     Actions: "Actions"
   Edit:
     Title: "Edit status page"
+    CreateTitle: "Create status page"
     Name: "Title"
     Slug: "Slug"
     Status: "Enabled"
@@ -635,7 +636,13 @@ StatusPages:
     IncidentMessage: "Message"
     IncidentState: "State"
     IncidentActive: "Active"
+    IncidentCreated: "Created"
     AddIncident: "Add incident"
+    NoIncidents: "No incidents yet"
+    StateInvestigating: "Investigating"
+    StateIdentified: "Identified"
+    StateMonitoring: "Monitoring"
+    StateResolved: "Resolved"
 
 Api:
   Menu: "API"

@@ -619,6 +619,7 @@ StatusPages:
     Actions: "Действия"
   Edit:
     Title: "Редактирование status page"
+    CreateTitle: "Создание status page"
     Name: "Название"
     Slug: "Slug"
     Status: "Включена"
@@ -630,7 +631,13 @@ StatusPages:
     IncidentMessage: "Сообщение"
     IncidentState: "Состояние"
     IncidentActive: "Активен"
+    IncidentCreated: "Создан"
     AddIncident: "Добавить инцидент"
+    NoIncidents: "Инцидентов пока нет"
+    StateInvestigating: "Расследование"
+    StateIdentified: "Причина найдена"
+    StateMonitoring: "Наблюдение"
+    StateResolved: "Решено"
 
 Api:
   Menu: "API"
