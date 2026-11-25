@@ -3,7 +3,7 @@
 namespace App\Status;
 
 /**
- * Anonymous public status page (no auth).
+ * Anonymous public status page (no auth). Visual language inspired by Uptime Kuma.
  */
 class PublicPage extends \Routing_Parent implements \Routing_Interface {
 
@@ -13,71 +13,163 @@ class PublicPage extends \Routing_Parent implements \Routing_Interface {
 		if (!$data) {
 			http_response_code(404);
 			header('Content-Type: text/html; charset=utf-8');
-			echo '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Not found</title>';
-			echo '<link rel="stylesheet" href="/css/main.css"></head><body class="p-4">';
-			echo '<h1>Status page not found</h1><p>Unknown or disabled slug.</p></body></html>';
+			echo '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">';
+			echo '<title>Not found</title><link rel="stylesheet" href="/css/status-public.css"></head>';
+			echo '<body><div class="sp-wrap"><h1 class="sp-title">Status page not found</h1>';
+			echo '<p class="sp-empty">Unknown or disabled slug.</p></div></body></html>';
 			return;
 		}
 
 		header('Content-Type: text/html; charset=utf-8');
 		header('Cache-Control: public, max-age=30');
+
 		$title = htmlspecialchars(strval($data['title'] ?? 'Status'), ENT_QUOTES, 'UTF-8');
 		$generated = intval($data['generated_at'] ?? time());
+		$overall = is_array($data['overall'] ?? null) ? $data['overall'] : ['code' => 'unknown', 'label' => 'Status Unknown'];
+		$overallCode = htmlspecialchars(strval($overall['code'] ?? 'unknown'), ENT_QUOTES, 'UTF-8');
+		$overallLabel = htmlspecialchars(strval($overall['label'] ?? 'Status Unknown'), ENT_QUOTES, 'UTF-8');
 
 		echo '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">';
 		echo '<meta name="viewport" content="width=device-width, initial-scale=1">';
+		echo '<meta name="robots" content="noindex">';
 		echo '<title>'.$title.'</title>';
-		echo '<link rel="stylesheet" href="/css/main.css">';
-		echo '<style>
-			body.status-public{background:var(--bs-body-bg,#f6f8fb);color:var(--bs-body-color,#1a2332);font-family:system-ui,-apple-system,sans-serif;margin:0}
-			.status-public .wrap{max-width:920px;margin:0 auto;padding:1.5rem 1rem 3rem}
-			.status-public h1{margin:0 0 .35rem;font-size:1.75rem}
-			.status-public .meta{color:#5b6b7f;font-size:.9rem;margin-bottom:1.25rem}
-			.status-public .incident{border:1px solid #f0c36d;background:#fff8e8;border-radius:10px;padding:1rem 1.1rem;margin-bottom:1rem}
-			.status-public .incident .state{font-weight:700;text-transform:uppercase;font-size:.75rem;letter-spacing:.04em;color:#8a5a00}
-			.status-public .group{margin:1.5rem 0}
-			.status-public .group h2{font-size:1.15rem;margin:0 0 .75rem}
-			.status-public .res{display:flex;justify-content:space-between;gap:1rem;align-items:center;padding:.7rem .85rem;border:1px solid #d7dee8;border-radius:10px;background:#fff;margin-bottom:.5rem}
-			.status-public .badge-pill{display:inline-block;padding:.2rem .55rem;border-radius:999px;font-size:.8rem;font-weight:600;color:#fff}
-			.status-public .st-up{background:#1f8a4c}.status-public .st-down{background:#c0392b}
-			.status-public .st-maintenance{background:#0b6bcb}.status-public .st-unknown{background:#6c757d}
-		</style></head><body class="status-public"><div class="wrap">';
-		echo '<h1>'.$title.'</h1>';
-		echo '<div class="meta">Updated '.htmlspecialchars(gmdate('Y-m-d H:i:s', $generated), ENT_QUOTES, 'UTF-8').' UTC</div>';
+		echo '<link rel="icon" href="/images/favicon.ico" type="image/x-icon">';
+		echo '<link rel="stylesheet" href="/css/status-public.css">';
+		echo '</head><body><div class="sp-wrap">';
+
+		echo '<h1 class="sp-title">';
+		echo '<img class="sp-logo" src="/images/apple-icon-180x180.png" width="42" height="42" alt="">';
+		echo '<span>'.$title.'</span></h1>';
 
 		foreach ($data['incidents'] ?? [] as $incident) {
+			$state = strval($incident['state'] ?? 'investigating');
+			$stateClass = preg_replace('/[^a-z0-9_\-]/i', '', $state) ?: 'investigating';
 			$it = htmlspecialchars(strval($incident['title'] ?? ''), ENT_QUOTES, 'UTF-8');
 			$im = nl2br(htmlspecialchars(strval($incident['message'] ?? ''), ENT_QUOTES, 'UTF-8'));
-			$is = htmlspecialchars(strval($incident['state'] ?? ''), ENT_QUOTES, 'UTF-8');
-			echo '<div class="incident"><div class="state">'.$is.'</div><strong>'.$it.'</strong><div>'.$im.'</div></div>';
+			$is = htmlspecialchars($state, ENT_QUOTES, 'UTF-8');
+			$when = intval($incident['create_time'] ?? 0);
+			echo '<div class="sp-card sp-incident is-'.$stateClass.'" role="alert">';
+			echo '<div class="sp-state">'.$is.'</div>';
+			echo '<h3>'.$it.'</h3>';
+			echo '<div class="sp-msg">'.$im.'</div>';
+			if ($when > 0) {
+				echo '<div class="sp-when">'.htmlspecialchars(gmdate('Y-m-d H:i', $when), ENT_QUOTES, 'UTF-8').' UTC</div>';
+			}
+			echo '</div>';
 		}
 
-		foreach ($data['groups'] ?? [] as $group) {
-			$gt = htmlspecialchars(strval($group['title'] ?? ''), ENT_QUOTES, 'UTF-8');
-			echo '<section class="group"><h2>'.$gt.'</h2>';
+		echo '<div class="sp-card sp-overall is-'.$overallCode.'">';
+		echo static::overallIconSvg($overallCode);
+		echo '<span>'.$overallLabel.'</span></div>';
+
+		$groups = $data['groups'] ?? [];
+		if (!$groups) {
+			echo '<p class="sp-empty">This status page has no monitors yet.</p>';
+		}
+
+		$renderedGroups = 0;
+		foreach ($groups as $group) {
 			$resources = $group['resources'] ?? [];
 			if (!$resources) {
-				echo '<p class="meta">No monitors in this group.</p>';
+				continue;
 			}
+			$renderedGroups++;
+			$gt = htmlspecialchars(strval($group['title'] ?? ''), ENT_QUOTES, 'UTF-8');
+			echo '<section class="sp-group"><h2>'.$gt.'</h2>';
+			echo '<div class="sp-card sp-list">';
 			foreach ($resources as $res) {
-				$rt = htmlspecialchars(strval($res['title'] ?? ''), ENT_QUOTES, 'UTF-8');
-				$st = strval($res['status'] ?? 'unknown');
-				$class = match ($st) {
-					'up' => 'st-up',
-					'down' => 'st-down',
-					'maintenance' => 'st-maintenance',
-					default => 'st-unknown',
-				};
-				$label = htmlspecialchars(strtoupper($st), ENT_QUOTES, 'UTF-8');
-				echo '<div class="res"><div>'.$rt.'</div><span class="badge-pill '.$class.'">'.$label.'</span></div>';
+				static::renderResource($res);
 			}
-			echo '</section>';
+			echo '</div></section>';
+		}
+		if ($groups && $renderedGroups === 0) {
+			echo '<p class="sp-empty">This status page has no monitors yet.</p>';
 		}
 
-		if (!$data['groups']) {
-			echo '<p class="meta">This status page has no monitors yet.</p>';
+		foreach ($data['maintenances'] ?? [] as $maint) {
+			$mt = htmlspecialchars(strval($maint['title'] ?? 'Maintenance'), ENT_QUOTES, 'UTF-8');
+			echo '<div class="sp-card sp-incident is-monitoring" role="status">';
+			echo '<div class="sp-state">maintenance</div><h3>'.$mt.'</h3></div>';
 		}
+
+		echo '<footer class="sp-footer">';
+		echo '<span>Updated '.htmlspecialchars(gmdate('Y-m-d H:i:s', $generated), ENT_QUOTES, 'UTF-8').' UTC</span>';
+		echo '<span>Powered by <a href="https://akeb.github.io/monitoring/" rel="noopener">Monitoring</a></span>';
+		echo '</footer>';
 
 		echo '</div></body></html>';
+	}
+
+	/** @param array<string,mixed> $res */
+	static private function renderResource(array $res): void {
+		$rt = htmlspecialchars(strval($res['title'] ?? ''), ENT_QUOTES, 'UTF-8');
+		$st = strval($res['status'] ?? 'unknown');
+		$url = trim(strval($res['check_url'] ?? ''));
+		$badgeClass = match ($st) {
+			'up' => 'is-up',
+			'down' => 'is-down',
+			'maintenance' => 'is-maintenance',
+			default => 'is-pending',
+		};
+		$badgeLabel = match ($st) {
+			'up' => 'Up',
+			'down' => 'Down',
+			'maintenance' => 'Maintenance',
+			default => 'Pending',
+		};
+
+		$uptimeRaw = $res['availability']['8h'] ?? null;
+		$uptimeHtml = '<span class="sp-uptime is-empty" title="8h availability">—</span>';
+		if (is_numeric($uptimeRaw)) {
+			$pct = floatval($uptimeRaw);
+			$uptimeClass = $pct >= 99.0 ? '' : ($pct >= 95.0 ? 'is-warn' : 'is-bad');
+			$uptimeHtml = '<span class="sp-uptime '.$uptimeClass.'" title="8h availability">'
+				.htmlspecialchars(rtrim(rtrim(number_format($pct, 2, '.', ''), '0'), '.').'%', ENT_QUOTES, 'UTF-8')
+				.'</span>';
+		}
+
+		echo '<div class="sp-item">';
+		echo '<div class="sp-item-main">'.$uptimeHtml;
+		if ($url !== '' && preg_match('#^https?://#i', $url)) {
+			$href = htmlspecialchars($url, ENT_QUOTES, 'UTF-8');
+			echo '<p class="sp-name"><a href="'.$href.'" target="_blank" rel="noopener noreferrer">'.$rt.'</a></p>';
+		} else {
+			echo '<p class="sp-name">'.$rt.'</p>';
+		}
+		echo '</div>';
+
+		echo '<div class="sp-beats" aria-hidden="true">';
+		$beats = is_array($res['beats'] ?? null) ? $res['beats'] : [];
+		if (!$beats) {
+			for ($i = 0; $i < 24; $i++) {
+				echo '<span class="sp-beat"></span>';
+			}
+		} else {
+			foreach ($beats as $beat) {
+				$b = strval($beat);
+				$class = match ($b) {
+					'up' => 'is-up',
+					'down' => 'is-down',
+					'maint', 'maintenance' => 'is-maint',
+					default => 'is-pending',
+				};
+				echo '<span class="sp-beat '.$class.'"></span>';
+			}
+		}
+		echo '</div>';
+
+		echo '<span class="sp-badge '.$badgeClass.'">'.$badgeLabel.'</span>';
+		echo '</div>';
+	}
+
+	static private function overallIconSvg(string $code): string {
+		$common = ' class="sp-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"';
+		return match ($code) {
+			'ok' => '<svg'.$common.'><path d="M12 2a10 10 0 1 0 .001 20.001A10 10 0 0 0 12 2Zm-1.1 14.2-3.6-3.6 1.4-1.4 2.2 2.2 5-5 1.4 1.4-6.4 6.4Z"/></svg>',
+			'down' => '<svg'.$common.'><path d="M12 2a10 10 0 1 0 .001 20.001A10 10 0 0 0 12 2Zm3.5 12.1-1.4 1.4L12 13.4l-2.1 2.1-1.4-1.4L10.6 12 8.5 9.9l1.4-1.4L12 10.6l2.1-2.1 1.4 1.4L13.4 12l2.1 2.1Z"/></svg>',
+			'maint' => '<svg'.$common.'><path d="M12 2a10 10 0 1 0 .001 20.001A10 10 0 0 0 12 2Zm1 5v6h-2V7h2Zm0 8v2h-2v-2h2Z"/></svg>',
+			'partial' => '<svg'.$common.'><path d="M12 2a10 10 0 1 0 .001 20.001A10 10 0 0 0 12 2Zm1 5v7h-2V7h2Zm0 9v2h-2v-2h2Z"/></svg>',
+			default => '<svg'.$common.'><path d="M12 2a10 10 0 1 0 .001 20.001A10 10 0 0 0 12 2Zm1 14h-2v-2h2v2Zm0-4h-2V6h2v6Z"/></svg>',
+		};
 	}
 }

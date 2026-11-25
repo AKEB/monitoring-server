@@ -1,0 +1,302 @@
+/* Public status page — visual language close to Uptime Kuma */
+:root {
+	--sp-bg: #ffffff;
+	--sp-fg: #212529;
+	--sp-muted: #6c757d;
+	--sp-card: #ffffff;
+	--sp-border: rgba(0, 0, 0, 0.06);
+	--sp-shadow: 0 15px 70px rgba(0, 0, 0, 0.1);
+	--sp-ok: #5cdd8b;
+	--sp-ok-fg: #0b5c2e;
+	--sp-ok-bg: #e7faec;
+	--sp-warn: #f8a306;
+	--sp-warn-fg: #7a4d00;
+	--sp-warn-bg: #fff6e5;
+	--sp-danger: #dc3545;
+	--sp-danger-fg: #fff;
+	--sp-danger-bg: #fde8ea;
+	--sp-maint: #1747f5;
+	--sp-maint-fg: #fff;
+	--sp-maint-bg: #e8edff;
+	--sp-unknown: #adb5bd;
+	--sp-beat-gap: 3px;
+	--sp-radius: 10px;
+	--sp-font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+	:root {
+		--sp-bg: #0d1117;
+		--sp-fg: #e6edf3;
+		--sp-muted: #8b949e;
+		--sp-card: #161b22;
+		--sp-border: #1d2634;
+		--sp-shadow: 0 15px 70px rgba(0, 0, 0, 0.45);
+		--sp-ok-bg: #12261a;
+		--sp-ok-fg: #7ce8a4;
+		--sp-warn-bg: #2a1f0a;
+		--sp-warn-fg: #f8c56a;
+		--sp-danger-bg: #2a1215;
+		--sp-danger-fg: #ff8a93;
+		--sp-maint-bg: #121a33;
+		--sp-maint-fg: #9db4ff;
+	}
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+	margin: 0;
+	padding: 0;
+	background: var(--sp-bg);
+	color: var(--sp-fg);
+	font-family: var(--sp-font);
+	font-size: 15px;
+	line-height: 1.45;
+	min-height: 100%;
+}
+
+a { color: inherit; }
+
+.sp-wrap {
+	max-width: 970px;
+	margin: 0 auto;
+	padding: 1.75rem 1.1rem 3rem;
+}
+
+.sp-title {
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+	margin: 0 0 1.5rem;
+	font-size: clamp(1.55rem, 2.5vw, 2rem);
+	font-weight: 700;
+	letter-spacing: -0.02em;
+}
+
+.sp-logo {
+	width: 42px;
+	height: 42px;
+	border-radius: 10px;
+	object-fit: contain;
+	flex: 0 0 auto;
+}
+
+.sp-card {
+	background: var(--sp-card);
+	box-shadow: var(--sp-shadow);
+	border-radius: var(--sp-radius);
+	border: 1px solid var(--sp-border);
+}
+
+.sp-overall {
+	display: flex;
+	align-items: center;
+	gap: 0.85rem;
+	padding: 1.15rem 1.35rem;
+	margin-bottom: 1.25rem;
+	font-size: 1.15rem;
+	font-weight: 600;
+}
+
+.sp-overall .sp-icon {
+	width: 1.55rem;
+	height: 1.55rem;
+	flex: 0 0 auto;
+}
+
+.sp-overall.is-ok { color: var(--sp-ok-fg); background: var(--sp-ok-bg); }
+.sp-overall.is-partial { color: var(--sp-warn-fg); background: var(--sp-warn-bg); }
+.sp-overall.is-down { color: var(--sp-danger-fg); background: var(--sp-danger-bg); }
+.sp-overall.is-maint { color: var(--sp-maint-fg); background: var(--sp-maint-bg); }
+.sp-overall.is-unknown { color: var(--sp-muted); }
+
+.sp-incident {
+	padding: 1.15rem 1.35rem;
+	margin-bottom: 1rem;
+}
+
+.sp-incident.is-investigating,
+.sp-incident.is-identified { background: var(--sp-danger-bg); color: var(--sp-danger-fg); }
+.sp-incident.is-monitoring { background: var(--sp-warn-bg); color: var(--sp-warn-fg); }
+.sp-incident.is-resolved { background: var(--sp-ok-bg); color: var(--sp-ok-fg); }
+
+.sp-incident .sp-state {
+	font-size: 0.72rem;
+	font-weight: 700;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	opacity: 0.85;
+	margin-bottom: 0.35rem;
+}
+
+.sp-incident h3 {
+	margin: 0 0 0.4rem;
+	font-size: 1.15rem;
+}
+
+.sp-incident .sp-msg {
+	margin: 0;
+	opacity: 0.95;
+	white-space: pre-wrap;
+}
+
+.sp-incident .sp-when {
+	margin-top: 0.75rem;
+	font-size: 0.85rem;
+	opacity: 0.75;
+}
+
+.sp-group {
+	margin: 1.75rem 0 0;
+}
+
+.sp-group h2 {
+	margin: 0 0 0.85rem;
+	font-size: 1.25rem;
+	font-weight: 700;
+}
+
+.sp-list {
+	padding: 0.35rem 0.85rem;
+	overflow: hidden;
+}
+
+.sp-item {
+	display: grid;
+	grid-template-columns: minmax(0, 1.1fr) minmax(120px, 1.2fr) auto;
+	gap: 0.75rem 1rem;
+	align-items: center;
+	padding: 0.85rem 0.35rem;
+	border-top: 1px solid var(--sp-border);
+}
+
+.sp-item:first-child { border-top: 0; }
+
+.sp-item-main {
+	display: flex;
+	align-items: center;
+	gap: 0.55rem;
+	min-width: 0;
+}
+
+.sp-uptime {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 3.4rem;
+	padding: 0.18rem 0.55rem;
+	border-radius: 999px;
+	font-size: 0.78rem;
+	font-weight: 700;
+	background: var(--sp-ok);
+	color: #06351a;
+	flex: 0 0 auto;
+}
+
+.sp-uptime.is-warn { background: var(--sp-warn); color: #3d2600; }
+.sp-uptime.is-bad { background: var(--sp-danger); color: #fff; }
+.sp-uptime.is-empty { background: #e9ecef; color: #6c757d; }
+
+@media (prefers-color-scheme: dark) {
+	.sp-uptime.is-empty { background: #30363d; color: #adbac7; }
+}
+
+.sp-name {
+	margin: 0;
+	font-weight: 600;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.sp-name a {
+	text-decoration: none;
+}
+
+.sp-name a:hover { text-decoration: underline; }
+
+.sp-beats {
+	display: flex;
+	align-items: stretch;
+	justify-content: flex-end;
+	gap: var(--sp-beat-gap);
+	height: 28px;
+	min-width: 0;
+}
+
+.sp-beat {
+	flex: 1 1 0;
+	min-width: 4px;
+	max-width: 10px;
+	border-radius: 999px;
+	background: var(--sp-unknown);
+	opacity: 0.55;
+}
+
+.sp-beat.is-up { background: var(--sp-ok); opacity: 1; }
+.sp-beat.is-down { background: var(--sp-danger); opacity: 1; }
+.sp-beat.is-maint { background: var(--sp-maint); opacity: 1; }
+.sp-beat.is-pending { background: var(--sp-warn); opacity: 1; }
+
+.sp-badge {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 4.5rem;
+	padding: 0.28rem 0.7rem;
+	border-radius: 999px;
+	font-size: 0.8rem;
+	font-weight: 700;
+	color: #fff;
+	background: var(--sp-unknown);
+	justify-self: end;
+}
+
+.sp-badge.is-up { background: var(--sp-ok); color: #06351a; }
+.sp-badge.is-down { background: var(--sp-danger); }
+.sp-badge.is-maintenance { background: var(--sp-maint); }
+.sp-badge.is-unknown,
+.sp-badge.is-pending { background: #6c757d; }
+
+.sp-empty {
+	color: var(--sp-muted);
+	padding: 1.25rem;
+	text-align: center;
+	margin: 0;
+}
+
+.sp-footer {
+	margin-top: 2rem;
+	padding-top: 1rem;
+	border-top: 1px solid var(--sp-border);
+	color: var(--sp-muted);
+	font-size: 0.85rem;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem 1.25rem;
+	justify-content: space-between;
+}
+
+.sp-footer a {
+	color: var(--sp-muted);
+	text-decoration: none;
+}
+
+.sp-footer a:hover { text-decoration: underline; }
+
+@media (max-width: 720px) {
+	.sp-item {
+		grid-template-columns: 1fr auto;
+		grid-template-areas:
+			"main badge"
+			"beats beats";
+	}
+	.sp-item-main { grid-area: main; }
+	.sp-badge { grid-area: badge; }
+	.sp-beats {
+		grid-area: beats;
+		justify-content: flex-start;
+		height: 22px;
+	}
+}

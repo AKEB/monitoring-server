@@ -135,4 +135,13 @@ class StatusPageMembershipTest extends PHPUnit\Framework\TestCase {
 		$this->assertTrue(\StatusPageMembership::isIncidentStateValid('resolved'));
 		$this->assertFalse(\StatusPageMembership::isIncidentStateValid('broken'));
 	}
+
+	function test_overall_status_summary() {
+		$this->assertSame('ok', \StatusPageBuilder::overallFromStatuses(['up', 'up'])['code']);
+		$this->assertSame('down', \StatusPageBuilder::overallFromStatuses(['down', 'down'])['code']);
+		$this->assertSame('partial', \StatusPageBuilder::overallFromStatuses(['up', 'down'])['code']);
+		$this->assertSame('unknown', \StatusPageBuilder::overallFromStatuses(['unknown'])['code']);
+		$this->assertSame('unknown', \StatusPageBuilder::overallFromStatuses([])['code']);
+		$this->assertSame('maint', \StatusPageBuilder::overallFromStatuses(['maintenance', 'up'])['code']);
+	}
 }

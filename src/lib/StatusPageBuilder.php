@@ -7,6 +7,7 @@
 class StatusPageBuilder {
 
 	const CACHE_TTL_SEC = 45;
+	const HEARTBEAT_LIMIT = 40;
 
 	/**
 	 * @return array<string,mixed>|null
@@ -48,9 +49,14 @@ class StatusPageBuilder {
 		}
 
 		$payload = \MonitoringApiStatus::buildPayloadForMonitors($leafMonitors);
+		$beatsByMonitor = static::recentBeats(array_map(static fn($m) => intval($m['id']), $leafMonitors));
 		$resourcesById = [];
+		$allStatuses = [];
 		foreach ($payload['resources'] as $resource) {
-			$resourcesById[intval($resource['id'])] = $resource;
+			$id = intval($resource['id']);
+			$resource['beats'] = $beatsByMonitor[$id] ?? [];
+			$resourcesById[$id] = $resource;
+			$allStatuses[] = strval($resource['status'] ?? \MonitoringApiStatus::STATUS_UNKNOWN);
 		}
 
 		$groups = [];
@@ -89,10 +95,111 @@ class StatusPageBuilder {
 			'title' => strval($page['title'] ?? ''),
 			'slug' => strval($page['slug'] ?? ''),
 			'generated_at' => time(),
+			'overall' => static::overallFromStatuses($allStatuses),
 			'groups' => $groups,
 			'maintenances' => $payload['maintenances'],
 			'incidents' => $incidents,
 		];
+	}
+
+	/**
+	 * @param list<string> $statuses
+	 * @return array{code:string,label:string}
+	 */
+	static public function overallFromStatuses(array $statuses): array {
+		if (!$statuses) {
+			return ['code' => 'unknown', 'label' => 'No Services'];
+		}
+		$up = 0;
+		$down = 0;
+		$maint = 0;
+		$unknown = 0;
+		foreach ($statuses as $st) {
+			switch ($st) {
+				case \MonitoringApiStatus::STATUS_UP:
+					$up++;
+					break;
+				case \MonitoringApiStatus::STATUS_DOWN:
+					$down++;
+					break;
+				case \MonitoringApiStatus::STATUS_MAINTENANCE:
+					$maint++;
+					break;
+				default:
+					$unknown++;
+					break;
+			}
+		}
+		$total = count($statuses);
+		if ($down === 0 && $unknown === 0 && $maint === 0 && $up === $total) {
+			return ['code' => 'ok', 'label' => 'All Systems Operational'];
+		}
+		if ($down === $total) {
+			return ['code' => 'down', 'label' => 'Degraded Service'];
+		}
+		if ($down > 0) {
+			return ['code' => 'partial', 'label' => 'Partially Degraded Service'];
+		}
+		if ($maint > 0 && $up + $maint === $total) {
+			return ['code' => 'maint', 'label' => 'Under Maintenance'];
+		}
+		if ($unknown === $total) {
+			return ['code' => 'unknown', 'label' => 'Status Unknown'];
+		}
+		if ($unknown > 0 && $down === 0) {
+			return ['code' => 'partial', 'label' => 'Partially Degraded Service'];
+		}
+		return ['code' => 'partial', 'label' => 'Partially Degraded Service'];
+	}
+
+	/**
+	 * Recent heartbeat statuses (oldest → newest), capped per monitor.
+	 *
+	 * @param list<int> $monitorIds
+	 * @return array<int, list<string>>
+	 */
+	static public function recentBeats(array $monitorIds): array {
+		$monitorIds = array_values(array_unique(array_filter(array_map('intval', $monitorIds))));
+		$out = [];
+		foreach ($monitorIds as $id) {
+			$out[$id] = [];
+		}
+		if (!$monitorIds) {
+			return $out;
+		}
+		$since = time() - 86400;
+		$limit = max(count($monitorIds) * self::HEARTBEAT_LIMIT, self::HEARTBEAT_LIMIT);
+		$rows = \MonitoringLogs::data(
+			false,
+			sql_pholder(
+				' AND `monitor_id` IN (?@) AND `update_time` >= ? ORDER BY `update_time` DESC, `id` DESC LIMIT '.$limit,
+				$monitorIds,
+				$since
+			),
+			'`monitor_id`, `status`, `update_time`'
+		) ?: [];
+		$counts = [];
+		foreach ($rows as $row) {
+			$mid = intval($row['monitor_id'] ?? 0);
+			if ($mid < 1 || !isset($out[$mid])) {
+				continue;
+			}
+			$counts[$mid] = ($counts[$mid] ?? 0) + 1;
+			if ($counts[$mid] > self::HEARTBEAT_LIMIT) {
+				continue;
+			}
+			$status = intval($row['status'] ?? -1);
+			$beat = match ($status) {
+				\MonitoringLogs::STATUS_GOOD => 'up',
+				\MonitoringLogs::STATUS_FAIL => 'down',
+				default => 'pending',
+			};
+			$out[$mid][] = $beat;
+		}
+		foreach ($out as $mid => $beats) {
+			$out[$mid] = array_reverse($beats);
+		}
+		return $out;
 	}
 
 	/**
