@@ -59,6 +59,10 @@
     {
       "name": "permissions",
       "description": "Object ACL"
+    },
+    {
+      "name": "statuspages",
+      "description": "Public status pages (admin CRUD). Membership independent of api_enabled."
     }
   ],
   "paths": {
@@ -1225,6 +1229,244 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/EnvelopeDeleted"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/statuspages/": {
+      "get": {
+        "tags": [
+          "statuspages"
+        ],
+        "summary": "List status pages",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ApiTokenHeader": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnvelopeList"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "statuspages"
+        ],
+        "summary": "Create status page",
+        "description": "slug + title. folder_ids/monitor_ids optional. Does not change api_enabled.",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ApiTokenHeader": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "title",
+                  "slug"
+                ],
+                "properties": {
+                  "title": {
+                    "type": "string"
+                  },
+                  "slug": {
+                    "type": "string"
+                  },
+                  "status": {
+                    "type": "integer"
+                  },
+                  "folder_ids": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer"
+                    }
+                  },
+                  "monitor_ids": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnvelopeItem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/statuspages/{id}/": {
+      "get": {
+        "tags": [
+          "statuspages"
+        ],
+        "summary": "Get status page",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ApiTokenHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Item",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnvelopeItem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "statuspages"
+        ],
+        "summary": "Update status page",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ApiTokenHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnvelopeItem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "statuspages"
+        ],
+        "summary": "Update status page (same as PATCH)",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ApiTokenHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnvelopeItem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "statuspages"
+        ],
+        "summary": "Delete status page",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ApiTokenHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnvelopeItem"
                 }
               }
             }

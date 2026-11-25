@@ -20,6 +20,8 @@ class MemoryStore {
 		'groups' => [],
 		'logs' => [],
 		'permissions' => [],
+		'status_pages' => [],
+		'status_page_incidents' => [],
 	];
 
 	/** @var array<string, int> */

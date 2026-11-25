@@ -601,6 +601,37 @@ Maintenances:
     NotingChanged: "Ничего не изменилось"
     TimeError: "Ошибка времени"
 
+StatusPages:
+  Menu: "Status pages"
+  PageTitle: "Status pages"
+  Permissions:
+    Access: "Доступ"
+    Create: "Создание status page"
+  Delete:
+    Confirmation: "Удалить эту status page?"
+    PermissionDenied: "Нет прав на удаление status page"
+    NotFound: "Status page не найдена"
+  Table:
+    Title: "Название"
+    Slug: "Slug"
+    Status: "Статус"
+    PublicUrl: "Публичный URL"
+    Actions: "Действия"
+  Edit:
+    Title: "Редактирование status page"
+    Name: "Название"
+    Slug: "Slug"
+    Status: "Включена"
+    Folders: "Папки (группы)"
+    Monitors: "Доп. мониторы"
+    PermissionDenied: "Нет прав на редактирование status page"
+    Incidents: "Инциденты"
+    IncidentTitle: "Заголовок инцидента"
+    IncidentMessage: "Сообщение"
+    IncidentState: "Состояние"
+    IncidentActive: "Активен"
+    AddIncident: "Добавить инцидент"
+
 Api:
   Menu: "API"
   Settings:

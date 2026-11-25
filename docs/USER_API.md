@@ -38,6 +38,8 @@ The token acts as the user who created it:
 - folders, disabled monitors, and disabled parent folders are omitted
 - administrators still need the expose flag; they are not shown every monitor
 
+This feed is separate from public HTML status pages (`/status/{slug}/`). Putting a monitor on a status page does **not** set `api_enabled`.
+
 ## Status values
 
 | Value | Meaning |

@@ -12,6 +12,17 @@ class MonitoringApiStatus {
 	 */
 	static public function buildForUser(array $user): array {
 		$monitors = static::visibleMonitors($user);
+		return static::buildPayloadForMonitors($monitors);
+	}
+
+	/**
+	 * Build status payload for an explicit monitor list.
+	 * Does NOT filter by api_enabled (caller decides membership).
+	 *
+	 * @param list<array> $monitors
+	 * @return array{resources: list<array>, maintenances: list<array>}
+	 */
+	static public function buildPayloadForMonitors(array $monitors): array {
 		$resources = static::buildResources($monitors);
 		$maintenances = static::buildMaintenances($monitors);
 		static::attachMaintenancesToResources($resources, $maintenances);

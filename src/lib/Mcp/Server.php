@@ -12,6 +12,7 @@ use Api\V2\NotifyService;
 use Api\V2\PermissionsService;
 use Api\V2\ServersService;
 use Api\V2\SignaturesService;
+use Api\V2\StatusPagesService;
 use Api\V2\UsersService;
 use Api\V2\WorkersService;
 
@@ -159,6 +160,11 @@ class Server {
 			['name' => 'maintenances_create', 'description' => 'Create maintenance. finish_time must be >= start_time (unix timestamps). Attach only monitors the user can read.', 'inputSchema' => ['type' => 'object', 'properties' => ['title' => ['type' => 'string'], 'start_time' => ['type' => 'integer'], 'finish_time' => ['type' => 'integer']], 'required' => ['title', 'start_time', 'finish_time']]],
 			['name' => 'maintenances_update', 'description' => 'Update maintenance. Keep finish_time >= start_time.', 'inputSchema' => ['type' => 'object', 'properties' => ['id' => ['type' => 'integer']], 'required' => ['id']]],
 			['name' => 'maintenances_delete', 'description' => 'Delete a maintenance.', 'inputSchema' => $idSchema],
+			['name' => 'statuspages_list', 'description' => 'List public status pages (admin). Membership is independent of api_enabled.', 'inputSchema' => $empty],
+			['name' => 'statuspages_get', 'description' => 'Get a status page by id.', 'inputSchema' => $idSchema],
+			['name' => 'statuspages_create', 'description' => 'Create a status page. slug required; folder_ids/monitor_ids optional. Does not change api_enabled.', 'inputSchema' => ['type' => 'object', 'properties' => ['title' => ['type' => 'string'], 'slug' => ['type' => 'string'], 'folder_ids' => ['type' => 'array'], 'monitor_ids' => ['type' => 'array'], 'status' => ['type' => 'integer']], 'required' => ['title', 'slug']]],
+			['name' => 'statuspages_update', 'description' => 'Update a status page.', 'inputSchema' => ['type' => 'object', 'properties' => ['id' => ['type' => 'integer']], 'required' => ['id']]],
+			['name' => 'statuspages_delete', 'description' => 'Delete a status page.', 'inputSchema' => $idSchema],
 			['name' => 'dockers_list', 'description' => 'List Docker hosts.', 'inputSchema' => $empty],
 			['name' => 'dockers_get', 'description' => 'Get a Docker host. TLS blobs are never returned.', 'inputSchema' => $idSchema],
 			['name' => 'dockers_create', 'description' => 'Create a Docker host entry.', 'inputSchema' => ['type' => 'object', 'properties' => ['title' => ['type' => 'string'], 'host' => ['type' => 'string']], 'required' => ['title']]],
@@ -209,6 +215,11 @@ class Server {
 			'maintenances_create' => MaintenancesService::create($user, $arguments),
 			'maintenances_update' => MaintenancesService::update($user, intval($arguments['id'] ?? 0), $arguments),
 			'maintenances_delete' => MaintenancesService::delete($user, intval($arguments['id'] ?? 0)),
+			'statuspages_list' => StatusPagesService::list($user, $arguments),
+			'statuspages_get' => StatusPagesService::get($user, intval($arguments['id'] ?? 0)),
+			'statuspages_create' => StatusPagesService::create($user, $arguments),
+			'statuspages_update' => StatusPagesService::update($user, intval($arguments['id'] ?? 0), $arguments),
+			'statuspages_delete' => StatusPagesService::delete($user, intval($arguments['id'] ?? 0)),
 			'dockers_list' => DockersService::list($user, $arguments),
 			'dockers_get' => DockersService::get($user, intval($arguments['id'] ?? 0)),
 			'dockers_create' => DockersService::create($user, $arguments),

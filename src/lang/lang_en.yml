@@ -606,6 +606,37 @@ Maintenances:
     NotingChanged: "Nothing changed"
     TimeError: "Time error"
 
+StatusPages:
+  Menu: "Status pages"
+  PageTitle: "Status pages"
+  Permissions:
+    Access: "Access"
+    Create: "Create status page"
+  Delete:
+    Confirmation: "Delete this status page?"
+    PermissionDenied: "You don't have permission to delete this status page"
+    NotFound: "Status page not found"
+  Table:
+    Title: "Title"
+    Slug: "Slug"
+    Status: "Status"
+    PublicUrl: "Public URL"
+    Actions: "Actions"
+  Edit:
+    Title: "Edit status page"
+    Name: "Title"
+    Slug: "Slug"
+    Status: "Enabled"
+    Folders: "Folders (groups)"
+    Monitors: "Extra monitors"
+    PermissionDenied: "You don't have permission to edit this status page"
+    Incidents: "Incidents"
+    IncidentTitle: "Incident title"
+    IncidentMessage: "Message"
+    IncidentState: "State"
+    IncidentActive: "Active"
+    AddIncident: "Add incident"
+
 Api:
   Menu: "API"
   Settings:

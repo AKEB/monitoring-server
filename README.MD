@@ -80,6 +80,7 @@ After upgrade, run DB migrations.
 - [x] New monitor type: MQTT
 - [x] New monitor type: RabbitMQ
 - [x] New monitor type: Kafka Producer
+- [x] Public status pages (`/status/{slug}/`) with admin UI, incidents, API/MCP — membership independent of `api_enabled`
 
 ## Issues
 

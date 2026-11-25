@@ -23,6 +23,7 @@ require_once("./autoload.php");
 \Permissions::add_permission(\Dockers::PERMISSION_CREATE, \T::Docker_Permissions_Create());
 \Permissions::add_permission(\Signatures::PERMISSION_CREATE, \T::Signature_Permissions_Create());
 \Permissions::add_permission(\Servers::PERMISSION_CREATE, \T::Server_Permissions_Create());
+\Permissions::add_permission(\StatusPages::PERMISSION_CREATE, \T::StatusPages_Permissions_Create());
 
 // Add another permissions subject types
 \Permissions::set_subject_type('worker', '\\Workers', 'Workers');
@@ -32,6 +33,7 @@ require_once("./autoload.php");
 \Permissions::set_subject_type('docker', '\\Dockers', 'Docker');
 \Permissions::set_subject_type('signature', '\\Signatures', 'Signatures');
 \Permissions::set_subject_type('server', '\\Servers', 'Servers');
+\Permissions::set_subject_type('status_page', '\\StatusPages', 'StatusPages');
 
 \Sessions::session_init(true); // This need to check Permissions and user language
 
@@ -54,6 +56,10 @@ require_once("./autoload.php");
 \Logs::add_object(\Notify::LOGS_OBJECT, \Notify::LOGS_OBJECT);
 \Logs::add_object(\MonitoringNotify::LOGS_OBJECT, \MonitoringNotify::LOGS_OBJECT);
 \Logs::add_object(\Signatures::LOGS_OBJECT, \Signatures::LOGS_OBJECT);
+\Logs::add_object(\StatusPages::LOGS_OBJECT, \StatusPages::LOGS_OBJECT);
+\Logs::add_object(\StatusPageFolders::LOGS_OBJECT, \StatusPageFolders::LOGS_OBJECT);
+\Logs::add_object(\StatusPageMonitors::LOGS_OBJECT, \StatusPageMonitors::LOGS_OBJECT);
+\Logs::add_object(\StatusPageIncidents::LOGS_OBJECT, \StatusPageIncidents::LOGS_OBJECT);
 
 // Set Application Settings
 \Template::setProjectName("Monitoring");
@@ -74,6 +80,10 @@ require_once("./autoload.php");
 \Template::addMenuItem(new \MenuItem('bi bi-journal-text', \T::Events_Menu(), '/events/', null, null));
 \Template::addMenuItem(new \MenuItem('bi bi-key', \T::Menu_ApiTokens(), '/settings/api/', null, null));
 \Template::addMenuItem(new \MenuItem('bi bi-hammer', \T::Maintenances_Menu(), '/maintenances/', null, null));
+\Template::addMenuAdminItem(new \MenuItem('bi bi-broadcast', \T::StatusPages_Menu(), '/admin/status-pages/', null, [
+	new \MenuPermissionItem(\StatusPages::PERMISSION_ACCESS, -1, READ),
+	new \MenuPermissionItem(\StatusPages::PERMISSION_CREATE, 0, WRITE),
+]));
 \Template::addMenuAdminItem(new \MenuItem('bi bi-hdd-network', \T::Worker_Menu(), '/admin/workers/', null, [
 	new \MenuPermissionItem(\Workers::PERMISSION_ACCESS, -1, READ),
 	new \MenuPermissionItem(\Workers::PERMISSION_CREATE, 0, WRITE),
@@ -119,6 +129,11 @@ require_once("./autoload.php");
 \Routes::addRoute('/api/agent/report/', '\\App\\Api\\Agent\\Report');
 \Routes::addRoute('/api/alert-action/(?P<channel>telegram|mattermost|max)/(?P<token>[a-fA-F0-9]{32})/', '\\App\\Api\\AlertAction');
 \Routes::addRoute('/settings/api/', '\\App\\Settings\\ApiTokens');
+\Routes::addRoute('/status/(?P<slug>[a-z0-9][a-z0-9_\-]{0,63})/', '\\App\\Status\\PublicPage');
+\Routes::addRoute('/admin/status-pages/edit/(?P<status_page_id>\d+)/', '\\App\\StatusPages\\Edit');
+\Routes::addRoute('/admin/status-pages/edit/', '\\App\\StatusPages\\Edit');
+\Routes::addRoute('/admin/status-pages/(?P<action>[^/]+)/(?P<status_page_id>\d+)/', '\\App\\StatusPages\\Show');
+\Routes::addRoute('/admin/status-pages/', '\\App\\StatusPages\\Show');
 
 \Routes::addRoute('/admin/workers/edit/(?P<worker_id>\d+)/', '\\App\\Workers\\Edit');
 \Routes::addRoute('/admin/workers/edit/', '\\App\\Workers\\Edit');
