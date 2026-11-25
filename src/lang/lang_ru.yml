@@ -603,7 +603,27 @@ Maintenances:
 
 StatusPages:
   Menu: "Status pages"
-  PageTitle: "Status pages"
+  PageTitle: "Страницы статуса"
+  Public:
+    NotFoundTitle: "Страница статуса не найдена"
+    NotFoundBody: "Неизвестный или отключённый адрес."
+    NoMonitors: "На этой status page пока нет мониторов."
+    Updated: "Обновлено %s UTC"
+    PoweredBy: "Работает на"
+    Availability8h: "Доступность за 8ч"
+    OverallOk: "Все системы работают"
+    OverallDown: "Сервис недоступен"
+    OverallPartial: "Частичная деградация"
+    OverallMaint: "Техническое обслуживание"
+    OverallUnknown: "Статус неизвестен"
+    OverallNoServices: "Нет сервисов"
+    StatusUp: "Работает"
+    StatusDown: "Недоступен"
+    StatusMaintenance: "Обслуживание"
+    StatusPending: "Ожидание"
+    StateMaintenance: "Обслуживание"
+    OtherGroup: "Прочее"
+    Language: "Язык"
   Permissions:
     Access: "Доступ"
     Create: "Создание status page"

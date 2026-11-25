@@ -108,7 +108,7 @@ class StatusPageBuilder {
 	 */
 	static public function overallFromStatuses(array $statuses): array {
 		if (!$statuses) {
-			return ['code' => 'unknown', 'label' => 'No Services'];
+			return ['code' => 'empty', 'label' => 'No Services'];
 		}
 		$up = 0;
 		$down = 0;

@@ -141,7 +141,7 @@ class StatusPageMembershipTest extends PHPUnit\Framework\TestCase {
 		$this->assertSame('down', \StatusPageBuilder::overallFromStatuses(['down', 'down'])['code']);
 		$this->assertSame('partial', \StatusPageBuilder::overallFromStatuses(['up', 'down'])['code']);
 		$this->assertSame('unknown', \StatusPageBuilder::overallFromStatuses(['unknown'])['code']);
-		$this->assertSame('unknown', \StatusPageBuilder::overallFromStatuses([])['code']);
+		$this->assertSame('empty', \StatusPageBuilder::overallFromStatuses([])['code']);
 		$this->assertSame('maint', \StatusPageBuilder::overallFromStatuses(['maintenance', 'up'])['code']);
 	}
 }

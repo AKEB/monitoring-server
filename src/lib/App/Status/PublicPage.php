@@ -7,35 +7,47 @@ namespace App\Status;
  */
 class PublicPage extends \Routing_Parent implements \Routing_Interface {
 
+	const LANG_COOKIE = 'status_lang';
+	const LANGS = ['en', 'ru'];
+
 	public function Run(string $slug = '') {
+		$lang = static::resolveLanguage();
+		\T::setCurrentLanguage($lang);
+
 		$slug = \StatusPageMembership::normalizeSlug($slug);
 		$data = \StatusPageBuilder::buildBySlugCached($slug);
 		if (!$data) {
 			http_response_code(404);
 			header('Content-Type: text/html; charset=utf-8');
-			echo '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">';
-			echo '<title>Not found</title><link rel="stylesheet" href="/css/status-public.css"></head>';
-			echo '<body><div class="sp-wrap"><h1 class="sp-title">Status page not found</h1>';
-			echo '<p class="sp-empty">Unknown or disabled slug.</p></div></body></html>';
+			echo '<!DOCTYPE html><html lang="'.htmlspecialchars($lang, ENT_QUOTES, 'UTF-8').'"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">';
+			echo '<title>'.htmlspecialchars(\T::StatusPages_Public_NotFoundTitle(), ENT_QUOTES, 'UTF-8').'</title>';
+			echo '<link rel="stylesheet" href="/css/status-public.css"></head>';
+			echo '<body><div class="sp-wrap">';
+			echo static::langSwitcherHtml($lang);
+			echo '<h1 class="sp-title">'.htmlspecialchars(\T::StatusPages_Public_NotFoundTitle(), ENT_QUOTES, 'UTF-8').'</h1>';
+			echo '<p class="sp-empty">'.htmlspecialchars(\T::StatusPages_Public_NotFoundBody(), ENT_QUOTES, 'UTF-8').'</p></div></body></html>';
 			return;
 		}
 
 		header('Content-Type: text/html; charset=utf-8');
 		header('Cache-Control: public, max-age=30');
+		header('Vary: Cookie, Accept-Language');
 
 		$title = htmlspecialchars(strval($data['title'] ?? 'Status'), ENT_QUOTES, 'UTF-8');
 		$generated = intval($data['generated_at'] ?? time());
-		$overall = is_array($data['overall'] ?? null) ? $data['overall'] : ['code' => 'unknown', 'label' => 'Status Unknown'];
-		$overallCode = htmlspecialchars(strval($overall['code'] ?? 'unknown'), ENT_QUOTES, 'UTF-8');
-		$overallLabel = htmlspecialchars(strval($overall['label'] ?? 'Status Unknown'), ENT_QUOTES, 'UTF-8');
+		$overallCode = strval($data['overall']['code'] ?? 'unknown');
+		$overallLabel = htmlspecialchars(static::overallLabel($overallCode), ENT_QUOTES, 'UTF-8');
+		$overallCodeSafe = htmlspecialchars($overallCode, ENT_QUOTES, 'UTF-8');
 
-		echo '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">';
+		echo '<!DOCTYPE html><html lang="'.htmlspecialchars($lang, ENT_QUOTES, 'UTF-8').'"><head><meta charset="UTF-8">';
 		echo '<meta name="viewport" content="width=device-width, initial-scale=1">';
 		echo '<meta name="robots" content="noindex">';
 		echo '<title>'.$title.'</title>';
 		echo '<link rel="icon" href="/images/favicon.ico" type="image/x-icon">';
 		echo '<link rel="stylesheet" href="/css/status-public.css">';
 		echo '</head><body><div class="sp-wrap">';
+
+		echo static::langSwitcherHtml($lang);
 
 		echo '<h1 class="sp-title">';
 		echo '<img class="sp-logo" src="/images/apple-icon-180x180.png" width="42" height="42" alt="">';
@@ -46,7 +58,7 @@ class PublicPage extends \Routing_Parent implements \Routing_Interface {
 			$stateClass = preg_replace('/[^a-z0-9_\-]/i', '', $state) ?: 'investigating';
 			$it = htmlspecialchars(strval($incident['title'] ?? ''), ENT_QUOTES, 'UTF-8');
 			$im = nl2br(htmlspecialchars(strval($incident['message'] ?? ''), ENT_QUOTES, 'UTF-8'));
-			$is = htmlspecialchars($state, ENT_QUOTES, 'UTF-8');
+			$is = htmlspecialchars(static::incidentStateLabel($state), ENT_QUOTES, 'UTF-8');
 			$when = intval($incident['create_time'] ?? 0);
 			echo '<div class="sp-card sp-incident is-'.$stateClass.'" role="alert">';
 			echo '<div class="sp-state">'.$is.'</div>';
@@ -58,13 +70,13 @@ class PublicPage extends \Routing_Parent implements \Routing_Interface {
 			echo '</div>';
 		}
 
-		echo '<div class="sp-card sp-overall is-'.$overallCode.'">';
+		echo '<div class="sp-card sp-overall is-'.$overallCodeSafe.'">';
 		echo static::overallIconSvg($overallCode);
 		echo '<span>'.$overallLabel.'</span></div>';
 
 		$groups = $data['groups'] ?? [];
 		if (!$groups) {
-			echo '<p class="sp-empty">This status page has no monitors yet.</p>';
+			echo '<p class="sp-empty">'.htmlspecialchars(\T::StatusPages_Public_NoMonitors(), ENT_QUOTES, 'UTF-8').'</p>';
 		}
 
 		$renderedGroups = 0;
@@ -74,7 +86,11 @@ class PublicPage extends \Routing_Parent implements \Routing_Interface {
 				continue;
 			}
 			$renderedGroups++;
-			$gt = htmlspecialchars(strval($group['title'] ?? ''), ENT_QUOTES, 'UTF-8');
+			$groupTitle = strval($group['title'] ?? '');
+			if (intval($group['id'] ?? -1) === 0 || $groupTitle === \StatusPageMembership::OTHER_GROUP_TITLE) {
+				$groupTitle = \T::StatusPages_Public_OtherGroup();
+			}
+			$gt = htmlspecialchars($groupTitle, ENT_QUOTES, 'UTF-8');
 			echo '<section class="sp-group"><h2>'.$gt.'</h2>';
 			echo '<div class="sp-card sp-list">';
 			foreach ($resources as $res) {
@@ -83,21 +99,85 @@ class PublicPage extends \Routing_Parent implements \Routing_Interface {
 			echo '</div></section>';
 		}
 		if ($groups && $renderedGroups === 0) {
-			echo '<p class="sp-empty">This status page has no monitors yet.</p>';
+			echo '<p class="sp-empty">'.htmlspecialchars(\T::StatusPages_Public_NoMonitors(), ENT_QUOTES, 'UTF-8').'</p>';
 		}
 
 		foreach ($data['maintenances'] ?? [] as $maint) {
-			$mt = htmlspecialchars(strval($maint['title'] ?? 'Maintenance'), ENT_QUOTES, 'UTF-8');
+			$mt = htmlspecialchars(strval($maint['title'] ?? \T::StatusPages_Public_StateMaintenance()), ENT_QUOTES, 'UTF-8');
 			echo '<div class="sp-card sp-incident is-monitoring" role="status">';
-			echo '<div class="sp-state">maintenance</div><h3>'.$mt.'</h3></div>';
+			echo '<div class="sp-state">'.htmlspecialchars(\T::StatusPages_Public_StateMaintenance(), ENT_QUOTES, 'UTF-8').'</div><h3>'.$mt.'</h3></div>';
 		}
 
+		$updated = sprintf(\T::StatusPages_Public_Updated(), gmdate('Y-m-d H:i:s', $generated));
 		echo '<footer class="sp-footer">';
-		echo '<span>Updated '.htmlspecialchars(gmdate('Y-m-d H:i:s', $generated), ENT_QUOTES, 'UTF-8').' UTC</span>';
-		echo '<span>Powered by <a href="https://akeb.github.io/monitoring/" rel="noopener">Monitoring</a></span>';
+		echo '<span>'.htmlspecialchars($updated, ENT_QUOTES, 'UTF-8').'</span>';
+		echo '<span>'.htmlspecialchars(\T::StatusPages_Public_PoweredBy(), ENT_QUOTES, 'UTF-8');
+		echo ' <a href="https://akeb.github.io/monitoring/" rel="noopener">Monitoring</a></span>';
 		echo '</footer>';
 
 		echo '</div></body></html>';
+	}
+
+	static public function resolveLanguage(): string {
+		$raw = '';
+		if (isset($_GET['lang']) && is_string($_GET['lang'])) {
+			$raw = strtolower(trim($_GET['lang']));
+		} elseif (isset($_COOKIE[self::LANG_COOKIE]) && is_string($_COOKIE[self::LANG_COOKIE])) {
+			$raw = strtolower(trim($_COOKIE[self::LANG_COOKIE]));
+		} elseif (!empty($_SERVER['HTTP_ACCEPT_LANGUAGE']) && is_string($_SERVER['HTTP_ACCEPT_LANGUAGE'])) {
+			$raw = strtolower(substr(trim($_SERVER['HTTP_ACCEPT_LANGUAGE']), 0, 2));
+		}
+		$lang = in_array($raw, self::LANGS, true) ? $raw : 'en';
+		if (isset($_GET['lang']) && in_array($lang, self::LANGS, true)) {
+			$secure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+				|| (isset($_SERVER['SERVER_PORT']) && intval($_SERVER['SERVER_PORT']) === 443);
+			setcookie(self::LANG_COOKIE, $lang, [
+				'expires' => time() + 365 * 86400,
+				'path' => '/',
+				'secure' => $secure,
+				'httponly' => false,
+				'samesite' => 'Lax',
+			]);
+			$_COOKIE[self::LANG_COOKIE] = $lang;
+		}
+		return $lang;
+	}
+
+	static private function langSwitcherHtml(string $lang): string {
+		$path = strval(parse_url(strval($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH) ?: '/');
+		$query = [];
+		parse_str(strval(parse_url(strval($_SERVER['REQUEST_URI'] ?? ''), PHP_URL_QUERY) ?: ''), $query);
+		$html = '<nav class="sp-lang" aria-label="'.htmlspecialchars(\T::StatusPages_Public_Language(), ENT_QUOTES, 'UTF-8').'">';
+		foreach (self::LANGS as $code) {
+			$query['lang'] = $code;
+			$href = htmlspecialchars($path.'?'.http_build_query($query), ENT_QUOTES, 'UTF-8');
+			$label = $code === 'ru' ? 'RU' : 'EN';
+			$cls = $code === $lang ? ' is-active' : '';
+			$html .= '<a class="sp-lang-link'.$cls.'" href="'.$href.'" hreflang="'.$code.'" lang="'.$code.'">'.$label.'</a>';
+		}
+		$html .= '</nav>';
+		return $html;
+	}
+
+	static private function overallLabel(string $code): string {
+		return match ($code) {
+			'ok' => \T::StatusPages_Public_OverallOk(),
+			'down' => \T::StatusPages_Public_OverallDown(),
+			'partial' => \T::StatusPages_Public_OverallPartial(),
+			'maint' => \T::StatusPages_Public_OverallMaint(),
+			'empty' => \T::StatusPages_Public_OverallNoServices(),
+			default => \T::StatusPages_Public_OverallUnknown(),
+		};
+	}
+
+	static private function incidentStateLabel(string $state): string {
+		return match ($state) {
+			'investigating' => \T::StatusPages_Edit_StateInvestigating(),
+			'identified' => \T::StatusPages_Edit_StateIdentified(),
+			'monitoring' => \T::StatusPages_Edit_StateMonitoring(),
+			'resolved' => \T::StatusPages_Edit_StateResolved(),
+			default => $state,
+		};
 	}
 
 	/** @param array<string,mixed> $res */
@@ -112,18 +192,19 @@ class PublicPage extends \Routing_Parent implements \Routing_Interface {
 			default => 'is-pending',
 		};
 		$badgeLabel = match ($st) {
-			'up' => 'Up',
-			'down' => 'Down',
-			'maintenance' => 'Maintenance',
-			default => 'Pending',
+			'up' => \T::StatusPages_Public_StatusUp(),
+			'down' => \T::StatusPages_Public_StatusDown(),
+			'maintenance' => \T::StatusPages_Public_StatusMaintenance(),
+			default => \T::StatusPages_Public_StatusPending(),
 		};
 
 		$uptimeRaw = $res['availability']['8h'] ?? null;
-		$uptimeHtml = '<span class="sp-uptime is-empty" title="8h availability">—</span>';
+		$availTitle = htmlspecialchars(\T::StatusPages_Public_Availability8h(), ENT_QUOTES, 'UTF-8');
+		$uptimeHtml = '<span class="sp-uptime is-empty" title="'.$availTitle.'">—</span>';
 		if (is_numeric($uptimeRaw)) {
 			$pct = floatval($uptimeRaw);
 			$uptimeClass = $pct >= 99.0 ? '' : ($pct >= 95.0 ? 'is-warn' : 'is-bad');
-			$uptimeHtml = '<span class="sp-uptime '.$uptimeClass.'" title="8h availability">'
+			$uptimeHtml = '<span class="sp-uptime '.$uptimeClass.'" title="'.$availTitle.'">'
 				.htmlspecialchars(rtrim(rtrim(number_format($pct, 2, '.', ''), '0'), '.').'%', ENT_QUOTES, 'UTF-8')
 				.'</span>';
 		}
@@ -158,7 +239,7 @@ class PublicPage extends \Routing_Parent implements \Routing_Interface {
 		}
 		echo '</div>';
 
-		echo '<span class="sp-badge '.$badgeClass.'">'.$badgeLabel.'</span>';
+		echo '<span class="sp-badge '.$badgeClass.'">'.htmlspecialchars($badgeLabel, ENT_QUOTES, 'UTF-8').'</span>';
 		echo '</div>';
 	}
 
