@@ -485,6 +485,24 @@ class Monitors extends \DB\MySQLObject implements \PermissionSubject_Interface {
 		];
 	}
 
+	/** @return array<string,string> Public DNS resolver preset label => IP */
+	static public function dns_resolver_presets(): array {
+		return [
+			'Google (8.8.8.8)' => '8.8.8.8',
+			'Google (8.8.4.4)' => '8.8.4.4',
+			'Cloudflare (1.1.1.1)' => '1.1.1.1',
+			'Cloudflare (1.0.0.1)' => '1.0.0.1',
+			'Quad9 (9.9.9.9)' => '9.9.9.9',
+			'Quad9 (149.112.112.112)' => '149.112.112.112',
+			'OpenDNS (208.67.222.222)' => '208.67.222.222',
+			'OpenDNS (208.67.220.220)' => '208.67.220.220',
+			'AdGuard (94.140.14.14)' => '94.140.14.14',
+			'AdGuard (94.140.15.15)' => '94.140.15.15',
+			'Yandex (77.88.8.8)' => '77.88.8.8',
+			'Yandex (77.88.8.1)' => '77.88.8.1',
+		];
+	}
+
 	/** Normalize expected DNS answers: one value per line. */
 	static public function normalize_dns_expected(mixed $raw): string {
 		if (is_array($raw)) {

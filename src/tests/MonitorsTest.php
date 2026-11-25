@@ -137,6 +137,10 @@ class MonitorsTest extends PHPUnit\Framework\TestCase {
 		$this->assertSame('nxdomain', \Monitors::normalize_dns_match_mode('NXDOMAIN'));
 		$this->assertSame("1.2.3.4\n5.6.7.8", \Monitors::normalize_dns_expected("1.2.3.4\n\n5.6.7.8\n"));
 		$this->assertArrayHasKey('Google', \Monitors::dns_doh_presets());
+		$resolvers = \Monitors::dns_resolver_presets();
+		$this->assertArrayHasKey('Google (8.8.8.8)', $resolvers);
+		$this->assertSame('8.8.8.8', $resolvers['Google (8.8.8.8)']);
+		$this->assertSame('1.1.1.1', $resolvers['Cloudflare (1.1.1.1)']);
 	}
 
 	function test_http_methods() {

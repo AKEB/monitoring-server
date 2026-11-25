@@ -1306,7 +1306,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 
 					echo $this->template->html_input("host", $this->monitor['host']??'', \T::Monitor_Edit_Host(), false, [
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
-						'global-class' => 'type-dependence type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_UDP.' type-'.\Monitors::TYPE_PING.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU.' type-'.\Monitors::TYPE_DNS.' type-'.\Monitors::TYPE_SMTP.' type-'.\Monitors::TYPE_NTP.' type-'.\Monitors::TYPE_MYSQL.' type-'.\Monitors::TYPE_POSTGRES.' type-'.\Monitors::TYPE_REDIS.' type-'.\Monitors::TYPE_MONGODB.' type-'.\Monitors::TYPE_SFTP.' type-'.\Monitors::TYPE_SNMP.' type-'.\Monitors::TYPE_RADIUS.' type-'.\Monitors::TYPE_MQTT.' type-'.\Monitors::TYPE_RABBITMQ,
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_UDP.' type-'.\Monitors::TYPE_PING.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU.' type-'.\Monitors::TYPE_SMTP.' type-'.\Monitors::TYPE_NTP.' type-'.\Monitors::TYPE_MYSQL.' type-'.\Monitors::TYPE_POSTGRES.' type-'.\Monitors::TYPE_REDIS.' type-'.\Monitors::TYPE_MONGODB.' type-'.\Monitors::TYPE_SFTP.' type-'.\Monitors::TYPE_SNMP.' type-'.\Monitors::TYPE_RADIUS.' type-'.\Monitors::TYPE_MQTT.' type-'.\Monitors::TYPE_RABBITMQ,
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 					echo $this->template->html_input("host", $this->monitor['host']??'', \T::Monitor_Edit_Domain(), false, [
@@ -1315,10 +1315,17 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 						'global-class' => 'type-dependence type-'.\Monitors::TYPE_DOMAIN,
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
+					echo $this->template->html_input("host", $this->monitor['host']??'', \T::Monitor_Edit_DnsName(), false, [
+						'id' => 'host_dns',
+						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_DNS,
+						'readonly' => !($this->can_write || $this->can_create),
+						'placeholder' => 'example.com',
+					]);
 
 					echo $this->template->html_input("port", $this->monitor['port']??'', \T::Monitor_Edit_Port(), false, [
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
-						'global-class' => 'type-dependence type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_UDP.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU.' type-'.\Monitors::TYPE_SERVER_PORT.' type-'.\Monitors::TYPE_DNS.' type-'.\Monitors::TYPE_SMTP.' type-'.\Monitors::TYPE_NTP.' type-'.\Monitors::TYPE_MYSQL.' type-'.\Monitors::TYPE_POSTGRES.' type-'.\Monitors::TYPE_REDIS.' type-'.\Monitors::TYPE_MONGODB.' type-'.\Monitors::TYPE_SFTP.' type-'.\Monitors::TYPE_SNMP.' type-'.\Monitors::TYPE_RADIUS.' type-'.\Monitors::TYPE_MQTT.' type-'.\Monitors::TYPE_RABBITMQ,
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_UDP.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU.' type-'.\Monitors::TYPE_SERVER_PORT.' type-'.\Monitors::TYPE_SMTP.' type-'.\Monitors::TYPE_NTP.' type-'.\Monitors::TYPE_MYSQL.' type-'.\Monitors::TYPE_POSTGRES.' type-'.\Monitors::TYPE_REDIS.' type-'.\Monitors::TYPE_MONGODB.' type-'.\Monitors::TYPE_SFTP.' type-'.\Monitors::TYPE_SNMP.' type-'.\Monitors::TYPE_RADIUS.' type-'.\Monitors::TYPE_MQTT.' type-'.\Monitors::TYPE_RABBITMQ,
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 
@@ -1492,16 +1499,36 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 						'global-class' => 'type-dependence type-'.\Monitors::TYPE_DNS,
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
-					echo $this->template->html_input("dns_resolver", $this->monitor['dns_resolver']??'', \T::Monitor_Edit_DnsResolver(), false, [
-						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
-						'global-class' => 'type-dependence type-'.\Monitors::TYPE_DNS,
-						'readonly' => !($this->can_write || $this->can_create),
-						'placeholder' => '8.8.8.8 / 2001:4860:4860::8888',
-					]);
 					echo $this->template?->html_select('dns_transport', \Monitors::dns_transport_hash(), $this->monitor['dns_transport']??'auto', \T::Monitor_Edit_DnsTransport(), false,[
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
 						'global-class' => 'type-dependence type-'.\Monitors::TYPE_DNS,
 						'readonly' => !($this->can_write || $this->can_create),
+					]);
+					$resolver_presets = ['' => '—'] + \Monitors::dns_resolver_presets();
+					echo $this->template?->html_select('dns_resolver_preset', $resolver_presets, '', \T::Monitor_Edit_DnsResolverPreset(), false,[
+						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_DNS.' dns-resolver-dependence',
+						'readonly' => !($this->can_write || $this->can_create),
+					]);
+					echo $this->template->html_input("dns_resolver", $this->monitor['dns_resolver']??'', \T::Monitor_Edit_DnsResolver(), false, [
+						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_DNS.' dns-resolver-dependence',
+						'readonly' => !($this->can_write || $this->can_create),
+						'placeholder' => '8.8.8.8 / 2001:4860:4860::8888',
+					]);
+					$dns_port_default = intval($this->monitor['port'] ?? 0);
+					if ($dns_port_default < 1) {
+						$dns_port_default = (($this->monitor['dns_transport'] ?? 'auto') === 'dot') ? 853 : 53;
+					}
+					echo $this->template->html_input("port", strval($dns_port_default), \T::Monitor_Edit_DnsResolverPort(), false, [
+						'id' => 'port_dns',
+						'type' => 'number',
+						'min' => '1',
+						'max' => '65535',
+						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_DNS.' dns-resolver-dependence',
+						'readonly' => !($this->can_write || $this->can_create),
+						'placeholder' => '53',
 					]);
 					$doh_presets = ['' => '—'] + \Monitors::dns_doh_presets();
 					echo $this->template?->html_select('dns_doh_preset', $doh_presets, '', \T::Monitor_Edit_DnsDohPreset(), false,[
@@ -1907,14 +1934,14 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					const $wrap = $(this).closest('.type-dependence');
 					$(this).prop('disabled', !$wrap.is(':visible'));
 				});
-				// Domain and DNS both use name="host" — only the visible one should submit.
-				$('input[name="host"]').each(function(){
+				// Domain/DNS (and other types) share name="host" / name="port" — only visible inputs submit.
+				$('input[name="host"], input[name="port"]').each(function(){
 					const $wrap = $(this).closest('.type-dependence');
 					$(this).prop('disabled', !$wrap.is(':visible'));
 				});
 				monitor_api_fields_toggle();
 				monitor_auth_fields_toggle();
-				monitor_dns_doh_fields_toggle();
+				monitor_dns_transport_fields_toggle();
 				monitor_ssl_alert_days_toggle();
 				monitor_http_body_fields_toggle();
 				<?php if (empty($this->monitor['id'])): ?>
@@ -1973,10 +2000,17 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				});
 			}
 
-			function monitor_dns_doh_fields_toggle() {
+			function monitor_dns_transport_fields_toggle() {
 				const isDns = String($('#type').val()) === '<?=intval(\Monitors::TYPE_DNS);?>';
-				const isDoh = ($('#dns_transport').val() || '').toString() === 'doh';
+				const transport = ($('#dns_transport').val() || '').toString();
+				const isDoh = transport === 'doh';
 				$('.dns-doh-dependence').toggle(isDns && isDoh);
+				$('.dns-resolver-dependence').toggle(isDns && !isDoh);
+				// Re-apply port disable after nested DNS visibility changes.
+				$('input[name="port"]').each(function(){
+					const $wrap = $(this).closest('.type-dependence');
+					$(this).prop('disabled', !$wrap.is(':visible'));
+				});
 			}
 
 			function monitor_ssl_alert_days_toggle() {
@@ -2206,13 +2240,29 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					monitor_auth_fields_toggle();
 				});
 				$('#dns_transport').on('changed.bs.select change', function(){
-					monitor_dns_doh_fields_toggle();
+					monitor_dns_transport_fields_toggle();
+					const transport = ($(this).val() || '').toString();
+					const $port = $('#port_dns');
+					if ($port.length && !$port.prop('disabled')) {
+						const cur = parseInt($port.val() || '0', 10) || 0;
+						if (transport === 'dot' && (cur === 0 || cur === 53)) {
+							$port.val(853);
+						} else if (transport !== 'dot' && transport !== 'doh' && (cur === 0 || cur === 853)) {
+							$port.val(53);
+						}
+					}
 				});
 				$('#ssl_cert_expire_alert').on('change', function(){
 					monitor_ssl_alert_days_toggle();
 				});
 				$('#method').on('changed.bs.select change', function(){
 					monitor_http_body_fields_toggle();
+				});
+				$('#dns_resolver_preset').on('changed.bs.select change', function(){
+					const ip = ($(this).val() || '').toString();
+					if (ip) {
+						$('#dns_resolver').val(ip);
+					}
 				});
 				$('#dns_doh_preset').on('changed.bs.select change', function(){
 					const url = ($(this).val() || '').toString();

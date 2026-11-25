@@ -1185,12 +1185,36 @@ class T {
 	public static function Monitor_Edit_DnsRecordType(...$argv): string { return ''; }
 
 	/**
+	 * Monitor_Edit_DnsName
+	 * 
+	 * @return string "DNS name"
+	 * @return string "Имя / домен"
+	 */
+	public static function Monitor_Edit_DnsName(...$argv): string { return ''; }
+
+	/**
 	 * Monitor_Edit_DnsResolver
 	 * 
 	 * @return string "DNS resolver (empty = system)"
 	 * @return string "DNS-резолвер (пусто = системный)"
 	 */
 	public static function Monitor_Edit_DnsResolver(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_DnsResolverPreset
+	 * 
+	 * @return string "DNS resolver preset"
+	 * @return string "Пресет DNS-резолвера"
+	 */
+	public static function Monitor_Edit_DnsResolverPreset(...$argv): string { return ''; }
+
+	/**
+	 * Monitor_Edit_DnsResolverPort
+	 * 
+	 * @return string "Resolver port"
+	 * @return string "Порт резолвера"
+	 */
+	public static function Monitor_Edit_DnsResolverPort(...$argv): string { return ''; }
 
 	/**
 	 * Monitor_Edit_DnsTransport
