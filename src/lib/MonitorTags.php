@@ -165,6 +165,9 @@ class MonitorTags extends \DB\MySQLObject implements \PermissionSubject_Interfac
 				$log_id = \Logs::create_log(\ObjectPermissions::LOGS_OBJECT, $owner_id, $owner);
 				\Logs::add_tag($log_id, static::LOGS_OBJECT, $tag_id);
 			}
+			// Drop cached ACL so create→edit redirect sees the new row immediately.
+			$cache = new \Cache('getPermissionsForUser_'.$creator_user_id);
+			$cache->remove();
 		}
 	}
 }

@@ -83,7 +83,9 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 			?>
 			<div class="float-end">
 				<h3 class="pointer text-info">
-					<i class="bi bi-plus-circle createActionButton"> <?=\T::Framework_Common_Create();?></i>
+					<a class="text-info text-decoration-none" href="/admin/tags/edit/">
+						<i class="bi bi-plus-circle"></i> <?=\T::Framework_Common_Create();?>
+					</a>
 				</h3>
 			</div>
 			<?php
@@ -93,13 +95,14 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 
 	private function print_table() {
 		?>
-		<div class="table-responsive">
-			<table class="table table-striped table-hover align-middle">
+		<div class="row d-flex justify-content-center">
+			<table class="table table-transparent table-responsive" id="Table">
 				<thead>
 					<tr>
-						<th><?=\T::MonitorTags_Table_Title();?></th>
-						<th><?=\T::MonitorTags_Table_Color();?></th>
-						<th><?=\T::MonitorTags_Table_Actions();?></th>
+						<th scope="col" class="align-middle">ID</th>
+						<th scope="col" class="align-middle"><?=\T::MonitorTags_Table_Title();?></th>
+						<th scope="col" class="align-middle"><?=\T::MonitorTags_Table_Color();?></th>
+						<th scope="col" class="align-middle text-center"><?=\T::MonitorTags_Table_Actions();?></th>
 					</tr>
 				</thead>
 				<tbody>
@@ -110,6 +113,7 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 					$canDelete = \Sessions::checkPermission(\MonitorTags::PERMISSION_ACCESS, $id, DELETE);
 					?>
 					<tr>
+						<th scope="row"><?=$id;?></th>
 						<td>
 							<span class="badge rounded-pill text-bg-light border" style="border-color:<?=htmlspecialchars($color, ENT_QUOTES, 'UTF-8');?>!important;color:<?=htmlspecialchars($color, ENT_QUOTES, 'UTF-8');?>;">
 								<?=htmlspecialchars(strval($tag['title']), ENT_QUOTES, 'UTF-8');?>
@@ -118,7 +122,7 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 						<td><code><?=htmlspecialchars($color, ENT_QUOTES, 'UTF-8');?></code>
 							<span class="badge rounded-pill ms-1" style="background-color:<?=htmlspecialchars($color, ENT_QUOTES, 'UTF-8');?>;">&nbsp;</span>
 						</td>
-						<td>
+						<td class="text-center">
 							<?php if ($canEdit) { ?>
 								<a class="btn btn-sm btn-outline-primary" href="/admin/tags/edit/<?=$id;?>/"><i class="bi bi-pencil"></i></a>
 							<?php } ?>
@@ -143,7 +147,7 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 		<div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
 			<div class="modal-dialog">
 				<form method="post" id="deleteForm" class="modal-content">
-					<?= \Csrf::hiddenInput(); ?>
+					<?= \Csrf::field(); ?>
 					<div class="modal-header">
 						<h5 class="modal-title"><?=\T::MonitorTags_Delete_Title();?></h5>
 						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -163,9 +167,8 @@ class Show extends \Routing_Parent implements \Routing_Interface {
 
 	private function print_javascript() {
 		?>
-		<script>
+		<script nonce="<?=\CSP::nonceRandom();?>">
 		$(function(){
-			$('.createActionButton').on('click', function(){ window.location.href = '/admin/tags/edit/'; });
 			$('.deleteActionButton').on('click', function(){
 				const id = $(this).data('id');
 				const title = $(this).data('title');

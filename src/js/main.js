@@ -103,6 +103,43 @@ function toSubtleStatusClass(className) {
 }
 
 /**
+ * Badge-теги монитора/папки для главной ленты.
+ * @param {Object} monitor
+ * @returns {string}
+ */
+function printMonitorTagBadges(monitor) {
+	let HTML = '';
+	if (!monitor || !monitor.tags || !monitor.tags.length) {
+		return HTML;
+	}
+	for (var ti = 0; ti < monitor.tags.length; ti++) {
+		const tag = monitor.tags[ti];
+		const tagColor = tag.color || '#0d6efd';
+		HTML += ' <span class="badge rounded-pill border ms-1" style="border-color:'+escapeHtmlAttr(tagColor)+'!important;color:'+escapeHtmlAttr(tagColor)+';">'+escapeHtmlAttr(tag.title || '')+'</span>';
+	}
+	return HTML;
+}
+
+/**
+ * Строка для поиска: названия тегов монитора/папки.
+ * @param {Object} monitor
+ * @returns {string}
+ */
+function monitorTagsSearchText(monitor) {
+	if (!monitor || !monitor.tags || !monitor.tags.length) {
+		return '';
+	}
+	let parts = [];
+	for (var ti = 0; ti < monitor.tags.length; ti++) {
+		const title = (monitor.tags[ti] && monitor.tags[ti].title) ? String(monitor.tags[ti].title) : '';
+		if (title) {
+			parts.push(title);
+		}
+	}
+	return parts.length ? (' ' + parts.join(' ')) : '';
+}
+
+/**
  * Рекурсивно генерирует HTML-представление списка мониторов.
  * @param {Object} data - Данные мониторов для отображения.
  * @param {number} [level=0] - Уровень вложенности для отступов.
@@ -126,10 +163,11 @@ function printMonitors(data, level=0, searchText='') {
 					show = true;
 				}
 				// Заголовок папки с отступом, значком доступности и иконкой сворачивания
-				HTML += '<div class="col-9 col-md-8'+(show ? '':' collapsed')+' monitor-title" data-search-status="'+(monitor.badge_class)+'" data-search-text="'+searchText + monitor.title +'" data-monitor-id="'+monitor.id+'" aria-controls="collapseMonitors_'+monitor.id+'">';
+				HTML += '<div class="col-9 col-md-8'+(show ? '':' collapsed')+' monitor-title" data-search-status="'+(monitor.badge_class)+'" data-search-text="'+escapeHtmlAttr(searchText + monitor.title + monitorTagsSearchText(monitor))+'" data-monitor-id="'+monitor.id+'" aria-controls="collapseMonitors_'+monitor.id+'">';
 				HTML += '<span class="ml-padding-'+level+'"></span><span class="badge rounded-pill monitor-badge '+(monitor.badge_class)+'" data-bs-toggle="tooltip" data-bs-html="true" data-bs-title="24-hours" data-monitor-id="'+monitor.id+'">'+monitor.availability_percent+'%</span>';
 				HTML += '<i class="bi bi-caret-down"></i>';
 				HTML += monitor.title;
+				HTML += printMonitorTagBadges(monitor);
 				HTML += '</div>';
 				// Блок с полосками состояний (uptime bars)
 				HTML += '<div class="col-3 col-md-4"><div class="wrap"><div class="monitor-states" data-monitor-id="'+monitor.id+'">';
@@ -168,17 +206,11 @@ function printMonitors(data, level=0, searchText='') {
 			}
 		} else {
 			// Monitor
-			HTML += '<div class="row monitor-item mb-1" data-monitor-id="'+monitor.id+'"><div class="col-9 col-md-8 monitor-title pointer" data-search-status="'+(monitor.badge_class)+'" data-search-text="'+searchText + monitor.title +'" data-monitor-id="'+monitor.id+'">';
+			HTML += '<div class="row monitor-item mb-1" data-monitor-id="'+monitor.id+'"><div class="col-9 col-md-8 monitor-title pointer" data-search-status="'+(monitor.badge_class)+'" data-search-text="'+escapeHtmlAttr(searchText + monitor.title + monitorTagsSearchText(monitor))+'" data-monitor-id="'+monitor.id+'">';
 			// Заголовок монитора с отступом и значком доступности
 			HTML += '<span class="ml-padding-'+level+'"></span><span class="badge rounded-pill monitor-badge '+(monitor.badge_class)+'" data-bs-toggle="tooltip" data-bs-html="true" data-bs-title="24-hours" data-monitor-id="'+monitor.id+'">'+monitor.availability_percent+'%</span>'+"\n";
 			HTML += monitor.title;
-			if (monitor.tags && monitor.tags.length) {
-				for (var ti = 0; ti < monitor.tags.length; ti++) {
-					const tag = monitor.tags[ti];
-					const tagColor = tag.color || '#0d6efd';
-					HTML += ' <span class="badge rounded-pill border ms-1" style="border-color:'+escapeHtmlAttr(tagColor)+'!important;color:'+escapeHtmlAttr(tagColor)+';">'+escapeHtmlAttr(tag.title || '')+'</span>';
-				}
-			}
+			HTML += printMonitorTagBadges(monitor);
 			HTML += '</div>';
 			// Блок с полосками состояний (uptime bars)
 			HTML += '<div class="col-3 col-md-4"><div class="wrap"><div class="monitor-states" data-monitor-id="'+monitor.id+'">';
