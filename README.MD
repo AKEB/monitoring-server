@@ -50,7 +50,7 @@ After upgrade, run DB migrations.
 - [x] Events in the database
 - [x] Displaying events on the main page
 - [x] Displaying events in the selected monitor
-- [x] Event notifications
+- [x] Event notifications (Telegram, Mattermost, Gotify, MAX, Webhook, Email, Discord, Slack, ntfy)
 - [x] New monitor type: TCP
 - [x] New monitor type: UDP Port
 - [x] New monitor type: PING

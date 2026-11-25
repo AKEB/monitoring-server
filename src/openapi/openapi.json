@@ -440,7 +440,7 @@
           "notify"
         ],
         "summary": "Create notification channel",
-        "description": "type: 0 Telegram, 1 Mattermost, 2 Gotify, 3 MAX. Secrets go in json_data; responses redact secrets without notify_secrets permission.",
+        "description": "type: 0 Telegram, 1 Mattermost, 2 Gotify, 3 MAX, 4 Webhook, 5 Email, 6 Discord, 7 Slack, 8 ntfy. Secrets go in json_data; responses redact secrets without notify_secrets permission.",
         "security": [
           {
             "BearerAuth": []
@@ -2918,7 +2918,7 @@
           },
           "type": {
             "type": "integer",
-            "description": "0 Telegram, 1 Mattermost, 2 Gotify, 3 MAX"
+            "description": "0 Telegram, 1 Mattermost, 2 Gotify, 3 MAX, 4 Webhook, 5 Email, 6 Discord, 7 Slack, 8 ntfy"
           },
           "status": {
             "type": "integer"

@@ -60,4 +60,20 @@ class ApiV2NotifyTest extends ApiV2TestCase {
 		$this->assertSame(1, $result['status']);
 		$this->assertSame(422, $result['http'] ?? 0);
 	}
+
+	function test_serialize_redacts_ntfy_token() {
+		$row = [
+			'id' => 2,
+			'title' => 'ntfy',
+			'type' => \Notify::TYPE_NTFY,
+			'json_data' => ['ntfy_url' => 'https://ntfy.sh', 'ntfy_token' => 'secret-ntfy', 'ntfy_priority' => '3'],
+		];
+		$serialized = \Api\V2\NotifyService::serialize($this->user(), $row);
+		$json = $serialized['json_data'] ?? [];
+		$this->assertSame('https://ntfy.sh', $json['ntfy_url'] ?? null);
+		$this->assertTrue(
+			!isset($json['ntfy_token']) || $json['ntfy_token'] === '' || $json['ntfy_token'] === '***',
+			'ntfy_token must be redacted without notify_secrets'
+		);
+	}
 }

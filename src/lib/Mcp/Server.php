@@ -144,7 +144,7 @@ class Server {
 			['name' => 'monitors_delete', 'description' => 'Delete a monitor by id.', 'inputSchema' => $idSchema],
 			['name' => 'notify_list', 'description' => 'List notification channels.', 'inputSchema' => $empty],
 			['name' => 'notify_get', 'description' => 'Get a notification channel. Secrets are redacted without notify_secrets.', 'inputSchema' => $idSchema],
-			['name' => 'notify_create', 'description' => 'Create a notification channel (Telegram/Mattermost/Gotify/MAX/Webhook).', 'inputSchema' => ['type' => 'object', 'properties' => ['title' => ['type' => 'string'], 'type' => ['type' => 'integer'], 'receiver' => ['type' => 'string']], 'required' => ['title', 'type']]],
+			['name' => 'notify_create', 'description' => 'Create a notification channel (Telegram/Mattermost/Gotify/MAX/Webhook/Email/Discord/Slack/ntfy).', 'inputSchema' => ['type' => 'object', 'properties' => ['title' => ['type' => 'string'], 'type' => ['type' => 'integer'], 'receiver' => ['type' => 'string']], 'required' => ['title', 'type']]],
 			['name' => 'notify_update', 'description' => 'Update a notification channel. Omitted secrets are preserved.', 'inputSchema' => ['type' => 'object', 'properties' => ['id' => ['type' => 'integer']], 'required' => ['id']]],
 			['name' => 'notify_delete', 'description' => 'Delete a notification channel.', 'inputSchema' => $idSchema],
 			['name' => 'signatures_list', 'description' => 'List signatures (reusable alert text blocks).', 'inputSchema' => $empty],

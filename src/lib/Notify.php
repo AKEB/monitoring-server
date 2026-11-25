@@ -15,6 +15,10 @@ class Notify extends \DB\MySQLObject implements \PermissionSubject_Interface {
 	const TYPE_GOTIFY     = 2;
 	const TYPE_MAX        = 3;
 	const TYPE_WEBHOOK    = 4;
+	const TYPE_EMAIL      = 5;
+	const TYPE_DISCORD    = 6;
+	const TYPE_SLACK      = 7;
+	const TYPE_NTFY       = 8;
 
 	const STATUS_DISABLED = 0;
 	const STATUS_ENABLED = 1;
@@ -37,6 +41,10 @@ class Notify extends \DB\MySQLObject implements \PermissionSubject_Interface {
 			static::TYPE_GOTIFY     => \T::Notify_Type_Gotify(),
 			static::TYPE_MAX        => \T::Notify_Type_Max(),
 			static::TYPE_WEBHOOK    => \T::Notify_Type_WebHook(),
+			static::TYPE_EMAIL      => \T::Notify_Type_Email(),
+			static::TYPE_DISCORD    => \T::Notify_Type_Discord(),
+			static::TYPE_SLACK      => \T::Notify_Type_Slack(),
+			static::TYPE_NTFY       => \T::Notify_Type_Ntfy(),
 		];
 	}
 

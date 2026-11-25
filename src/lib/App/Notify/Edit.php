@@ -123,6 +123,16 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					if (isset($data['json_data']['webhook_password']) && $data['json_data']['webhook_password'] && trim($data['json_data']['webhook_password']) != '') {
 						$params['json_data']['webhook_password'] = trim($data['json_data']['webhook_password']);
 					}
+				} elseif ($params['type'] == \Notify::TYPE_NTFY) {
+					if (isset($data['json_data']['ntfy_url']) && $data['json_data']['ntfy_url'] && trim($data['json_data']['ntfy_url']) != '') {
+						$params['json_data']['ntfy_url'] = trim($data['json_data']['ntfy_url']);
+					}
+					if (isset($data['json_data']['ntfy_token']) && $data['json_data']['ntfy_token'] && trim($data['json_data']['ntfy_token']) != '') {
+						$params['json_data']['ntfy_token'] = trim($data['json_data']['ntfy_token']);
+					}
+					if (isset($data['json_data']['ntfy_priority']) && $data['json_data']['ntfy_priority'] !== '' && $data['json_data']['ntfy_priority'] !== null) {
+						$params['json_data']['ntfy_priority'] = trim(strval($data['json_data']['ntfy_priority']));
+					}
 				}
 			}
 
@@ -303,6 +313,93 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 						}
 					} catch (\Exception $e) {
 						$this->error = \T::Notify_Edit_TestError(51);
+						break;
+					}
+					$this->success = \T::Notify_Edit_TestSuccess();
+					break;
+				} else if ($params['type'] == \Notify::TYPE_EMAIL) {
+					$to = trim((string) ($params['receiver'] ?? ''));
+					if ($to === '' || !\NotifyEmail::normalizeRecipients($to)) {
+						$this->error = \T::Notify_Edit_TestError(60);
+						break;
+					}
+					try {
+						$subject = \NotifyEmail::buildSubject('Test Message '.date('Y-m-d H:i:s'), strval($params['title'] ?? 'email'));
+						$html = \NotifyEmail::buildHtmlBody(
+							'Email test notification from monitoring',
+							'Test Message',
+							strval($params['title'] ?? ''),
+							false
+						);
+						$ok = \NotifyEmail::send($to, $subject, $html);
+						if (!$ok) {
+							$this->error = \T::Notify_Edit_TestError(61);
+							break;
+						}
+					} catch (\Exception $e) {
+						$this->error = \T::Notify_Edit_TestError(61);
+						break;
+					}
+					$this->success = \T::Notify_Edit_TestSuccess();
+					break;
+				} else if ($params['type'] == \Notify::TYPE_DISCORD) {
+					$url = trim((string) ($params['receiver'] ?? ''));
+					if ($url === '' || !preg_match('#^https?://#i', $url)) {
+						$this->error = \T::Notify_Edit_TestError(70);
+						break;
+					}
+					try {
+						$ok = \NotifyDiscord::send($url, \NotifyDiscord::buildTestPayload(strval($params['title'] ?? 'discord')));
+						if (!$ok) {
+							$this->error = \T::Notify_Edit_TestError(71);
+							break;
+						}
+					} catch (\Exception $e) {
+						$this->error = \T::Notify_Edit_TestError(71);
+						break;
+					}
+					$this->success = \T::Notify_Edit_TestSuccess();
+					break;
+				} else if ($params['type'] == \Notify::TYPE_SLACK) {
+					$url = trim((string) ($params['receiver'] ?? ''));
+					if ($url === '' || !preg_match('#^https?://#i', $url)) {
+						$this->error = \T::Notify_Edit_TestError(80);
+						break;
+					}
+					try {
+						$ok = \NotifySlack::send($url, \NotifySlack::buildTestPayload(strval($params['title'] ?? 'slack')));
+						if (!$ok) {
+							$this->error = \T::Notify_Edit_TestError(81);
+							break;
+						}
+					} catch (\Exception $e) {
+						$this->error = \T::Notify_Edit_TestError(81);
+						break;
+					}
+					$this->success = \T::Notify_Edit_TestSuccess();
+					break;
+				} else if ($params['type'] == \Notify::TYPE_NTFY) {
+					$topic = trim((string) ($params['receiver'] ?? ''));
+					$baseUrl = trim(strval($params['json_data']['ntfy_url'] ?? ''));
+					if ($topic === '' || $baseUrl === '' || !preg_match('#^https?://#i', $baseUrl)) {
+						$this->error = \T::Notify_Edit_TestError(90);
+						break;
+					}
+					try {
+						$ok = \NotifyNtfy::send(
+							$baseUrl,
+							$topic,
+							'ntfy test notification from monitoring '.date('Y-m-d H:i:s'),
+							'Test: '.strval($params['title'] ?? 'ntfy'),
+							strval($params['json_data']['ntfy_token'] ?? ''),
+							intval($params['json_data']['ntfy_priority'] ?? 3)
+						);
+						if (!$ok) {
+							$this->error = \T::Notify_Edit_TestError(91);
+							break;
+						}
+					} catch (\Exception $e) {
+						$this->error = \T::Notify_Edit_TestError(91);
 						break;
 					}
 					$this->success = \T::Notify_Edit_TestSuccess();
@@ -845,6 +942,18 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					<div class="type-dependence type-<?=\Notify::TYPE_WEBHOOK;?> col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6 mb-2">
 						<small class="text-muted"><?=\T::Notify_Edit_WebHookUrlHint();?></small>
 					</div>
+					<div class="type-dependence type-<?=\Notify::TYPE_EMAIL;?> col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6 mb-2">
+						<small class="text-muted"><?=\T::Notify_Edit_EmailReceiverHint();?></small>
+					</div>
+					<div class="type-dependence type-<?=\Notify::TYPE_DISCORD;?> col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6 mb-2">
+						<small class="text-muted"><?=\T::Notify_Edit_DiscordUrlHint();?></small>
+					</div>
+					<div class="type-dependence type-<?=\Notify::TYPE_SLACK;?> col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6 mb-2">
+						<small class="text-muted"><?=\T::Notify_Edit_SlackUrlHint();?></small>
+					</div>
+					<div class="type-dependence type-<?=\Notify::TYPE_NTFY;?> col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6 mb-2">
+						<small class="text-muted"><?=\T::Notify_Edit_NtfyTopicHint();?></small>
+					</div>
 					<?php
 					$actionToken = trim(strval($this->notify['json_data']['alert_action_token'] ?? ''));
 					$actionBase = strval($this->notify['json_data']['alert_action_base_url'] ?? '') ?: \ExternalMonitors::baseUrl();
@@ -907,11 +1016,27 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 							'readonly' => !($this->can_write || $this->can_create),
 							'type' => 'password',
 						]);
+						echo $this->template->html_input("json_data[ntfy_url]", $this->notify['json_data']['ntfy_url']??'https://ntfy.sh', \T::Notify_Edit_NtfyServer(), false, [
+							'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+							'global-class' => 'type-dependence type-'.\Notify::TYPE_NTFY,
+							'readonly' => !($this->can_write || $this->can_create),
+						]);
+						echo $this->template->html_input("json_data[ntfy_token]", $this->notify['json_data']['ntfy_token']??'', \T::Notify_Edit_NtfyToken(), false, [
+							'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+							'global-class' => 'type-dependence type-'.\Notify::TYPE_NTFY,
+							'readonly' => !($this->can_write || $this->can_create),
+							'type' => 'password',
+						]);
 					}
 
 					echo $this->template->html_input("json_data[gotify_priority]", $this->notify['json_data']['gotify_priority']??'', \T::Notify_Edit_GotifyPriority(), false, [
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
 						'global-class' => 'type-dependence type-'.\Notify::TYPE_GOTIFY,
+						'readonly' => !($this->can_write || $this->can_create),
+					]);
+					echo $this->template->html_input("json_data[ntfy_priority]", $this->notify['json_data']['ntfy_priority']??'3', \T::Notify_Edit_NtfyPriority(), false, [
+						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+						'global-class' => 'type-dependence type-'.\Notify::TYPE_NTFY,
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 

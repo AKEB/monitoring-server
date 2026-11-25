@@ -166,7 +166,7 @@ class NotifyService {
 			$canSecrets = false;
 		}
 		if (!$canSecrets) {
-			foreach (['telegram_bot_token', 'mattermost_token', 'max_token', 'webhook_password', 'gotify_token'] as $secret) {
+			foreach (['telegram_bot_token', 'mattermost_token', 'max_token', 'webhook_password', 'gotify_token', 'ntfy_token'] as $secret) {
 				if (array_key_exists($secret, $json)) {
 					$json[$secret] = '***';
 				}

@@ -10,7 +10,11 @@ class LookupHashesTest extends PHPUnit\Framework\TestCase {
 		$this->assertSame(2, \Notify::TYPE_GOTIFY);
 		$this->assertSame(3, \Notify::TYPE_MAX);
 		$this->assertSame(4, \Notify::TYPE_WEBHOOK);
-		$this->assertSame([0, 1, 2, 3, 4], array_keys(\Notify::type_hash()));
+		$this->assertSame(5, \Notify::TYPE_EMAIL);
+		$this->assertSame(6, \Notify::TYPE_DISCORD);
+		$this->assertSame(7, \Notify::TYPE_SLACK);
+		$this->assertSame(8, \Notify::TYPE_NTFY);
+		$this->assertSame([0, 1, 2, 3, 4, 5, 6, 7, 8], array_keys(\Notify::type_hash()));
 		$this->assertSame([0, 1], array_keys(\Notify::status_hash()));
 	}
 

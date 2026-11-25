@@ -330,6 +330,71 @@ class MonitoringNotify extends \DB\MySQLObject {
 					continue;
 				}
 				continue;
+			} elseif ($notify['type'] == \Notify::TYPE_EMAIL) {
+				try {
+					$to = trim((string) ($notify['receiver'] ?? ''));
+					if ($to === '') {
+						continue;
+					}
+					$subject = \NotifyEmail::buildSubject($title_send, strval($notify['title'] ?? ''));
+					$html = \NotifyEmail::buildHtmlBody(
+						$text_send,
+						$title_send,
+						strval($notify['title'] ?? ''),
+						$omitAlertFooter
+					);
+					\NotifyEmail::send($to, $subject, $html);
+				} catch (\Exception $e) {
+					continue;
+				}
+				continue;
+			} elseif ($notify['type'] == \Notify::TYPE_DISCORD) {
+				try {
+					$url = trim((string) ($notify['receiver'] ?? ''));
+					if ($url === '') {
+						continue;
+					}
+					$payload = \NotifyDiscord::buildPayload($text_send, $title_send, (bool) $status);
+					\NotifyDiscord::send($url, $payload);
+				} catch (\Exception $e) {
+					continue;
+				}
+				continue;
+			} elseif ($notify['type'] == \Notify::TYPE_SLACK) {
+				try {
+					$url = trim((string) ($notify['receiver'] ?? ''));
+					if ($url === '') {
+						continue;
+					}
+					$payload = \NotifySlack::buildPayload($text_send, $title_send, (bool) $status);
+					\NotifySlack::send($url, $payload);
+				} catch (\Exception $e) {
+					continue;
+				}
+				continue;
+			} elseif ($notify['type'] == \Notify::TYPE_NTFY) {
+				try {
+					$topic = trim((string) ($notify['receiver'] ?? ''));
+					$baseUrl = trim(strval($notify['json_data']['ntfy_url'] ?? ''));
+					if ($topic === '' || $baseUrl === '') {
+						continue;
+					}
+					$message = \NotifyNtfy::buildMessage($text_send, $title_send);
+					if (!$omitAlertFooter && ($notify['title'] ?? '') !== '') {
+						$message = rtrim($message)."\n\nAlert: ".$notify['title'];
+					}
+					\NotifyNtfy::send(
+						$baseUrl,
+						$topic,
+						$message,
+						$title_send !== '' ? $title_send : strval($notify['title'] ?? ''),
+						strval($notify['json_data']['ntfy_token'] ?? ''),
+						intval($notify['json_data']['ntfy_priority'] ?? 3)
+					);
+				} catch (\Exception $e) {
+					continue;
+				}
+				continue;
 			} else {
 				continue;
 			}
