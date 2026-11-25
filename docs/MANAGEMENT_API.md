@@ -1,6 +1,6 @@
 # Management API (`/api/v2`) and MCP
 
-Full management surface for monitors, notify channels, signatures, workers, maintenances, status pages, dockers, users/groups (read-only), audit logs, and object permissions.
+Full management surface for monitors, notify channels, signatures, workers, maintenances, status pages, tags, dockers, users/groups (read-only), audit logs, and object permissions.
 
 Interactive docs (Swagger UI): **`/api/docs/`** (OpenAPI JSON: `/api/docs/openapi.json`). MCP tool **`api_docs`** returns the same document (index or a `tag` / `path` / `operation` slice).
 
@@ -34,6 +34,7 @@ Base: `/api/v2/{resource}/` and `/api/v2/{resource}/{id}/`
 | `workers` | GET list/get, POST, PATCH, DELETE |
 | `maintenances` | GET list/get, POST, PATCH, DELETE |
 | `statuspages` | GET list/get, POST, PATCH, DELETE (`folder_ids` / `monitor_ids`; incidents via service/MCP) |
+| `tags` | GET list/get, POST, PATCH, DELETE (monitor tags: `title`, `color`) |
 | `dockers` | GET list/get, POST, PATCH, DELETE |
 | `users` | GET only |
 | `groups` | GET only |
@@ -50,7 +51,7 @@ Errors: `{ "status": 1, "error": "..." }` with HTTP 401/403/404/422/429.
 
 Secrets (`notify` tokens, `worker_key_hash`) are redacted unless the caller has the matching secret permission. Docker TLS PEM blobs are write-only: send PEM or base64 in `tls_ca_file` / `tls_certificate` / `tls_key`; responses expose only `tls_present`.
 
-Monitors accept the same fields as the UI edit form, including type-specific options, `workers[]`, `notify[]`, `signature_id`, and `api_enabled` (status feed opt-in only). Workers accept tuning timeouts, `monitors[]`, `dockers[]`, and `restart_worker`. Dockers accept `workers[]` and TLS fields.
+Monitors accept the same fields as the UI edit form, including type-specific options, `workers[]`, `notify[]`, `tags` / `tag_ids`, `signature_id`, `api_enabled` (status feed opt-in only), and `badge_enabled` (public `/badge/{hash}.svg`; response includes `badge_url`). Workers accept tuning timeouts, `monitors[]`, `dockers[]`, and `restart_worker`. Dockers accept `workers[]` and TLS fields.
 
 ## MCP
 

@@ -25,6 +25,7 @@ class McpServerTest extends ApiV2TestCase {
 			'workers_list', 'workers_get', 'workers_create', 'workers_update', 'workers_delete',
 			'maintenances_list', 'maintenances_create', 'maintenances_update', 'maintenances_delete',
 			'statuspages_list', 'statuspages_get', 'statuspages_create', 'statuspages_update', 'statuspages_delete',
+			'tags_list', 'tags_get', 'tags_create', 'tags_update', 'tags_delete',
 			'dockers_list', 'dockers_get', 'dockers_create', 'dockers_update', 'dockers_delete',
 			'servers_list', 'servers_get', 'servers_create', 'servers_update', 'servers_delete',
 			'users_list', 'groups_list', 'logs_list',

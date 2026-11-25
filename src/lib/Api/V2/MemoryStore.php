@@ -22,6 +22,7 @@ class MemoryStore {
 		'permissions' => [],
 		'status_pages' => [],
 		'status_page_incidents' => [],
+		'monitor_tags' => [],
 	];
 
 	/** @var array<string, int> */

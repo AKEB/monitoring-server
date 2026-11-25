@@ -50,6 +50,7 @@ class Gateway extends \Routing_Parent implements \Routing_Interface {
 			'workers' => $this->crud($user, $method, $id, $payload, \Api\V2\WorkersService::class),
 			'maintenances' => $this->crud($user, $method, $id, $payload, \Api\V2\MaintenancesService::class),
 			'statuspages' => $this->crud($user, $method, $id, $payload, \Api\V2\StatusPagesService::class),
+			'tags' => $this->crud($user, $method, $id, $payload, \Api\V2\TagsService::class),
 			'dockers' => $this->crud($user, $method, $id, $payload, \Api\V2\DockersService::class),
 			'servers' => $this->crud($user, $method, $id, $payload, \Api\V2\ServersService::class),
 			'users' => $this->readOnly($user, $method, $id, \Api\V2\UsersService::class),

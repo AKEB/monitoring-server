@@ -13,6 +13,7 @@ use Api\V2\PermissionsService;
 use Api\V2\ServersService;
 use Api\V2\SignaturesService;
 use Api\V2\StatusPagesService;
+use Api\V2\TagsService;
 use Api\V2\UsersService;
 use Api\V2\WorkersService;
 
@@ -165,6 +166,11 @@ class Server {
 			['name' => 'statuspages_create', 'description' => 'Create a status page. slug required; folder_ids/monitor_ids optional. Does not change api_enabled.', 'inputSchema' => ['type' => 'object', 'properties' => ['title' => ['type' => 'string'], 'slug' => ['type' => 'string'], 'folder_ids' => ['type' => 'array'], 'monitor_ids' => ['type' => 'array'], 'status' => ['type' => 'integer']], 'required' => ['title', 'slug']]],
 			['name' => 'statuspages_update', 'description' => 'Update a status page.', 'inputSchema' => ['type' => 'object', 'properties' => ['id' => ['type' => 'integer']], 'required' => ['id']]],
 			['name' => 'statuspages_delete', 'description' => 'Delete a status page.', 'inputSchema' => $idSchema],
+			['name' => 'tags_list', 'description' => 'List monitor tags.', 'inputSchema' => $empty],
+			['name' => 'tags_get', 'description' => 'Get a monitor tag by id.', 'inputSchema' => $idSchema],
+			['name' => 'tags_create', 'description' => 'Create a monitor tag (title, optional Bootstrap hex color).', 'inputSchema' => ['type' => 'object', 'properties' => ['title' => ['type' => 'string'], 'color' => ['type' => 'string']], 'required' => ['title']]],
+			['name' => 'tags_update', 'description' => 'Update a monitor tag.', 'inputSchema' => ['type' => 'object', 'properties' => ['id' => ['type' => 'integer']], 'required' => ['id']]],
+			['name' => 'tags_delete', 'description' => 'Delete a monitor tag.', 'inputSchema' => $idSchema],
 			['name' => 'dockers_list', 'description' => 'List Docker hosts.', 'inputSchema' => $empty],
 			['name' => 'dockers_get', 'description' => 'Get a Docker host. TLS blobs are never returned.', 'inputSchema' => $idSchema],
 			['name' => 'dockers_create', 'description' => 'Create a Docker host entry.', 'inputSchema' => ['type' => 'object', 'properties' => ['title' => ['type' => 'string'], 'host' => ['type' => 'string']], 'required' => ['title']]],
@@ -220,6 +226,11 @@ class Server {
 			'statuspages_create' => StatusPagesService::create($user, $arguments),
 			'statuspages_update' => StatusPagesService::update($user, intval($arguments['id'] ?? 0), $arguments),
 			'statuspages_delete' => StatusPagesService::delete($user, intval($arguments['id'] ?? 0)),
+			'tags_list' => TagsService::list($user, $arguments),
+			'tags_get' => TagsService::get($user, intval($arguments['id'] ?? 0)),
+			'tags_create' => TagsService::create($user, $arguments),
+			'tags_update' => TagsService::update($user, intval($arguments['id'] ?? 0), $arguments),
+			'tags_delete' => TagsService::delete($user, intval($arguments['id'] ?? 0)),
 			'dockers_list' => DockersService::list($user, $arguments),
 			'dockers_get' => DockersService::get($user, intval($arguments['id'] ?? 0)),
 			'dockers_create' => DockersService::create($user, $arguments),

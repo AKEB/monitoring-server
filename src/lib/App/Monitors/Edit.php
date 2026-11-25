@@ -11,6 +11,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 	private bool $can_create = false;
 	private array $workers_hash = [];
 	private array $notify_hash = [];
+	private array $tags_hash = [];
 
 	public function Run(int $monitor_id=0, int $parent_id=0) {
 		$this->monitor_id = intval($monitor_id ?? 0);
@@ -241,6 +242,10 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				intval($params['type'] ?? ($data['type'] ?? 0)),
 				$data['api_enabled'] ?? 0
 			);
+			$params['badge_enabled'] = \EntityValidation::normalizeSwitchStatus($data['badge_enabled'] ?? 0);
+			if (intval($params['type'] ?? ($data['type'] ?? 0)) === \Monitors::TYPE_FOLDER) {
+				$params['badge_enabled'] = 0;
+			}
 			$params['api_description_ru'] = isset($data['api_description_ru']) ? trim($data['api_description_ru']) : '';
 			$params['api_description_en'] = isset($data['api_description_en']) ? trim($data['api_description_en']) : '';
 
@@ -621,6 +626,14 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					$notify_hash[$v['id']] = \Sessions::checkPermission(\Notify::PERMISSION_ACCESS, $v['id'], READ);
 				}
 			}
+			$tags_hash = [];
+			foreach (\MonitorTags::data(false, ' ORDER BY `title` ASC', '`id`, `title`') ?: [] as $v) {
+				$tags_hash[intval($v['id'])] = \Sessions::checkPermission(\MonitorTags::PERMISSION_ACCESS, intval($v['id']), READ);
+			}
+			if (!isset($data['tags']) || !is_array($data['tags'])) {
+				$data['tags'] = [];
+			}
+			$data['tags'] = array_values(array_filter(array_map('intval', $data['tags'])));
 
 			$parentForInherit = intval($params['parent_id'] ?? $this->parent_id);
 
@@ -654,6 +667,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 			$old_monitor = [];
 			$update_jobs = [];
 			$update_notify = [];
+			$update_tags = [];
 			if (isset($params['id']) && $params['id']) {
 				if (!$this->can_write) {
 					$this->error = \T::Monitor_Edit_PermissionDenied();
@@ -721,12 +735,40 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					}
 				}
 
+				$old_tags = [];
+				foreach (\MonitoringMonitorTags::tagIdsForMonitor(intval($params['id'])) as $tid) {
+					$old_tags[$tid] = true;
+				}
+				foreach ($old_tags as $tag_id => $_) {
+					if (!isset($tags_hash[$tag_id]) || !$tags_hash[$tag_id]) continue;
+					if (!in_array($tag_id, $data['tags'], true)) {
+						$update_tags[$tag_id] = -1;
+					}
+				}
+				foreach ($data['tags'] as $tag_id) {
+					if (!isset($tags_hash[$tag_id]) || !$tags_hash[$tag_id]) continue;
+					if (isset($update_tags[$tag_id])) continue;
+					if (isset($old_tags[$tag_id])) continue;
+					$update_tags[$tag_id] = 1;
+				}
+
+				if (array_key_exists('badge_enabled', $params)) {
+					$wantBadge = intval($params['badge_enabled']) === 1;
+					$hadBadge = intval($old_monitor['badge_enabled'] ?? 0) === 1;
+					$oldHash = trim(strval($old_monitor['badge_hash'] ?? ''));
+					if ($wantBadge && (!$hadBadge || $oldHash === '' || !\BadgeSvg::isValidHash($oldHash))) {
+						$params['badge_hash'] = \BadgeSvg::generateHash();
+					} elseif (!$wantBadge) {
+						$params['badge_hash'] = null;
+					}
+				}
+
 				foreach($params as $k=>$v) {
-					if ($old_monitor[$k] == $v) {
+					if (($old_monitor[$k] ?? null) == $v) {
 						unset($params[$k]);
 					}
 				}
-				if (!$params && !$update_jobs && !$update_notify) {
+				if (!$params && !$update_jobs && !$update_notify && !$update_tags) {
 					$this->success = \T::Monitor_Edit_NotingChanged();
 					break;
 				}
@@ -762,6 +804,15 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 						if (isset($update_notify[$notify_id])) continue;
 						$update_notify[$notify_id] = 1;
 					}
+				}
+				foreach ($data['tags'] as $tag_id) {
+					if (!isset($tags_hash[$tag_id]) || !$tags_hash[$tag_id]) continue;
+					$update_tags[$tag_id] = 1;
+				}
+				if (intval($params['badge_enabled'] ?? 0) === 1) {
+					$params['badge_hash'] = \BadgeSvg::generateHash();
+				} else {
+					$params['badge_hash'] = null;
 				}
 				$params['create_time'] = time();
 			}
@@ -832,6 +883,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 						\Logs::add_tag($log_id, \Notify::LOGS_OBJECT, $notify_id);
 					}
 				}
+				\Api\V2\Relations::applyMonitorTags(intval($params['id']), $update_tags);
 			} else {
 				// Create
 				$params['response_code'] = $params['response_code']??'';
@@ -870,6 +922,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					\Logs::add_tag($log_id, \Monitors::LOGS_OBJECT, $monitor_id);
 					\Logs::add_tag($log_id, \Notify::LOGS_OBJECT, $notify_id);
 				}
+				\Api\V2\Relations::applyMonitorTags(intval($monitor_id), $update_tags);
 
 				if (!\Sessions::in_group(\Groups::ADMIN_GROUP_ID, intval(\Sessions::currentUser()['id']))) {
 					$permissions = \Monitors::permissions_hash();
@@ -989,6 +1042,11 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					$this->monitor['notify'][$v['notify_id']] = true;
 				}
 			}
+			$this->monitor['tags'] = [];
+			foreach (\MonitoringMonitorTags::tagIdsForMonitor(intval($this->monitor['id'])) as $tid) {
+				$this->monitor['tags'][$tid] = true;
+			}
+			$this->monitor['badge_enabled'] ??= 0;
 			$parentForInherit = intval($this->monitor['parent_id'] ?? $this->parent_id);
 			// Show workers/notifies enabled on ancestor folders as checked (locked later).
 			// Server-agent monitors never inherit workers from folders.
@@ -1023,6 +1081,8 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 		} else {
 			$this->monitor['status'] ??= \Monitors::STATUS_ENABLED;
 			$this->monitor['api_enabled'] ??= 0;
+			$this->monitor['badge_enabled'] ??= 0;
+			$this->monitor['tags'] ??= [];
 			$this->monitor['api_description_ru'] ??= '';
 			$this->monitor['api_description_en'] ??= '';
 			$this->monitor['type'] ??= \Monitors::TYPE_FOLDER;
@@ -1118,6 +1178,14 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				];
 			}
 		}
+
+		$this->tags_hash = [];
+		foreach (\MonitorTags::readable_hash() as $tid => $title) {
+			$this->tags_hash[$tid] = [
+				'title' => htmlspecialchars($title),
+				'enable' => true,
+			];
+		}
 	}
 
 	private function get_breadcrumb() {
@@ -1195,6 +1263,28 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 						'readonly' => !($this->can_write || $this->can_create),
 						'global-class' => 'type-dependence type-'.\Monitors::TYPE_HTTPS.' type-'.\Monitors::TYPE_HTTP_JSON.' type-'.\Monitors::TYPE_TCP.' type-'.\Monitors::TYPE_UDP.' type-'.\Monitors::TYPE_PING.' type-'.\Monitors::TYPE_DOCKER.' type-'.\Monitors::TYPE_EXPORTER_DISK.' type-'.\Monitors::TYPE_EXPORTER_MEMORY.' type-'.\Monitors::TYPE_EXPORTER_CPU.' type-'.\Monitors::TYPE_EXTERNAL.' type-'.\Monitors::TYPE_DOMAIN.' type-'.\Monitors::TYPE_DNS,
 					]);
+					echo $this->template->html_switch("badge_enabled", intval($this->monitor['badge_enabled']??0), \T::Monitor_Edit_BadgeEnabled(), false,[
+						'readonly' => !($this->can_write || $this->can_create),
+					]);
+					$badgeUrl = '';
+					if (!empty($this->monitor['id']) && intval($this->monitor['badge_enabled'] ?? 0) === 1) {
+						$badgeUrl = \BadgeSvg::badgeUrl(strval($this->monitor['badge_hash'] ?? ''));
+					}
+					if ($badgeUrl !== '') {
+						$copy_btn = '<button class="btn btn-outline-secondary copy-external-url" type="button" tabindex="-1" title="Copy"><i class="bi bi-clipboard"></i></button>';
+						echo '<div class="badge-url-dependence mb-2">';
+						echo '<p class="text-muted small mb-1">'.\T::Monitor_Edit_BadgeUrlHint().'</p>';
+						echo $this->template->html_input("badge_url", htmlspecialchars($badgeUrl, ENT_QUOTES, 'UTF-8'), \T::Monitor_Edit_BadgeUrl(), false, [
+							'type' => 'textarea',
+							'rows' => '2',
+							'class1' => 'col-12',
+							'class2' => 'col-12',
+							'readonly' => true,
+							'add_after' => $copy_btn,
+						]);
+						echo '<p class="text-muted small">Markdown: <code>![status]('.$badgeUrl.')</code></p>';
+						echo '</div>';
+					}
 					$api_description_class = 'api-description-dependence';
 					echo $this->template->html_input("api_description_ru", htmlspecialchars(strval($this->monitor['api_description_ru']??''), ENT_QUOTES, 'UTF-8'), \T::Monitor_Edit_ApiDescriptionRu(), false, [
 						'type' => 'textarea',
@@ -1421,6 +1511,10 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					]);
 
 					echo $this->template->html_params("notify[]", $this->notify_hash, $this->monitor['notify']??[], \T::Monitor_Edit_Notify(),false,[
+						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
+						'readonly' => !($this->can_write || $this->can_create),
+					]);
+					echo $this->template->html_params("tags[]", $this->tags_hash, $this->monitor['tags']??[], \T::Monitor_Edit_Tags(),false,[
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
 						'readonly' => !($this->can_write || $this->can_create),
 					]);

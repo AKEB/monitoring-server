@@ -65,11 +65,13 @@ class MonitorsService {
 		$row['update_time'] = time();
 		$workers = $built['workers'];
 		$notify = $built['notify'];
+		$tags = $built['tags'] ?? [];
 
 		$store = Runtime::store();
 		if ($store) {
 			$row['workers'] = $workers;
 			$row['notify'] = $notify;
+			$row['tags'] = $tags;
 			return Envelope::ok(static::publicRow($store->insert('monitors', $row), $store));
 		}
 		if (!Acl::canCreate($user, \Monitors::PERMISSION_CREATE)) {
@@ -92,6 +94,8 @@ class MonitorsService {
 		Relations::applyMonitorWorkers($id, $workerDiff);
 		$notifyDiff = Relations::diffLinks([], $notify, fn(int $nid) => Acl::can($user, \Notify::PERMISSION_ACCESS, $nid, READ));
 		Relations::applyMonitorNotify($id, $notifyDiff);
+		$tagDiff = Relations::diffLinks([], $tags, fn(int $tid) => Acl::can($user, \MonitorTags::PERMISSION_ACCESS, $tid, READ));
+		Relations::applyMonitorTags($id, $tagDiff);
 
 		if ($type === \Monitors::TYPE_EXTERNAL) {
 			\ExternalMonitors::ensureVirtualJob($id);
@@ -137,6 +141,9 @@ class MonitorsService {
 			}
 			if (array_key_exists('notify', $payload)) {
 				$patch['notify'] = $built['notify'];
+			}
+			if (array_key_exists('tags', $payload) || array_key_exists('tag_ids', $payload)) {
+				$patch['tags'] = $built['tags'] ?? [];
 			}
 			$patch['update_time'] = time();
 			return Envelope::ok(static::publicRow($store->update('monitors', $id, $patch) ?? [], $store));
@@ -201,6 +208,15 @@ class MonitorsService {
 			);
 			Relations::applyMonitorNotify($id, $diff);
 		}
+		if (array_key_exists('tags', $payload) || array_key_exists('tag_ids', $payload)) {
+			$oldTags = \MonitoringMonitorTags::tagIdsForMonitor($id);
+			$diff = Relations::diffLinks(
+				$oldTags,
+				$built['tags'] ?? [],
+				fn(int $tid) => Acl::can($user, \MonitorTags::PERMISSION_ACCESS, $tid, READ)
+			);
+			Relations::applyMonitorTags($id, $diff);
+		}
 
 		if ($type === \Monitors::TYPE_EXTERNAL) {
 			\ExternalMonitors::ensureVirtualJob($id);
@@ -255,6 +271,20 @@ class MonitorsService {
 		}
 		if ($creating || array_key_exists('api_enabled', $payload) || array_key_exists('type', $payload)) {
 			$row['api_enabled'] = \EntityValidation::normalizeApiEnabled($type, $payload['api_enabled'] ?? ($existing['api_enabled'] ?? 0));
+		}
+		if ($creating || array_key_exists('badge_enabled', $payload)) {
+			$badgeOn = \EntityValidation::normalizeSwitchStatus($payload['badge_enabled'] ?? 0);
+			$row['badge_enabled'] = $badgeOn;
+			$existingHash = trim(strval($existing['badge_hash'] ?? ''));
+			if ($badgeOn) {
+				if ($existingHash === '' || !\BadgeSvg::isValidHash($existingHash)) {
+					$row['badge_hash'] = Runtime::store()
+						? bin2hex(random_bytes(32))
+						: \BadgeSvg::generateHash();
+				}
+			} else {
+				$row['badge_hash'] = null;
+			}
 		}
 		foreach (['api_description_ru', 'api_description_en'] as $field) {
 			if ($creating || array_key_exists($field, $payload)) {
@@ -649,7 +679,18 @@ class MonitorsService {
 			}
 		}
 
-		return ['row' => $row, 'workers' => $workers, 'notify' => $notify];
+		$tags = [];
+		if ($creating || array_key_exists('tags', $payload) || array_key_exists('tag_ids', $payload)) {
+			$rawTags = $payload['tags'] ?? ($payload['tag_ids'] ?? []);
+			$tags = Relations::intIdList($rawTags);
+			if (!Runtime::$bypassAcl) {
+				$tags = array_values(array_filter($tags, fn($tid) => Acl::can($user, \MonitorTags::PERMISSION_ACCESS, $tid, READ)));
+			}
+		} elseif ($existing) {
+			$tags = Relations::intIdList($existing['tags'] ?? ($existing['tag_ids'] ?? []));
+		}
+
+		return ['row' => $row, 'workers' => $workers, 'notify' => $notify, 'tags' => $tags];
 	}
 
 	static private function normalizeSslDays(mixed $raw): string {
@@ -700,6 +741,13 @@ class MonitorsService {
 		if ($store) {
 			$row['workers'] = Relations::intIdList($row['workers'] ?? []);
 			$row['notify'] = Relations::intIdList($row['notify'] ?? []);
+			$row['tags'] = Relations::intIdList($row['tags'] ?? ($row['tag_ids'] ?? []));
+			$row['tag_ids'] = $row['tags'];
+			$row['badge_enabled'] = intval($row['badge_enabled'] ?? 0);
+			$hash = trim(strval($row['badge_hash'] ?? ''));
+			$row['badge_url'] = (intval($row['badge_enabled']) === 1 && $hash !== '')
+				? \BadgeSvg::badgeUrl($hash)
+				: '';
 			return $row;
 		}
 		if ($id > 0 && !Runtime::store()) {
@@ -726,7 +774,17 @@ class MonitorsService {
 			}
 			$row['workers'] = array_values(array_unique($workers));
 			$row['notify'] = array_values($notify);
+			$row['tags'] = \MonitoringMonitorTags::tagIdsForMonitor($id);
+			$row['tag_ids'] = $row['tags'];
+		} else {
+			$row['tags'] = Relations::intIdList($row['tags'] ?? ($row['tag_ids'] ?? []));
+			$row['tag_ids'] = $row['tags'];
 		}
+		$row['badge_enabled'] = intval($row['badge_enabled'] ?? 0);
+		$hash = trim(strval($row['badge_hash'] ?? ''));
+		$row['badge_url'] = (intval($row['badge_enabled']) === 1 && $hash !== '')
+			? \BadgeSvg::badgeUrl($hash)
+			: '';
 		return $row;
 	}
 

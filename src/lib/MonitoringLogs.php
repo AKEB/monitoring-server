@@ -762,6 +762,12 @@ class MonitoringLogs extends \DB\MySQLObject {
 			$monitors[$monitor_id]['states'][$slotTime]['workers'][$worker_id] = max($monitors[$monitor_id]['states'][$slotTime]['workers'][$worker_id], $state);
 		}
 		if (!isset($monitors[0])) return [];
+		$tagMap = \MonitoringMonitorTags::tagsByMonitorIds(array_keys($monitor_ids));
+		foreach ($tagMap as $mid => $tagList) {
+			if (isset($monitors[$mid])) {
+				$monitors[$mid]['tags'] = $tagList;
+			}
+		}
 		$parent = [];
 		$monitors = static::getDataForParents($monitors[0]['children']??[]);
 		unset($parent);

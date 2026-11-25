@@ -63,6 +63,10 @@
     {
       "name": "statuspages",
       "description": "Public status pages (admin CRUD). Membership independent of api_enabled."
+    },
+    {
+      "name": "tags",
+      "description": "Monitor tags"
     }
   ],
   "paths": {
@@ -2210,6 +2214,193 @@
           }
         }
       }
+    },
+    "/api/v2/tags/": {
+      "get": {
+        "tags": [
+          "tags"
+        ],
+        "summary": "List monitor tags",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ApiTokenHeader": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnvelopeList"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "tags"
+        ],
+        "summary": "Create monitor tag",
+        "description": "title required; color optional Bootstrap hex (#0d6efd).",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ApiTokenHeader": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TagWrite"
+              },
+              "example": {
+                "title": "production",
+                "color": "#198754"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnvelopeObject"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/tags/{id}/": {
+      "get": {
+        "tags": [
+          "tags"
+        ],
+        "summary": "Get monitor tag",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ApiTokenHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdPath"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Object",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnvelopeObject"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "tags"
+        ],
+        "summary": "Update monitor tag",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ApiTokenHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TagWrite"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnvelopeObject"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "tags"
+        ],
+        "summary": "Delete monitor tag",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ApiTokenHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnvelopeObject"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -2868,6 +3059,23 @@
           "ntp_max_offset_ms": {
             "type": "integer",
             "description": "For type 30; 0 disables drift check"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            },
+            "description": "Tag ids"
+          },
+          "tag_ids": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            }
+          },
+          "badge_enabled": {
+            "type": "integer",
+            "description": "1 enables public /badge/{hash}.svg"
           }
         },
         "additionalProperties": true
@@ -3202,6 +3410,21 @@
             "items": {
               "type": "object"
             }
+          }
+        }
+      },
+      "TagWrite": {
+        "type": "object",
+        "required": [
+          "title"
+        ],
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "color": {
+            "type": "string",
+            "description": "Hex color e.g. #0d6efd"
           }
         }
       }

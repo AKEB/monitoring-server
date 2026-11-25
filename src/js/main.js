@@ -172,6 +172,13 @@ function printMonitors(data, level=0, searchText='') {
 			// Заголовок монитора с отступом и значком доступности
 			HTML += '<span class="ml-padding-'+level+'"></span><span class="badge rounded-pill monitor-badge '+(monitor.badge_class)+'" data-bs-toggle="tooltip" data-bs-html="true" data-bs-title="24-hours" data-monitor-id="'+monitor.id+'">'+monitor.availability_percent+'%</span>'+"\n";
 			HTML += monitor.title;
+			if (monitor.tags && monitor.tags.length) {
+				for (var ti = 0; ti < monitor.tags.length; ti++) {
+					const tag = monitor.tags[ti];
+					const tagColor = tag.color || '#0d6efd';
+					HTML += ' <span class="badge rounded-pill border ms-1" style="border-color:'+escapeHtmlAttr(tagColor)+'!important;color:'+escapeHtmlAttr(tagColor)+';">'+escapeHtmlAttr(tag.title || '')+'</span>';
+				}
+			}
 			HTML += '</div>';
 			// Блок с полосками состояний (uptime bars)
 			HTML += '<div class="col-3 col-md-4"><div class="wrap"><div class="monitor-states" data-monitor-id="'+monitor.id+'">';

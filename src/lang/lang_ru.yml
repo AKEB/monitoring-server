@@ -121,6 +121,10 @@ Monitor:
     Type: "Тип"
     Status: "Статус"
     ApiEnabled: "Отдавать в /api/v1/status/"
+    BadgeEnabled: "Публичный SVG-бейдж статуса"
+    BadgeUrl: "URL бейджа"
+    BadgeUrlHint: "Shields-style SVG для README / docs (без логина). Markdown ниже."
+    Tags: "Теги"
     ApiDescriptionRu: "Описание (русский)"
     ApiDescriptionEn: "Описание (английский)"
     CreateTime: "Время создания"
@@ -189,6 +193,7 @@ Monitor:
     CreateButton: "Создать"
     ParentFolder: "Родительская папка"
     Notify: "Уведомления"
+    Tags: "Теги"
     NotifyInherited: "наследуется"
     Docker: "Docker"
     Value: "Больше чем (%%)"
@@ -611,6 +616,37 @@ Maintenances:
     PermissionDenied: "У вас нет прав на редактирование этой технической работы"
     NotingChanged: "Ничего не изменилось"
     TimeError: "Ошибка времени"
+
+MonitorTags:
+  Menu: "Теги"
+  PageTitle: "Теги мониторов"
+  Permissions:
+    Access: "Доступ"
+    Create: "Создание тега"
+  Delete:
+    Title: "Удаление тега"
+    Confirmation: "Удалить тег {title}?"
+    PermissionDenied: "Нет прав на удаление этого тега"
+    NotFound: "Тег не найден"
+  Table:
+    Title: "Название"
+    Color: "Цвет"
+    Actions: "Действия"
+  Edit:
+    CreateTitle: "Создание тега"
+    EditTitle: "Редактирование тега &quot;%s&quot; [ID=%d]"
+    Title: "Название"
+    Color: "Цвет"
+    ColorHint: "Цвета в стиле Bootstrap — пресет или любой hex."
+    ChangeButton: "Обновить"
+    CreateButton: "Создать"
+    NameLengthError: "Название должно быть от 1 до 64 символов"
+    DuplicateError: "Тег с таким названием уже есть"
+    NotFound: "Тег не найден"
+    PermissionDenied: "Нет прав на редактирование этого тега"
+    NotingChanged: "Ничего не изменилось"
+  Create:
+    PermissionDenied: "Нет прав на создание тега"
 
 StatusPages:
   Menu: "Status pages"

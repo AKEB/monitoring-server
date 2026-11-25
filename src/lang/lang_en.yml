@@ -122,6 +122,10 @@ Monitor:
     Type: "Type"
     Status: "Status"
     ApiEnabled: "Expose in /api/v1/status/"
+    BadgeEnabled: "Public SVG status badge"
+    BadgeUrl: "Badge embed URL"
+    BadgeUrlHint: "Shields-style SVG for README / docs (no login). Copy Markdown below."
+    Tags: "Tags"
     ApiDescriptionRu: "Description (Russian)"
     ApiDescriptionEn: "Description (English)"
     CreateTime: "Create time"
@@ -192,6 +196,7 @@ Monitor:
     CreateButton: "Create"
     ParentFolder: "Parent folder"
     Notify: "Notifications"
+    Tags: "Tags"
     NotifyInherited: "inherited"
     Docker: "Docker"
     Container: "Container"
@@ -616,6 +621,37 @@ Maintenances:
     PermissionDenied: "You don't have permission to edit this maintenance"
     NotingChanged: "Nothing changed"
     TimeError: "Time error"
+
+MonitorTags:
+  Menu: "Tags"
+  PageTitle: "Monitor tags"
+  Permissions:
+    Access: "Access"
+    Create: "Create tag"
+  Delete:
+    Title: "Delete tag"
+    Confirmation: "Delete tag {title}?"
+    PermissionDenied: "You don't have permission to delete this tag"
+    NotFound: "Tag not found"
+  Table:
+    Title: "Title"
+    Color: "Color"
+    Actions: "Actions"
+  Edit:
+    CreateTitle: "Create tag"
+    EditTitle: "Edit tag &quot;%s&quot; [ID=%d]"
+    Title: "Title"
+    Color: "Color"
+    ColorHint: "Bootstrap-style colors — pick a preset or any hex."
+    ChangeButton: "Update"
+    CreateButton: "Create"
+    NameLengthError: "Title must be 1–64 characters"
+    DuplicateError: "A tag with this title already exists"
+    NotFound: "Tag not found"
+    PermissionDenied: "You don't have permission to edit this tag"
+    NotingChanged: "Nothing changed"
+  Create:
+    PermissionDenied: "You don't have permission to create a tag"
 
 StatusPages:
   Menu: "Status pages"

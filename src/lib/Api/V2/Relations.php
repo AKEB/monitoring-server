@@ -106,6 +106,35 @@ class Relations {
 	}
 
 	/**
+	 * @param array<int,int> $diff tag_id => +/-1
+	 */
+	static public function applyMonitorTags(int $monitorId, array $diff): void {
+		foreach ($diff as $tagId => $status) {
+			$tagId = intval($tagId);
+			if ($status < 0) {
+				$old = \MonitoringMonitorTags::get(['monitor_id' => $monitorId, 'tag_id' => $tagId]);
+				if (!empty($old['id'])) {
+					\MonitoringMonitorTags::delete(intval($old['id']));
+					$logId = \Logs::delete_log(\MonitoringMonitorTags::LOGS_OBJECT, intval($old['id']), $old);
+					\Logs::add_tag($logId, \Monitors::LOGS_OBJECT, $monitorId);
+					\Logs::add_tag($logId, \MonitorTags::LOGS_OBJECT, $tagId);
+				}
+				continue;
+			}
+			$row = [
+				'monitor_id' => $monitorId,
+				'tag_id' => $tagId,
+				'create_time' => time(),
+				'update_time' => time(),
+			];
+			$row['id'] = \MonitoringMonitorTags::save($row);
+			$logId = \Logs::create_log(\MonitoringMonitorTags::LOGS_OBJECT, intval($row['id']), $row);
+			\Logs::add_tag($logId, \Monitors::LOGS_OBJECT, $monitorId);
+			\Logs::add_tag($logId, \MonitorTags::LOGS_OBJECT, $tagId);
+		}
+	}
+
+	/**
 	 * @param array<int,int> $diff worker_id => +/-1
 	 */
 	static public function applyDockerWorkers(int $dockerId, array $diff): void {
