@@ -108,7 +108,7 @@ class PublicPage extends \Routing_Parent implements \Routing_Interface {
 			echo '<div class="sp-state">'.htmlspecialchars(\T::StatusPages_Public_StateMaintenance(), ENT_QUOTES, 'UTF-8').'</div><h3>'.$mt.'</h3></div>';
 		}
 
-		$updated = sprintf(\T::StatusPages_Public_Updated(), gmdate('Y-m-d H:i:s', $generated));
+		$updated = \T::StatusPages_Public_Updated(gmdate('Y-m-d H:i:s', $generated));
 		echo '<footer class="sp-footer">';
 		echo '<span>'.htmlspecialchars($updated, ENT_QUOTES, 'UTF-8').'</span>';
 		echo '<span>'.htmlspecialchars(\T::StatusPages_Public_PoweredBy(), ENT_QUOTES, 'UTF-8');
