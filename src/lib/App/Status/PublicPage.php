@@ -180,9 +180,24 @@ class PublicPage extends \Routing_Parent implements \Routing_Interface {
 		};
 	}
 
+	/**
+	 * Split a leading country-flag emoji (regional-indicator pair) from a title
+	 * so the flag can sit in a fixed-width column and names stay aligned.
+	 *
+	 * @return array{0:string,1:string} [flag, rest]
+	 */
+	static private function splitLeadingFlag(string $title): array {
+		if (preg_match('/^([\x{1F1E6}-\x{1F1FF}]{2})\s*(.*)$/u', $title, $m)) {
+			return [$m[1], $m[2]];
+		}
+		return ['', $title];
+	}
+
 	/** @param array<string,mixed> $res */
 	static private function renderResource(array $res): void {
-		$rt = htmlspecialchars(strval($res['title'] ?? ''), ENT_QUOTES, 'UTF-8');
+		[$flag, $name] = static::splitLeadingFlag(strval($res['title'] ?? ''));
+		$flagHtml = htmlspecialchars($flag, ENT_QUOTES, 'UTF-8');
+		$rt = htmlspecialchars($name, ENT_QUOTES, 'UTF-8');
 		$st = strval($res['status'] ?? 'unknown');
 		$url = trim(strval($res['check_url'] ?? ''));
 		$badgeClass = match ($st) {
@@ -211,6 +226,7 @@ class PublicPage extends \Routing_Parent implements \Routing_Interface {
 
 		echo '<div class="sp-item">';
 		echo '<div class="sp-item-main">'.$uptimeHtml;
+		echo '<span class="sp-flag" aria-hidden="true">'.$flagHtml.'</span>';
 		if ($url !== '' && preg_match('#^https?://#i', $url)) {
 			$href = htmlspecialchars($url, ENT_QUOTES, 'UTF-8');
 			echo '<p class="sp-name"><a href="'.$href.'" target="_blank" rel="noopener noreferrer">'.$rt.'</a></p>';

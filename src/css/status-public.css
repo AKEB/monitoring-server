@@ -208,9 +208,10 @@ a { color: inherit; }
 .sp-item:first-child { border-top: 0; }
 
 .sp-item-main {
-	display: flex;
+	display: grid;
+	grid-template-columns: 4.6rem 1.35em minmax(0, 1fr);
+	column-gap: 0.55rem;
 	align-items: center;
-	gap: 0.55rem;
 	min-width: 0;
 }
 
@@ -218,14 +219,14 @@ a { color: inherit; }
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
-	min-width: 3.4rem;
-	padding: 0.18rem 0.55rem;
+	width: 100%;
+	padding: 0.18rem 0.35rem;
 	border-radius: 999px;
 	font-size: 0.78rem;
 	font-weight: 700;
+	font-variant-numeric: tabular-nums;
 	background: var(--sp-ok);
 	color: #06351a;
-	flex: 0 0 auto;
 }
 
 .sp-uptime.is-warn { background: var(--sp-warn); color: #3d2600; }
@@ -236,12 +237,23 @@ a { color: inherit; }
 	.sp-uptime.is-empty { background: #30363d; color: #adbac7; }
 }
 
+.sp-flag {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 100%;
+	line-height: 1;
+	font-size: 1.05em;
+	user-select: none;
+}
+
 .sp-name {
 	margin: 0;
 	font-weight: 600;
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
+	min-width: 0;
 }
 
 .sp-name a {
