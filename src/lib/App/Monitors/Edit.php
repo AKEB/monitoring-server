@@ -1478,7 +1478,7 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					echo $this->template?->html_select('ssl_cert_expire_alert_days[]', \Monitors::ssl_cert_expire_alert_days_hash(), $this->monitor['ssl_cert_expire_alert_days']??[], \T::Monitor_Edit_SSLCertExpireAlertDays(), false,[
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
 						'multiple' => 'multiple',
-						'global-class' => $httpTypeClass,
+						'global-class' => $httpTypeClass.' ssl-alert-days-dependence',
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 					echo $this->template?->html_select('domain_expire_alert_days[]', \Monitors::domain_expire_alert_days_hash(), $this->monitor['domain_expire_alert_days']??[], \T::Monitor_Edit_DomainExpireAlertDays(), false,[
@@ -1506,13 +1506,13 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					$doh_presets = ['' => '—'] + \Monitors::dns_doh_presets();
 					echo $this->template?->html_select('dns_doh_preset', $doh_presets, '', \T::Monitor_Edit_DnsDohPreset(), false,[
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
-						'global-class' => 'type-dependence type-'.\Monitors::TYPE_DNS,
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_DNS.' dns-doh-dependence',
 						'readonly' => !($this->can_write || $this->can_create),
 						'global-id' => 'dns-doh-preset-div',
 					]);
 					echo $this->template->html_input("dns_doh_url", $this->monitor['dns_doh_url']??'', \T::Monitor_Edit_DnsDohUrl(), false, [
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
-						'global-class' => 'type-dependence type-'.\Monitors::TYPE_DNS,
+						'global-class' => 'type-dependence type-'.\Monitors::TYPE_DNS.' dns-doh-dependence',
 						'readonly' => !($this->can_write || $this->can_create),
 						'placeholder' => 'https://dns.google/dns-query',
 						'global-id' => 'dns-doh-url-div',
@@ -1543,13 +1543,13 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 						'type' => 'textarea',
 						'rows' => '6',
 						'cols' => '60',
-						'global-class' => $httpTypeClass,
+						'global-class' => $httpTypeClass.' http-body-dependence',
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 					echo $this->template?->html_select('http_body_encoding', \Monitors::http_body_encoding_hash(), $this->monitor['http_body_encoding']??'json', \T::Monitor_Edit_HttpBodyEncoding(), false,[
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
-						'global-class' => $httpTypeClass,
+						'global-class' => $httpTypeClass.' http-body-dependence',
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 					echo $this->template?->html_select('auth_method', \Monitors::auth_method_hash(), $this->monitor['auth_method']??'none', \T::Monitor_Edit_AuthMethod(), false,[
@@ -1560,73 +1560,73 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					$credTypeClass = $httpTypeClass.' type-'.\Monitors::TYPE_MYSQL.' type-'.\Monitors::TYPE_POSTGRES.' type-'.\Monitors::TYPE_REDIS.' type-'.\Monitors::TYPE_MONGODB.' type-'.\Monitors::TYPE_SFTP.' type-'.\Monitors::TYPE_RADIUS.' type-'.\Monitors::TYPE_MQTT.' type-'.\Monitors::TYPE_RABBITMQ;
 					echo $this->template->html_input("basic_auth_user", $this->monitor['basic_auth_user']??'', \T::Monitor_Edit_BasicAuthUser(), false, [
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
-						'global-class' => $credTypeClass,
+						'global-class' => $credTypeClass.' auth-dependence auth-basic',
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 					echo $this->template->html_input("basic_auth_pass", $this->monitor['basic_auth_pass']??'', \T::Monitor_Edit_BasicAuthPass(), false, [
 						'type' => 'password',
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
-						'global-class' => $credTypeClass,
+						'global-class' => $credTypeClass.' auth-dependence auth-basic',
 						'readonly' => !($this->can_write || $this->can_create),
 						'autocomplete' => 'new-password',
 					]);
 					echo $this->template->html_input("bearer_token", $this->monitor['bearer_token']??'', \T::Monitor_Edit_BearerToken(), false, [
 						'type' => 'password',
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
-						'global-class' => $httpTypeClass,
+						'global-class' => $httpTypeClass.' auth-dependence auth-bearer',
 						'readonly' => !($this->can_write || $this->can_create),
 						'autocomplete' => 'new-password',
 					]);
 					echo $this->template->html_input("oauth_token_url", $this->monitor['oauth_token_url']??'', \T::Monitor_Edit_OAuthTokenUrl(), false, [
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
-						'global-class' => $httpTypeClass,
+						'global-class' => $httpTypeClass.' auth-dependence auth-oauth2_cc',
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 					echo $this->template->html_input("oauth_client_id", $this->monitor['oauth_client_id']??'', \T::Monitor_Edit_OAuthClientId(), false, [
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
-						'global-class' => $httpTypeClass,
+						'global-class' => $httpTypeClass.' auth-dependence auth-oauth2_cc',
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 					echo $this->template->html_input("oauth_client_secret", $this->monitor['oauth_client_secret']??'', \T::Monitor_Edit_OAuthClientSecret(), false, [
 						'type' => 'password',
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
-						'global-class' => $httpTypeClass,
+						'global-class' => $httpTypeClass.' auth-dependence auth-oauth2_cc',
 						'readonly' => !($this->can_write || $this->can_create),
 						'autocomplete' => 'new-password',
 					]);
 					echo $this->template->html_input("oauth_scopes", $this->monitor['oauth_scopes']??'', \T::Monitor_Edit_OAuthScopes(), false, [
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
-						'global-class' => $httpTypeClass,
+						'global-class' => $httpTypeClass.' auth-dependence auth-oauth2_cc',
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 					echo $this->template->html_input("oauth_audience", $this->monitor['oauth_audience']??'', \T::Monitor_Edit_OAuthAudience(), false, [
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
-						'global-class' => $httpTypeClass,
+						'global-class' => $httpTypeClass.' auth-dependence auth-oauth2_cc',
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 					echo $this->template?->html_select('oauth_auth_method', \Monitors::oauth_auth_method_hash(), $this->monitor['oauth_auth_method']??'client_secret_basic', \T::Monitor_Edit_OAuthAuthMethod(), false,[
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
-						'global-class' => $httpTypeClass,
+						'global-class' => $httpTypeClass.' auth-dependence auth-oauth2_cc',
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 					echo $this->template->html_input("http_tls_ca", $this->monitor['http_tls_ca']??'', \T::Monitor_Edit_HttpTlsCa(), false, [
 						'type' => 'textarea',
 						'rows' => '3',
-						'global-class' => $httpTypeClass,
+						'global-class' => $httpTypeClass.' auth-dependence auth-mtls',
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 					echo $this->template->html_input("http_tls_cert", $this->monitor['http_tls_cert']??'', \T::Monitor_Edit_HttpTlsCert(), false, [
 						'type' => 'textarea',
 						'rows' => '3',
-						'global-class' => $httpTypeClass,
+						'global-class' => $httpTypeClass.' auth-dependence auth-mtls',
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
 					echo $this->template->html_input("http_tls_key", $this->monitor['http_tls_key']??'', \T::Monitor_Edit_HttpTlsKey(), false, [
 						'type' => 'textarea',
 						'rows' => '3',
-						'global-class' => $httpTypeClass,
+						'global-class' => $httpTypeClass.' auth-dependence auth-mtls',
 						'class2' => 'col-xs-12 col-sm-12 col-md-9 col-lg-8 col-xl-7 col-xxl-6',
 						'readonly' => !($this->can_write || $this->can_create),
 					]);
@@ -1913,6 +1913,10 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 					$(this).prop('disabled', !$wrap.is(':visible'));
 				});
 				monitor_api_fields_toggle();
+				monitor_auth_fields_toggle();
+				monitor_dns_doh_fields_toggle();
+				monitor_ssl_alert_days_toggle();
+				monitor_http_body_fields_toggle();
 				<?php if (empty($this->monitor['id'])): ?>
 				if (selected_type == '<?=intval(\Monitors::TYPE_DOMAIN);?>') {
 					$('#repeat_seconds').val(3600);
@@ -1938,10 +1942,57 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				}
 			}
 
+			function monitor_http_type_vals() {
+				return [
+					'<?=intval(\Monitors::TYPE_HTTPS);?>',
+					'<?=intval(\Monitors::TYPE_HTTP_JSON);?>',
+					'<?=intval(\Monitors::TYPE_HTTP_KEYWORD);?>',
+					'<?=intval(\Monitors::TYPE_WEBSOCKET);?>'
+				];
+			}
+
 			function monitor_api_fields_toggle() {
 				const enabled = $('#api_enabled').is(':checked');
 				const isFolder = $('#type').val() == '<?=intval(\Monitors::TYPE_FOLDER);?>';
 				$('.api-description-dependence').toggle(enabled && !isFolder);
+			}
+
+			function monitor_auth_fields_toggle() {
+				const auth = ($('#auth_method').val() || 'none').toString();
+				const type = String($('#type').val());
+				const isHttp = monitor_http_type_vals().indexOf(type) >= 0;
+				$('.auth-dependence').each(function() {
+					const $el = $(this);
+					if (!isHttp) {
+						// DB/SFTP/etc reuse basic_auth_* — leave visibility to type-dependence.
+						return;
+					}
+					const forType = $el.hasClass('type-' + type);
+					const forAuth = $el.hasClass('auth-' + auth);
+					$el.toggle(forType && forAuth);
+				});
+			}
+
+			function monitor_dns_doh_fields_toggle() {
+				const isDns = String($('#type').val()) === '<?=intval(\Monitors::TYPE_DNS);?>';
+				const isDoh = ($('#dns_transport').val() || '').toString() === 'doh';
+				$('.dns-doh-dependence').toggle(isDns && isDoh);
+			}
+
+			function monitor_ssl_alert_days_toggle() {
+				const type = String($('#type').val());
+				const isHttp = monitor_http_type_vals().indexOf(type) >= 0;
+				const enabled = $('#ssl_cert_expire_alert').is(':checked');
+				$('.ssl-alert-days-dependence').toggle(isHttp && enabled);
+			}
+
+			function monitor_http_body_fields_toggle() {
+				const type = String($('#type').val());
+				const isHttp = monitor_http_type_vals().indexOf(type) >= 0;
+				const isWs = type === '<?=intval(\Monitors::TYPE_WEBSOCKET);?>';
+				const method = ($('#method').val() || 'GET').toString().toUpperCase();
+				const methodsWithBody = ['POST', 'PUT', 'PATCH', 'DELETE'];
+				$('.http-body-dependence').toggle(isHttp && (isWs || methodsWithBody.indexOf(method) >= 0));
 			}
 
 			function monitor_docker_select() {
@@ -2150,6 +2201,18 @@ class Edit extends \Routing_Parent implements \Routing_Interface {
 				});
 				$('#api_enabled').on('change', function(){
 					monitor_api_fields_toggle();
+				});
+				$('#auth_method').on('changed.bs.select change', function(){
+					monitor_auth_fields_toggle();
+				});
+				$('#dns_transport').on('changed.bs.select change', function(){
+					monitor_dns_doh_fields_toggle();
+				});
+				$('#ssl_cert_expire_alert').on('change', function(){
+					monitor_ssl_alert_days_toggle();
+				});
+				$('#method').on('changed.bs.select change', function(){
+					monitor_http_body_fields_toggle();
 				});
 				$('#dns_doh_preset').on('changed.bs.select change', function(){
 					const url = ($(this).val() || '').toString();
