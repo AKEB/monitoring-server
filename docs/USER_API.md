@@ -45,7 +45,8 @@ This feed is separate from public HTML status pages (`/status/{slug}/`). Putting
 | Value | Meaning |
 |--------|---------|
 | `up` | All assigned workers with fresh data succeeded |
-| `down` | At least one assigned worker failed (mixed workers are `down`) |
+| `degraded` | Some workers up and some down (same yellow threshold as the main list: failures ≤ successes) |
+| `down` | All fresh workers failed, or failures outnumber successes |
 | `maintenance` | Active planned maintenance (inherits from parent folders) |
 | `unknown` | No fresh checks in the last `2 × repeat_seconds` |
 

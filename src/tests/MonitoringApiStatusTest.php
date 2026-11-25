@@ -111,7 +111,18 @@ class MonitoringApiStatusTest extends PHPUnit\Framework\TestCase {
 
 	function test_aggregate_status() {
 		$this->assertSame(\MonitoringApiStatus::STATUS_MAINTENANCE, \MonitoringApiStatus::aggregateResourceStatus(true, [\MonitoringApiStatus::STATUS_UP]));
-		$this->assertSame(\MonitoringApiStatus::STATUS_DOWN, \MonitoringApiStatus::aggregateResourceStatus(false, [\MonitoringApiStatus::STATUS_UP, \MonitoringApiStatus::STATUS_DOWN]));
+		// Mixed workers: same yellow/red threshold as the main list bars.
+		$this->assertSame(\MonitoringApiStatus::STATUS_DEGRADED, \MonitoringApiStatus::aggregateResourceStatus(false, [\MonitoringApiStatus::STATUS_UP, \MonitoringApiStatus::STATUS_DOWN]));
+		$this->assertSame(\MonitoringApiStatus::STATUS_DEGRADED, \MonitoringApiStatus::aggregateResourceStatus(false, [
+			\MonitoringApiStatus::STATUS_UP,
+			\MonitoringApiStatus::STATUS_UP,
+			\MonitoringApiStatus::STATUS_DOWN,
+		]));
+		$this->assertSame(\MonitoringApiStatus::STATUS_DOWN, \MonitoringApiStatus::aggregateResourceStatus(false, [
+			\MonitoringApiStatus::STATUS_DOWN,
+			\MonitoringApiStatus::STATUS_DOWN,
+			\MonitoringApiStatus::STATUS_UP,
+		]));
 		$this->assertSame(\MonitoringApiStatus::STATUS_UP, \MonitoringApiStatus::aggregateResourceStatus(false, [\MonitoringApiStatus::STATUS_UP, \MonitoringApiStatus::STATUS_UNKNOWN]));
 		$this->assertSame(\MonitoringApiStatus::STATUS_UNKNOWN, \MonitoringApiStatus::aggregateResourceStatus(false, [\MonitoringApiStatus::STATUS_UNKNOWN]));
 		$this->assertSame(\MonitoringApiStatus::STATUS_UNKNOWN, \MonitoringApiStatus::aggregateResourceStatus(false, []));

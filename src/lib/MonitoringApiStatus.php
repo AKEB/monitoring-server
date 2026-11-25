@@ -4,6 +4,7 @@ class MonitoringApiStatus {
 
 	const STATUS_UP = 'up';
 	const STATUS_DOWN = 'down';
+	const STATUS_DEGRADED = 'degraded';
 	const STATUS_MAINTENANCE = 'maintenance';
 	const STATUS_UNKNOWN = 'unknown';
 
@@ -308,22 +309,44 @@ class MonitoringApiStatus {
 		if ($in_maintenance) {
 			return self::STATUS_MAINTENANCE;
 		}
-		$has_down = false;
-		$has_up = false;
+		$down = 0;
+		$up = 0;
 		foreach ($worker_statuses as $status) {
 			if ($status === self::STATUS_DOWN) {
-				$has_down = true;
+				$down++;
 			} elseif ($status === self::STATUS_UP) {
-				$has_up = true;
+				$up++;
 			}
 		}
-		if ($has_down) {
-			return self::STATUS_DOWN;
-		}
-		if ($has_up) {
-			return self::STATUS_UP;
-		}
-		return self::STATUS_UNKNOWN;
+		return static::statusFromWorkerCounts($down, $up);
+	}
+
+	/**
+	 * Same multi-worker rollup as the main monitor list bars
+	 * ({@see MonitoringLogs::classForCountedStates()}).
+	 */
+	static public function statusFromWorkerCounts(int $down, int $up, bool $in_maintenance = false): string {
+		$class = \MonitoringLogs::classForCountedStates($down, $up, $in_maintenance);
+		return match ($class) {
+			'bg-primary' => self::STATUS_MAINTENANCE,
+			'bg-warning' => self::STATUS_DEGRADED,
+			'bg-danger' => self::STATUS_DOWN,
+			'bg-success' => self::STATUS_UP,
+			default => self::STATUS_UNKNOWN,
+		};
+	}
+
+	/**
+	 * Map a list bar Bootstrap class to a public status-page beat code.
+	 */
+	static public function beatStatusFromClass(string $class): string {
+		return match (\MonitoringLogs::toSolidStatusClass($class)) {
+			'bg-primary' => 'maint',
+			'bg-warning' => 'degraded',
+			'bg-danger' => 'down',
+			'bg-success' => 'up',
+			default => 'pending',
+		};
 	}
 
 	/**

@@ -49,7 +49,22 @@ class StatusPageBuilder {
 		}
 
 		$payload = \MonitoringApiStatus::buildPayloadForMonitors($leafMonitors);
-		$beatsByMonitor = static::recentBeats(array_map(static fn($m) => intval($m['id']), $leafMonitors));
+		$repeatByMonitor = [];
+		foreach ($leafMonitors as $monitor) {
+			$repeatByMonitor[intval($monitor['id'])] = max(1, intval($monitor['repeat_seconds'] ?? 60));
+		}
+		$workersByMonitor = [];
+		foreach ($payload['resources'] as $resource) {
+			$mid = intval($resource['id']);
+			$workersByMonitor[$mid] = [];
+			foreach ($resource['workers'] ?? [] as $worker) {
+				$wid = intval($worker['id'] ?? 0);
+				if ($wid !== 0) {
+					$workersByMonitor[$mid][$wid] = $wid;
+				}
+			}
+		}
+		$beatsByMonitor = static::recentBeats($workersByMonitor, $repeatByMonitor);
 		$resourcesById = [];
 		$allStatuses = [];
 		foreach ($payload['resources'] as $resource) {
@@ -112,6 +127,7 @@ class StatusPageBuilder {
 		}
 		$up = 0;
 		$down = 0;
+		$degraded = 0;
 		$maint = 0;
 		$unknown = 0;
 		foreach ($statuses as $st) {
@@ -122,6 +138,9 @@ class StatusPageBuilder {
 				case \MonitoringApiStatus::STATUS_DOWN:
 					$down++;
 					break;
+				case \MonitoringApiStatus::STATUS_DEGRADED:
+					$degraded++;
+					break;
 				case \MonitoringApiStatus::STATUS_MAINTENANCE:
 					$maint++;
 					break;
@@ -131,13 +150,13 @@ class StatusPageBuilder {
 			}
 		}
 		$total = count($statuses);
-		if ($down === 0 && $unknown === 0 && $maint === 0 && $up === $total) {
+		if ($down === 0 && $degraded === 0 && $unknown === 0 && $maint === 0 && $up === $total) {
 			return ['code' => 'ok', 'label' => 'All Systems Operational'];
 		}
 		if ($down === $total) {
 			return ['code' => 'down', 'label' => 'Degraded Service'];
 		}
-		if ($down > 0) {
+		if ($down > 0 || $degraded > 0) {
 			return ['code' => 'partial', 'label' => 'Partially Degraded Service'];
 		}
 		if ($maint > 0 && $up + $maint === $total) {
@@ -146,58 +165,173 @@ class StatusPageBuilder {
 		if ($unknown === $total) {
 			return ['code' => 'unknown', 'label' => 'Status Unknown'];
 		}
-		if ($unknown > 0 && $down === 0) {
+		if ($unknown > 0 && $down === 0 && $degraded === 0) {
 			return ['code' => 'partial', 'label' => 'Partially Degraded Service'];
 		}
 		return ['code' => 'partial', 'label' => 'Partially Degraded Service'];
 	}
 
 	/**
-	 * Recent heartbeat statuses (oldest → newest), capped per monitor.
+	 * Recent heartbeat slots (oldest → newest), capped per monitor.
+	 * Aggregates all workers in each time slot with the same yellow/red logic
+	 * as the main monitor list.
 	 *
-	 * @param list<int> $monitorIds
-	 * @return array<int, list<string>>
+	 * @param array<int, array<int, int>> $workersByMonitor monitor_id => [worker_id => worker_id]
+	 * @param array<int, int> $repeatByMonitor monitor_id => native repeat_seconds
+	 * @return array<int, list<array{status:string,time:int}>>
 	 */
-	static public function recentBeats(array $monitorIds): array {
-		$monitorIds = array_values(array_unique(array_filter(array_map('intval', $monitorIds))));
+	static public function recentBeats(array $workersByMonitor, array $repeatByMonitor = []): array {
 		$out = [];
-		foreach ($monitorIds as $id) {
-			$out[$id] = [];
+		$monitorIds = [];
+		foreach ($workersByMonitor as $mid => $workers) {
+			$mid = intval($mid);
+			if ($mid < 1) {
+				continue;
+			}
+			$monitorIds[$mid] = $mid;
+			$out[$mid] = [];
 		}
 		if (!$monitorIds) {
 			return $out;
 		}
-		$since = time() - 86400;
-		$limit = max(count($monitorIds) * self::HEARTBEAT_LIMIT, self::HEARTBEAT_LIMIT);
+
+		$now = time();
+		$displayRepeatByMonitor = [];
+		$slotTimesByMonitor = [];
+		$globalMin = $now;
+		$globalMax = 0;
+		$carryLookback = 0;
+		$intervalSeconds = [];
+
+		foreach ($monitorIds as $mid) {
+			$native = max(1, intval($repeatByMonitor[$mid] ?? 60));
+			$display = \MonitoringLogs::listDisplayRepeatSeconds($native);
+			$displayRepeatByMonitor[$mid] = $display;
+			$intervalSeconds[$display] = $display;
+			$carryLookback = max($carryLookback, \MonitoringLogs::listCarryLookbackSeconds($native));
+
+			$maxTime = intval($now / $display) * $display;
+			$minTime = $maxTime - (($display * (self::HEARTBEAT_LIMIT - 1)));
+			$globalMin = min($globalMin, $minTime);
+			$globalMax = max($globalMax, $maxTime);
+
+			$slots = [];
+			for ($t = $minTime; $t <= $maxTime; $t += $display) {
+				if ($t > $now) {
+					continue;
+				}
+				$workers = [];
+				foreach ($workersByMonitor[$mid] ?? [] as $wid) {
+					$workers[intval($wid)] = \MonitoringLogs::STATE_UNKNOWN;
+				}
+				$slots[$t] = $workers;
+			}
+			$slotTimesByMonitor[$mid] = $slots;
+		}
+
+		if (!$intervalSeconds) {
+			return $out;
+		}
+
+		$fields = '`monitor_id`, `worker_id`, `status`, `update_time`';
+		foreach ($intervalSeconds as $interval) {
+			$fields .= ', FLOOR(`update_time` / '.intval($interval).') * '.intval($interval).' AS `interval_time_'.intval($interval).'`';
+		}
 		$rows = \MonitoringLogs::data(
 			false,
 			sql_pholder(
-				' AND `monitor_id` IN (?@) AND `update_time` >= ? ORDER BY `update_time` DESC, `id` DESC LIMIT '.$limit,
-				$monitorIds,
-				$since
+				' AND `monitor_id` IN (?@) AND `update_time` >= ? AND `update_time` <= ? ORDER BY NULL',
+				array_values($monitorIds),
+				$globalMin - intval($carryLookback),
+				$globalMax
 			),
-			'`monitor_id`, `status`, `update_time`'
+			$fields
 		) ?: [];
-		$counts = [];
+
+		$carrySeed = [];
 		foreach ($rows as $row) {
 			$mid = intval($row['monitor_id'] ?? 0);
-			if ($mid < 1 || !isset($out[$mid])) {
+			$wid = intval($row['worker_id'] ?? 0);
+			$time = intval($row['update_time'] ?? 0);
+			if ($mid < 1 || $wid === 0 || $time < 1 || !isset($slotTimesByMonitor[$mid])) {
 				continue;
 			}
-			$counts[$mid] = ($counts[$mid] ?? 0) + 1;
-			if ($counts[$mid] > self::HEARTBEAT_LIMIT) {
+			if (!isset($workersByMonitor[$mid][$wid]) && !isset($workersByMonitor[$mid][strval($wid)])) {
 				continue;
 			}
 			$status = intval($row['status'] ?? -1);
-			$beat = match ($status) {
-				\MonitoringLogs::STATUS_GOOD => 'up',
-				\MonitoringLogs::STATUS_FAIL => 'down',
-				default => 'pending',
+			$state = match ($status) {
+				\MonitoringLogs::STATUS_FAIL => \MonitoringLogs::STATE_ERROR,
+				\MonitoringLogs::STATUS_GOOD => \MonitoringLogs::STATE_SUCCESS,
+				default => \MonitoringLogs::STATE_UNKNOWN,
 			};
-			$out[$mid][] = $beat;
+			if ($state === \MonitoringLogs::STATE_UNKNOWN) {
+				continue;
+			}
+			$display = $displayRepeatByMonitor[$mid];
+			$slotTime = intval($row['interval_time_'.$display] ?? 0);
+			if ($slotTime < 1) {
+				continue;
+			}
+			$visibleMin = array_key_first($slotTimesByMonitor[$mid]);
+			if ($visibleMin !== null && $slotTime < intval($visibleMin)) {
+				$prevTime = intval($carrySeed[$mid]['_time'][$wid] ?? 0);
+				if ($time >= $prevTime) {
+					$carrySeed[$mid][$wid] = $state;
+					$carrySeed[$mid]['_time'][$wid] = $time;
+				}
+				continue;
+			}
+			if (!isset($slotTimesByMonitor[$mid][$slotTime])) {
+				continue;
+			}
+			$prev = intval($slotTimesByMonitor[$mid][$slotTime][$wid] ?? \MonitoringLogs::STATE_UNKNOWN);
+			$slotTimesByMonitor[$mid][$slotTime][$wid] = max($prev, $state);
 		}
-		foreach ($out as $mid => $beats) {
-			$out[$mid] = array_reverse($beats);
+
+		foreach ($slotTimesByMonitor as $mid => $slots) {
+			$native = max(1, intval($repeatByMonitor[$mid] ?? 60));
+			$display = $displayRepeatByMonitor[$mid];
+			$carry = \MonitoringLogs::listShouldCarryStatus($native);
+			$previousWorkers = [];
+			if (!empty($carrySeed[$mid]) && is_array($carrySeed[$mid])) {
+				foreach ($carrySeed[$mid] as $wid => $state) {
+					if ($wid === '_time') {
+						continue;
+					}
+					$previousWorkers[intval($wid)] = intval($state);
+				}
+			}
+			$beats = [];
+			foreach ($slots as $slotTime => $workerStates) {
+				$isOpen = \MonitoringLogs::isOpenInterval(intval($slotTime), $display, $now);
+				$expected = [];
+				foreach ($workersByMonitor[$mid] ?? [] as $wid) {
+					$expected[intval($wid)] = 1;
+				}
+				$hasRealData = false;
+				foreach ($expected as $wid => $_) {
+					$state = intval($workerStates[$wid] ?? \MonitoringLogs::STATE_UNKNOWN);
+					if ($state === \MonitoringLogs::STATE_SUCCESS || $state === \MonitoringLogs::STATE_ERROR) {
+						$hasRealData = true;
+						break;
+					}
+				}
+				if (($isOpen || $carry) && $previousWorkers) {
+					$workerStates = \MonitoringLogs::fillUnknownFromPrevious($workerStates, $previousWorkers);
+				}
+				$counts = \MonitoringLogs::countWorkerStatesForSlot($expected, $workerStates, false);
+				$slotClass = \MonitoringLogs::classForCountedStates($counts['error'], $counts['success']);
+				if ($isOpen && !$hasRealData && !$carry && $slotClass !== 'bg-primary') {
+					$slotClass = \MonitoringLogs::toSubtleStatusClass($slotClass);
+				}
+				$previousWorkers = $workerStates;
+				$beats[] = [
+					'status' => \MonitoringApiStatus::beatStatusFromClass($slotClass),
+					'time' => intval($slotTime),
+				];
+			}
+			$out[$mid] = $beats;
 		}
 		return $out;
 	}

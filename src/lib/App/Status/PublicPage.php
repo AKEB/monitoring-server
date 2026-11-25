@@ -108,13 +108,17 @@ class PublicPage extends \Routing_Parent implements \Routing_Interface {
 			echo '<div class="sp-state">'.htmlspecialchars(\T::StatusPages_Public_StateMaintenance(), ENT_QUOTES, 'UTF-8').'</div><h3>'.$mt.'</h3></div>';
 		}
 
-		$updated = \T::StatusPages_Public_Updated(gmdate('Y-m-d H:i:s', $generated));
+		$updatedTpl = \T::StatusPages_Public_Updated('%s');
+		$updatedFallback = \T::StatusPages_Public_Updated(gmdate('Y-m-d H:i:s', $generated).' UTC');
 		echo '<footer class="sp-footer">';
-		echo '<span>'.htmlspecialchars($updated, ENT_QUOTES, 'UTF-8').'</span>';
+		echo '<span class="sp-updated" data-time="'.intval($generated).'" data-template="'
+			.htmlspecialchars($updatedTpl, ENT_QUOTES, 'UTF-8').'">'
+			.htmlspecialchars($updatedFallback, ENT_QUOTES, 'UTF-8').'</span>';
 		echo '<span>'.htmlspecialchars(\T::StatusPages_Public_PoweredBy(), ENT_QUOTES, 'UTF-8');
 		echo ' <a href="https://akeb.github.io/monitoring/" rel="noopener">Monitoring</a></span>';
 		echo '</footer>';
 
+		echo '<script src="/js/status-public.js" defer></script>';
 		echo '</div></body></html>';
 	}
 
@@ -203,22 +207,31 @@ class PublicPage extends \Routing_Parent implements \Routing_Interface {
 		$badgeClass = match ($st) {
 			'up' => 'is-up',
 			'down' => 'is-down',
+			'degraded' => 'is-degraded',
 			'maintenance' => 'is-maintenance',
 			default => 'is-pending',
 		};
 		$badgeLabel = match ($st) {
 			'up' => \T::StatusPages_Public_StatusUp(),
 			'down' => \T::StatusPages_Public_StatusDown(),
+			'degraded' => \T::StatusPages_Public_StatusDegraded(),
 			'maintenance' => \T::StatusPages_Public_StatusMaintenance(),
 			default => \T::StatusPages_Public_StatusPending(),
 		};
 
+		// Uptime pill color follows current aggregated status (same idea as main list badge_class).
+		$uptimeClass = match ($st) {
+			'up' => '',
+			'degraded' => 'is-warn',
+			'down' => 'is-bad',
+			'maintenance' => 'is-maint',
+			default => 'is-empty',
+		};
 		$uptimeRaw = $res['availability']['8h'] ?? null;
 		$availTitle = htmlspecialchars(\T::StatusPages_Public_Availability8h(), ENT_QUOTES, 'UTF-8');
-		$uptimeHtml = '<span class="sp-uptime is-empty" title="'.$availTitle.'">—</span>';
+		$uptimeHtml = '<span class="sp-uptime '.$uptimeClass.'" title="'.$availTitle.'">—</span>';
 		if (is_numeric($uptimeRaw)) {
 			$pct = floatval($uptimeRaw);
-			$uptimeClass = $pct >= 99.0 ? '' : ($pct >= 95.0 ? 'is-warn' : 'is-bad');
 			$uptimeHtml = '<span class="sp-uptime '.$uptimeClass.'" title="'.$availTitle.'">'
 				.htmlspecialchars(rtrim(rtrim(number_format($pct, 2, '.', ''), '0'), '.').'%', ENT_QUOTES, 'UTF-8')
 				.'</span>';
@@ -235,7 +248,7 @@ class PublicPage extends \Routing_Parent implements \Routing_Interface {
 		}
 		echo '</div>';
 
-		echo '<div class="sp-beats" aria-hidden="true">';
+		echo '<div class="sp-beats">';
 		$beats = is_array($res['beats'] ?? null) ? $res['beats'] : [];
 		if (!$beats) {
 			for ($i = 0; $i < 24; $i++) {
@@ -243,14 +256,27 @@ class PublicPage extends \Routing_Parent implements \Routing_Interface {
 			}
 		} else {
 			foreach ($beats as $beat) {
-				$b = strval($beat);
+				if (is_array($beat)) {
+					$b = strval($beat['status'] ?? 'pending');
+					$time = intval($beat['time'] ?? 0);
+				} else {
+					$b = strval($beat);
+					$time = 0;
+				}
 				$class = match ($b) {
 					'up' => 'is-up',
 					'down' => 'is-down',
+					'degraded' => 'is-degraded',
 					'maint', 'maintenance' => 'is-maint',
 					default => 'is-pending',
 				};
-				echo '<span class="sp-beat '.$class.'"></span>';
+				// data-time is unix; status-public.js rewrites title into the browser timezone.
+				$timeAttr = '';
+				if ($time > 0) {
+					$fallback = htmlspecialchars(gmdate('Y-m-d H:i:s', $time).' UTC', ENT_QUOTES, 'UTF-8');
+					$timeAttr = ' data-time="'.$time.'" title="'.$fallback.'"';
+				}
+				echo '<span class="sp-beat '.$class.'"'.$timeAttr.'></span>';
 			}
 		}
 		echo '</div>';

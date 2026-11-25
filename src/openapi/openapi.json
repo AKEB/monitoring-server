@@ -3341,6 +3341,7 @@
             "type": "string",
             "enum": [
               "up",
+              "degraded",
               "down",
               "maintenance",
               "unknown"
